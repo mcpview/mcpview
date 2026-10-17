@@ -139,7 +139,7 @@ export interface AuthInfo {
  * `auth:` option; that auto-construction path was removed when
  * `createAuthProviderFromConfig` took over YAML/env provider construction,
  * but the dead fields stayed in the interface. 0.17.0 deletes them as part
- * of the auth-module cleanup (superWorldSavior/mcp-platform#13).
+ * of the auth-module cleanup (superWorldSavior/mcp-server#13).
  *
  * The interface is kept (rather than reducing `McpAppOptions.auth` to a
  * bare `AuthProvider`) so that future additions like pipeline-level auth

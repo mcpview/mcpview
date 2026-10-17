@@ -55,20 +55,20 @@ npm install @casys/mcp-server
 > re-exporting this package, so 0.28.x imports keep working unchanged.
 >
 > Coming from `@casys/mcp-platform`? See the
-> [package migration guide](https://github.com/superWorldSavior/mcp-platform/blob/main/docs/migration/mcp-server-to-mcp-platform.md).
+> [package migration guide](https://github.com/superWorldSavior/mcp-server/blob/main/docs/migration/mcp-server-to-mcp-platform.md).
 
 ## Which companion package should I use?
 
 Start with `@casys/mcp-server` to build and operate an MCP server. Add a
 companion only for the boundary it owns:
 
-| Package                                                                                                             | Use it when you need to...                                                        |
-| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [`@casys/mcp-compose`](https://github.com/superWorldSavior/mcp-platform/tree/main/packages/compose)                 | Compose and synchronize multiple MCP Apps in one dashboard.                       |
-| [`@casys/mcp-bridge`](https://github.com/superWorldSavior/mcp-platform/tree/main/packages/bridge)                   | Bridge MCP Apps to external hosts or route selected calls to a private network.   |
-| [`@casys/mcp-view-contracts`](https://github.com/superWorldSavior/mcp-platform/tree/main/packages/view-contracts)   | Share dependency-free App, resource, composition, and recorded-session contracts. |
-| [`@casys/mcp-view`](https://github.com/superWorldSavior/mcp-platform/tree/main/packages/view)                       | Build the browser-side lifecycle, routing, results, and events of an MCP App.     |
-| [`@casys/mcp-view-components`](https://github.com/superWorldSavior/mcp-platform/tree/main/packages/view-components) | Add the optional presentation runtime, theme, and component kit to an MCP App.    |
+| Package                                                                                                           | Use it when you need to...                                                        |
+| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [`@casys/mcp-compose`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/compose)                 | Compose and synchronize multiple MCP Apps in one dashboard.                       |
+| [`@casys/mcp-bridge`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/bridge)                   | Bridge MCP Apps to external hosts or route selected calls to a private network.   |
+| [`@casys/mcp-view-contracts`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/view-contracts)   | Share dependency-free App, resource, composition, and recorded-session contracts. |
+| [`@casys/mcp-view`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/view)                       | Build the browser-side lifecycle, routing, results, and events of an MCP App.     |
+| [`@casys/mcp-view-components`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/view-components) | Add the optional presentation runtime, theme, and component kit to an MCP App.    |
 
 `@casys/mcp-platform` is the deprecated compatibility alias, not a separate
 framework or an additional layer to install for new projects.
@@ -125,7 +125,7 @@ await server.start();
 Provider repositories that expose a native stdio CLI should test their actual
 documented command, transport flags, protocol eras, stdout discipline, and EOF
 cleanup. Use the
-[native stdio provider testing guide](https://github.com/superWorldSavior/mcp-platform/blob/main/docs/guides/native-stdio-provider-testing.md)
+[native stdio provider testing guide](https://github.com/superWorldSavior/mcp-server/blob/main/docs/guides/native-stdio-provider-testing.md)
 as a test-only adoption kit.
 
 ### HTTP Server with Auth
@@ -173,7 +173,7 @@ self-contained: the server does not issue `Mcp-Session-Id`, keep an MCP session,
 or expose the legacy SSE stream on `GET /mcp`.
 
 See the
-[HTTP security guide](https://github.com/superWorldSavior/mcp-platform/blob/main/docs/guides/securing-your-http-server.md)
+[HTTP security guide](https://github.com/superWorldSavior/mcp-server/blob/main/docs/guides/securing-your-http-server.md)
 to choose between a shared static allowlist, identity-aware static credentials,
 and OIDC/JWT.
 

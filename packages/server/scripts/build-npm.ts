@@ -35,7 +35,7 @@ await build({
     license: "MIT",
     repository: {
       type: "git",
-      url: "git+https://github.com/superWorldSavior/mcp-platform.git",
+      url: "git+https://github.com/superWorldSavior/mcp-server.git",
     },
     keywords: [
       "mcp",

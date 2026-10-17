@@ -31,7 +31,7 @@ framework repository separated from the Casys-AI GitHub organisation, while
    `export * from "@casys/mcp-server"` in `packages/platform/`, depending on
    `^0.29.0`, guarded by the same export-parity test the previous alias used,
    with the npm notice "Renamed back to @casys/mcp-server".
-3. **The repository is `superWorldSavior/mcp-platform`.** Package metadata,
+3. **The repository is `superWorldSavior/mcp-server`.** Package metadata,
    READMEs, and documentation links point there. The `@casys` scope stays the
    JSR/npm publication namespace; "Casys MCP Platform" stays the monorepo name.
 
@@ -66,9 +66,10 @@ Negative (the cost):
   time.
 - Registry bookkeeping outside this repo: remove the npm deprecation from
   `@casys/mcp-server`, deprecate `@casys/mcp-platform`, archive or freeze the
-  platform package on JSR after 0.28.2, and check that the JSR repository links
-  point to `superWorldSavior/mcp-platform`. The repository keeps its name, so no
-  JSR re-linking is needed for this move.
+  platform package on JSR after 0.28.2, and re-link the JSR repository of all
+  seven packages to `superWorldSavior/mcp-server`: the GitHub repository was
+  renamed from `mcp-platform` on 2026-10-17, and JSR's OIDC publishing checks
+  the linked repository name.
 - A wide metadata sweep inside the repo (workspace, CI jobs and their dependency
   order, build scripts, docs, skills). One-off, mechanical, and covered by the
   existing test suites plus the alias parity test.

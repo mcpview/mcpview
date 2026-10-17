@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 > **Deprecated:** the framework was renamed back to
-> [`@casys/mcp-server`](https://github.com/superWorldSavior/mcp-platform/blob/main/packages/server/README.md)
+> [`@casys/mcp-server`](https://github.com/superWorldSavior/mcp-server/blob/main/packages/server/README.md)
 > in 0.29.0. This package re-exports it unchanged so existing 0.28.x imports keep working. New code
 > should install `@casys/mcp-server` directly.
 

@@ -19,7 +19,7 @@ await build({
     version: denoJson.version,
     description: "Dependency-free MCP App resource, composition, and session contracts",
     license: "MIT",
-    repository: { type: "git", url: "https://github.com/superWorldSavior/mcp-platform" },
+    repository: { type: "git", url: "https://github.com/superWorldSavior/mcp-server" },
     keywords: ["mcp", "model-context-protocol", "mcp-apps", "contracts", "manifest"],
   },
   compilerOptions: { lib: ["ES2022"], target: "ES2022" },

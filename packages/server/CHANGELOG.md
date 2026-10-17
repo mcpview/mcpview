@@ -11,7 +11,7 @@ All notable changes to `@casys/mcp-server` will be documented in this file.
 - **Package renamed back: the framework is again `@casys/mcp-server`.** Same
   code, same API — `packages/platform/` moved back to `packages/server/`
   following the repository rename to
-  [superWorldSavior/mcp-platform](https://github.com/superWorldSavior/mcp-platform).
+  [superWorldSavior/mcp-server](https://github.com/superWorldSavior/mcp-server).
   The 0.28.x entries below were released as `@casys/mcp-platform`; that name
   continues as a deprecated alias (0.28.2) re-exporting this package, so 0.28.x
   imports keep working unchanged. Version 0.29.0 sits above both the last
