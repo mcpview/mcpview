@@ -1,10 +1,10 @@
 /**
  * Pure Preact presentation primitives for native applications and MCP Apps.
  *
- * Unlike `@casys/mcp-view-components/preact`, this entry point does not import the MCP
+ * Unlike `@mcpview/components/preact`, this entry point does not import the MCP
  * Apps lifecycle, iframe transport, surface registry, or postMessage bridge.
  *
- * Import as `@casys/mcp-view-components/preact/components`.
+ * Import as `@mcpview/components/preact/components`.
  *
  * @module
  */

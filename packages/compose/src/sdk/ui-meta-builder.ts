@@ -99,7 +99,7 @@ export interface UiMetaResult {
  *
  * @example
  * ```typescript
- * import { uiMeta } from "@casys/mcp-compose";
+ * import { uiMeta } from "@mcpview/compose";
  *
  * const tool = {
  *   name: "erp:customers",

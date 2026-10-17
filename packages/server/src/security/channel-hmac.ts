@@ -8,7 +8,7 @@
  * `MessageSigner.verify()`. This script only handles the IFRAME side
  * (signing outgoing).
  *
- * Part of @casys/mcp-server security module. See also:
+ * Part of @mcpview/server security module. See also:
  * - message-signer.ts (MessageSigner class, HMAC sign/verify)
  *
  * @module server/security/channel-hmac

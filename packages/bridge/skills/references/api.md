@@ -1,4 +1,4 @@
-# @casys/mcp-bridge — Full API Reference
+# @mcpview/bridge — Full API Reference
 
 Version 0.2.0. All exports from `src/mod.ts`.
 

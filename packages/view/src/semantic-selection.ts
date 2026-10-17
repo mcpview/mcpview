@@ -15,7 +15,7 @@ import {
   type SemanticSelectionInput,
   type SemanticSelectionMode,
   validateSemanticSelection,
-} from "@casys/mcp-view-contracts";
+} from "@mcpview/contracts";
 import {
   COMPOSE_EVENT_METHOD,
   type ComposeEventClient,

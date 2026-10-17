@@ -11,12 +11,12 @@
   "rangeStrategy": "bump",
   "packageRules": [
     {
-      "description": "Group all @casys/* packages into a single PR so cross-package bumps (e.g., mcp-server affecting mcp-compose or mcp-bridge) are reviewed together.",
+      "description": "Group all @mcpview/* packages into a single PR so cross-package bumps (e.g., server affecting compose or bridge) are reviewed together.",
       "matchPackagePatterns": [
-        "^@casys/"
+        "^@mcpview/"
       ],
-      "groupName": "@casys packages",
-      "commitMessageTopic": "@casys workspace packages"
+      "groupName": "@mcpview packages",
+      "commitMessageTopic": "@mcpview workspace packages"
     },
     {
       "description": "Group Deno standard library (@std/*) bumps into one PR to reduce noise.",

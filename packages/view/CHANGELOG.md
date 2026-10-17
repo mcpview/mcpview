@@ -1,11 +1,28 @@
 # Changelog
 
-All notable changes to `@casys/mcp-view` will be documented in this file.
+All notable changes to `@mcpview/view` (published as `@casys/mcp-view` up to 0.9.5) will be
+documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.10.0] - 2026-10-17
+
+### Changed
+
+- Renamed from `@casys/mcp-view` to `@mcpview/view`. The whole family moves to the `@mcpview` scope
+  on JSR and npm (repository `mcpview/mcpview`, site https://mcpview.dev, maintained by Casys). Same
+  code and same API: only the dependency and import name change. Version numbers continue from
+  0.9.5, and `@casys/mcp-view@0.10.0` stays published as a deprecated alias that re-exports this
+  package, with the same `.`, `./contracts`, and `./react` entry points.
+- Depends on `@mcpview/contracts@^0.2.0` (formerly `@casys/mcp-view-contracts`); the `./contracts`
+  sub-path still re-exports it unchanged.
+- Wire identifiers such as `io.casys.semantic-selection/1.0` are unchanged, so Apps and hosts built
+  against earlier releases keep interoperating.
+- See the
+  [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md).
 
 ## [0.9.5] - 2026-09-18
 

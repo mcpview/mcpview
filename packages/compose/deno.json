@@ -1,6 +1,6 @@
 {
-  "name": "@casys/mcp-compose",
-  "version": "0.9.1",
+  "name": "@mcpview/compose",
+  "version": "0.10.0",
   "exports": {
     ".": "./mod.ts",
     "./core": "./src/core/mod.ts",
@@ -22,7 +22,7 @@
     "check": "deno check mod.ts stubs/shared.ts stubs/stub-chart/server.ts stubs/stub-detail/server.ts stubs/stub-filter/server.ts stubs/stub-list/server.ts",
     "lint": "deno lint",
     "fmt": "deno fmt",
-    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern 'compose-v.*' --include-path 'packages/compose/**' --unreleased",
+    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern '^compose-v.*' --include-path 'packages/compose/**' --unreleased",
     "release:check": "deno task check && deno task lint && deno task test",
     "release:tag": "deno run -A ../../scripts/release-tag.ts compose"
   },

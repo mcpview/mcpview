@@ -411,7 +411,7 @@
       result: {
         protocolVersion: "2025-11-25",
         hostInfo: {
-          name: "@casys/mcp-bridge",
+          name: "@mcpview/bridge",
           version: "0.2.0",
         },
         hostCapabilities: {

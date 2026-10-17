@@ -2,7 +2,7 @@ import {
   createStaticTokenAuthProvider,
   McpApp,
   type McpUiToolMeta,
-} from "@casys/mcp-server";
+} from "@mcpview/server";
 
 const ui: McpUiToolMeta = {
   resourceUri: "ui://node-consumer/smoke",

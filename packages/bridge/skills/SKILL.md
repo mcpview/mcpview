@@ -1,6 +1,6 @@
-# @casys/mcp-bridge — Reference Skill
+# @mcpview/bridge — Reference Skill
 
-**Registry:** `jsr:@casys/mcp-bridge` | **Runtime:** Deno
+**Registry:** `jsr:@mcpview/bridge` | **Runtime:** Deno
 
 Bridge MCP Apps (interactive HTML UIs delivered via the MCP protocol) to
 messaging platform webviews — Telegram Mini Apps and LINE LIFF.
@@ -9,7 +9,7 @@ messaging platform webviews — Telegram Mini Apps and LINE LIFF.
 
 ## What it does
 
-`@casys/mcp-bridge` solves one problem: an MCP App's HTML runs inside a platform
+`@mcpview/bridge` solves one problem: an MCP App's HTML runs inside a platform
 webview (Telegram, LINE) that does not speak the MCP protocol. The bridge
 injects a `bridge.js` script into the served HTML, which intercepts
 `postMessage` calls from the MCP App SDK and routes them over WebSocket to a
@@ -58,7 +58,7 @@ The resource server and backend run server-side in Deno.
 ## Installation
 
 ```sh
-deno add jsr:@casys/mcp-bridge
+deno add jsr:@mcpview/bridge
 ```
 
 Import:
@@ -68,7 +68,7 @@ import {
   JsonRpcMcpBackend,
   startResourceServer,
   TelegramPlatformAdapter,
-} from "@casys/mcp-bridge";
+} from "@mcpview/bridge";
 ```
 
 ---
@@ -76,7 +76,7 @@ import {
 ## Quick start — Telegram
 
 ```ts
-import { JsonRpcMcpBackend, startResourceServer } from "@casys/mcp-bridge";
+import { JsonRpcMcpBackend, startResourceServer } from "@mcpview/bridge";
 
 const backend = new JsonRpcMcpBackend({
   endpointUrl: "http://localhost:3000/mcp",

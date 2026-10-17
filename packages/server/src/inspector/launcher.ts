@@ -14,7 +14,7 @@
  *
  * Usage from a server script:
  * ```typescript
- * import { launchInspector } from "@casys/mcp-server";
+ * import { launchInspector } from "@mcpview/server";
  *
  * if (Deno.args.includes("--inspect")) {
  *   await launchInspector("deno", ["run", "--allow-all", "server.ts"]);

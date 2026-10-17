@@ -1,5 +1,5 @@
 {
-  "name": "@casys/mcp-server",
+  "name": "@mcpview/server",
   "version": "0.29.0",
   "license": "MIT",
   "exports": {
@@ -17,7 +17,7 @@
     "check": "deno check mod.ts",
     "lint": "deno lint",
     "fmt": "deno fmt",
-    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern 'server-v.*' --include-path 'packages/server/**' --unreleased",
+    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern '^server-v.*' --include-path 'packages/server/**' --unreleased",
     "publish:check": "deno publish --dry-run --allow-dirty",
     "release:check": "deno check mod.ts src/ api-surface_test.ts && deno task test && deno task publish:check",
     "release:tag": "deno run -A ../../scripts/release-tag.ts server"

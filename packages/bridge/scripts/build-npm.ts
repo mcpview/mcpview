@@ -1,5 +1,5 @@
 /**
- * Build script for @casys/mcp-bridge npm package.
+ * Build script for @mcpview/bridge npm package.
  *
  * Uses dnt (Deno to Node Transform) to produce ESM + CJS + type declarations
  * from the Deno source.
@@ -34,15 +34,18 @@ await build({
     deno: false,
   },
   package: {
-    name: "@casys/mcp-bridge",
+    name: "@mcpview/bridge",
     version: VERSION,
     description:
       "Bridge MCP Apps interactive UIs to messaging platforms (Telegram Mini Apps, LINE LIFF)",
     license: "MIT",
     repository: {
       type: "git",
-      url: "https://github.com/superWorldSavior/mcp-server",
+      url: "git+https://github.com/mcpview/mcpview.git",
+      directory: "packages/bridge",
     },
+    homepage: "https://mcpview.dev",
+    bugs: { url: "https://github.com/mcpview/mcpview/issues" },
     keywords: [
       "mcp",
       "model-context-protocol",
@@ -116,11 +119,11 @@ async function smokeTestNetworkAdapterSubpath(): Promise<void> {
     prefix: "mcp-bridge-npm-smoke-",
   });
   try {
-    const packageScope = `${tempConsumer}/node_modules/@casys`;
+    const packageScope = `${tempConsumer}/node_modules/@mcpview`;
     await Deno.mkdir(packageScope, { recursive: true });
     await Deno.symlink(
       new URL("../dist-node", import.meta.url).pathname,
-      `${packageScope}/mcp-bridge`,
+      `${packageScope}/bridge`,
       { type: "dir" },
     );
     const command = new Deno.Command("node", {
@@ -129,7 +132,7 @@ async function smokeTestNetworkAdapterSubpath(): Promise<void> {
         "--input-type=module",
         "--eval",
         [
-          "const mod = await import('@casys/mcp-bridge/adapters/network');",
+          "const mod = await import('@mcpview/bridge/adapters/network');",
           "if (typeof mod.NetworkRelay !== 'function') {",
           "  throw new Error('NetworkRelay export missing');",
           "}",

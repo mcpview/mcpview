@@ -3,9 +3,9 @@
 Date: 2026-10-17 Status: Proposed Scope: view, view-components, view-contracts,
 server
 
-Amends the package ownership table of view ADR 0004: `@casys/mcp-view` also owns
+Amends the package ownership table of view ADR 0004: `@mcpview/view` also owns
 the context, navigation and refresh engines below. Root ADR 0001 predates the
-current seven-package workspace.
+current six-package workspace.
 
 ## Context
 
@@ -25,7 +25,7 @@ The ERPNext pilot (github.com/Casys-AI/mcp-erpnext, 3.2.0-beta.1 line) built a
 bounded active-context basket and a navigation stack. Measured on 2026-10-17 in
 `src/ui/shared`: about 4k lines of `.ts` source (5.4k with `.tsx`) and 5k lines
 of tests; the engine code alone is about 2.5k lines, the size of the whole
-`@casys/mcp-view` source (2.6k). It lives in the pilot, wired by hand in eight
+`@mcpview/view` source (2.6k). It lives in the pilot, wired by hand in eight
 viewers, while the platform packages have no context engine and a flat router.
 
 Upstream issues show the infrastructure parts may be standardized later
@@ -79,15 +79,15 @@ fullscreen.
 No new package before 1.0. Pure subpaths, each guarded by a module-graph test
 like `view-components/entries_test.ts`:
 
-| Subpath / package                           | Content                                                                   |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `@casys/mcp-view-contracts`                 | active context schema, `NavTarget`, refresh request, viewer tool manifest |
-| `@casys/mcp-view/refresh`                   | refresh sequence and viewer lifecycle (view ADR 0002, items 2–3)          |
-| `@casys/mcp-view/context`                   | basket engine (view ADR 0006)                                             |
-| `@casys/mcp-view/navigation`                | level stack, jump orchestration, crumbs                                   |
-| `@casys/mcp-view/gesture` (experimental)    | click / double-click / keyboard arbitration                               |
-| `@casys/mcp-view-components` `/interaction` | context chip, detail toggle, level host, Preact hooks                     |
-| `@casys/mcp-server`                         | viewer navigation middleware; extend the existing `registerViewers`       |
+| Subpath / package                      | Content                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------- |
+| `@mcpview/contracts`                   | active context schema, `NavTarget`, refresh request, viewer tool manifest |
+| `@mcpview/view/refresh`                | refresh sequence and viewer lifecycle (view ADR 0002, items 2–3)          |
+| `@mcpview/view/context`                | basket engine (view ADR 0006)                                             |
+| `@mcpview/view/navigation`             | level stack, jump orchestration, crumbs                                   |
+| `@mcpview/view/gesture` (experimental) | click / double-click / keyboard arbitration                               |
+| `@mcpview/components` `/interaction`   | context chip, detail toggle, level host, Preact hooks                     |
+| `@mcpview/server`                      | viewer navigation middleware; extend the existing `registerViewers`       |
 
 Engines live outside the render tree and expose `subscribe` / `getSnapshot`.
 
@@ -132,7 +132,6 @@ showcase page comes after the matrix, not before.
 ## Consequences
 
 - The platform family gains a second core, its engines about as large as
-  `@casys/mcp-view` today; the extraction is paced by pilots, not by the
-  calendar.
+  `@mcpview/view` today; the extraction is paced by pilots, not by the calendar.
 - Scope discipline from view ADR 0002 ("Trigger to promote candidates") still
   applies: no subpath ships without a second consumer.

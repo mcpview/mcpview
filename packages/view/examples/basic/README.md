@@ -1,6 +1,6 @@
 # view-basic
 
-End-to-end integration demo for `@casys/mcp-view`.
+End-to-end integration demo for `@mcpview/view`.
 
 Exercises the real handshake + router path with two views (list, detail) and SPA navigation via
 `ctx.navigate(...)` — the pattern that replaces `app.sendMessage("show details for X")` (which would

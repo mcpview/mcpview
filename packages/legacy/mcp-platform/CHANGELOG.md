@@ -7,26 +7,29 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.28.2] - 2026-10-17
+## [0.29.0] - 2026-10-17
 
 ### Changed
 
-- **Deprecated alias:** the framework was renamed back to `@casys/mcp-server@^0.29.0`. This package
-  now re-exports it unchanged, and its npm publication is marked deprecated ("Renamed back to
-  @casys/mcp-server"). Framework history continues in the `@casys/mcp-server` changelog.
-- Both JSR and npm publications depend on `@casys/mcp-server@^0.29.0`, with the npm build deriving
-  that range from the Deno package manifest so the two registries cannot drift apart. The package
-  remains a pure re-export, and compatible framework patches are adopted without another alias
-  release.
-- The npm publication smoke type-checks a strict NodeNext consumer through the deprecated package
-  name as well as importing it at runtime, against both the newest compatible framework release and
-  the declared `0.29.0` lower bound. This protects value and type re-exports without silently
-  raising the alias floor.
+- **Deprecated alias.** Renamed from `@casys/mcp-platform` to `@mcpview/server`: the whole family
+  moved to the `@mcpview` scope. This package now re-exports `@mcpview/server` unchanged, with the
+  same API and the same single `.` entry point. Its npm publication is marked deprecated ("Moved to
+  @mcpview/server"). The last release carrying the framework under this name is 0.28.1; the
+  framework history continues in the `@mcpview/server` changelog (`packages/server/CHANGELOG.md`).
+- Both the JSR and npm publications depend on `@mcpview/server@^0.29.0`; the npm build derives that
+  range from the Deno manifest so the two registries cannot drift apart. Compatible patches of the
+  framework are adopted without another alias release.
+- The export-name parity test (`mod_test.ts`) fails whenever the framework gains, drops, or renames
+  an export. The npm publication smoke type-checks a strict NodeNext consumer through the deprecated
+  package name, against both the newest compatible framework release and the declared `0.29.0` lower
+  bound, so the alias floor cannot be raised silently.
 
 ### Documentation
 
-- Added explicit npm and Deno migration steps back to `@casys/mcp-server`. The rename is a
-  package-name migration, not an API migration.
+- Added the
+  [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md):
+  the package-name mapping and the import replacement. The rename is a package-name migration, not
+  an API migration.
 
 ## [0.28.1] - 2026-09-19
 

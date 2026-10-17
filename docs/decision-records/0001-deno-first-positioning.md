@@ -5,10 +5,11 @@ bridge)
 
 ## Context
 
-The Casys MCP Platform monorepo publishes three packages to both **JSR**
-(`jsr:@casys/*`) and **npm** (`@casys/*`). The primary runtime target is Deno
-2.x (plus Deno Deploy for cloud). A Node compatibility path exists via a build
-step (`scripts/build-node.sh`).
+The mcpview monorepo (published as `@casys/*` when this was written,
+`@mcpview/*` since ADR 0003) publishes its packages to both **JSR**
+(`jsr:@mcpview/*`) and **npm** (`@mcpview/*`). The primary runtime target is
+Deno 2.x (plus Deno Deploy for cloud). A Node compatibility path exists via a
+build step (`scripts/build-node.sh`).
 
 Several runtime targets were considered during early development:
 
@@ -22,9 +23,8 @@ Several runtime targets were considered during early development:
 
 ## Decision
 
-The monorepo publishes **4 packages** (`@casys/mcp-server`,
-`@casys/mcp-compose`, `@casys/mcp-view`, `@casys/mcp-bridge`) and is
-**Deno-first**:
+The monorepo publishes **4 packages** (`@mcpview/server`, `@mcpview/compose`,
+`@mcpview/view`, `@mcpview/bridge`) and is **Deno-first**:
 
 1. All development, tests, and type-checking run under Deno
    (`deno task
@@ -37,8 +37,8 @@ The monorepo publishes **4 packages** (`@casys/mcp-server`,
 4. Deno Deploy is the canonical cloud target. Other serverless runtimes
    (Workers, AWS Lambda, Vercel Edge) are not supported and not planned.
 5. Browser is not a target at the framework level. The only code that ships
-   browser-side is `@casys/mcp-view` for inside-iframe usage — explicitly
-   bundled by consumers via esbuild.
+   browser-side is `@mcpview/view` for inside-iframe usage — explicitly bundled
+   by consumers via esbuild.
 
 ## Consequences
 
@@ -64,8 +64,8 @@ Negative:
 
 ## Non-decisions (explicitly not settled here)
 
-- Whether to publish a CLI tool (`create-casys-mcp-app`) under JSR only, npm
-  only, or both. Leaning both, tracked separately.
+- Whether to publish a CLI tool (`create-mcpview-app`) under JSR only, npm only,
+  or both. Leaning both, tracked separately.
 - Whether individual packages can opt out of Node support (e.g., if compose
   ships pure Deno Deploy features). Not urgent; revisit per-package when needed.
 

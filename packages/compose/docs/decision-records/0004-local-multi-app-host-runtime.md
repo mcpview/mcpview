@@ -16,8 +16,8 @@ rendered dashboard must also behave as an MCP Apps host:
 - send the initial complete `CallToolResult` after the App's initialization handshake;
 - retain Compose's multi-iframe `ui/compose/event` routing.
 
-The existing `@casys/mcp-bridge` resource server solves a related problem for a single App embedded
-in an external platform. Its injected browser client owns `postMessage`, which is incompatible with
+The existing `@mcpview/bridge` resource server solves a related problem for a single App embedded in
+an external platform. Its injected browser client owns `postMessage`, which is incompatible with
 Compose acting as the parent of multiple App iframes.
 
 ## Decision
@@ -43,7 +43,7 @@ Compose HTTP host
 Compose is **stateless-first** for HTTP. It probes `server/discover` using the `2026-07-28`
 per-request metadata and headers. A server that returns unsupported-version or method-not-found is
 then reached through the legacy initialized Streamable HTTP client. This follows the protocol's
-published compatibility flow and lets the Console (legacy) and current `@casys/mcp-server` instances
+published compatibility flow and lets the Console (legacy) and current `@mcpview/server` instances
 (stateless) coexist.
 
 The public SDK available during this work does not yet expose the stateless client transport, so
@@ -53,11 +53,11 @@ request-mirroring headers.
 
 ### Boundaries
 
-- `@casys/mcp-compose` owns local dashboard lifecycle, per-slot routing, initial result delivery,
-  and cross-iframe events.
-- `@casys/mcp-bridge` remains the home for external-platform adapters, WebSocket bridging,
+- `@mcpview/compose` owns local dashboard lifecycle, per-slot routing, initial result delivery, and
+  cross-iframe events.
+- `@mcpview/bridge` remains the home for external-platform adapters, WebSocket bridging,
   authentication, and remote/tunnel deployment concerns.
-- `@casys/mcp-view` remains the browser-side view library.
+- `@mcpview/view` remains the browser-side view library.
 - Digital Thread supplies explicit manifests and templates; it does not duplicate host plumbing.
 
 ### Security invariants

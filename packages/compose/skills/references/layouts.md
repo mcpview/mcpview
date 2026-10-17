@@ -1,4 +1,4 @@
-# @casys/mcp-compose — Layouts & Sync Rules
+# @mcpview/compose — Layouts & Sync Rules
 
 ---
 
@@ -112,7 +112,7 @@ If you need to detect bad rules before building, call `validateSyncRules` first.
 ## Validation
 
 ```typescript
-import { validateSyncRules } from "@casys/mcp-compose/core";
+import { validateSyncRules } from "@mcpview/compose/core";
 
 const resources = collector.getResources();
 const knownSources = resources.map((r) => r.source);

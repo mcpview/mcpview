@@ -1,4 +1,4 @@
-/** Preact integration for `@casys/mcp-view-components` surfaces. */
+/** Preact integration for `@mcpview/components` surfaces. */
 
 export {
   definePreactComponent,

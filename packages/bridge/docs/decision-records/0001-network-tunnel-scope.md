@@ -4,12 +4,12 @@ Date: 2026-05-09 Status: Accepted
 
 ## Context
 
-Until now, `@casys/mcp-bridge` has been positioned as a **UI bridge** — it
-serves MCP Apps `ui://` resources inside hosts that don't render them natively
+Until now, `@mcpview/bridge` has been positioned as a **UI bridge** — it serves
+MCP Apps `ui://` resources inside hosts that don't render them natively
 (Telegram Mini Apps, LINE LIFF). The README, the package description, and the
 directory layout (`adapters/telegram/`, `adapters/line/`) reinforce this scope.
 
-Independently, `@casys/mcp-compose/src/deploy/` ships a **design document**
+Independently, `@mcpview/compose/src/deploy/` ships a **design document**
 (readme + contract + types, no impl) for publishing dashboards on Deno Deploy,
 which includes a **WebSocket tunnel** for local-data MCPs:
 
@@ -33,7 +33,7 @@ Cons: **duplicates ~1600 LOC of WebSocket + JSON-RPC + session/router plumbing
 already living in `mcp-bridge/src/core/`** (battle-tested, ~120 tests). Two
 packages would each carry their own copy of the same machinery.
 
-### B. Inside `@casys/mcp-compose/src/deploy/`
+### B. Inside `@mcpview/compose/src/deploy/`
 
 Pros: design already there, types defined.
 
@@ -44,7 +44,7 @@ general. Locking it inside `compose/deploy/` means every other consumer
 (erp-platform, future on-prem cases) would have to import all of `mcp-compose`
 to reach it.
 
-### C. Inside `@casys/mcp-server` core
+### C. Inside `@mcpview/server` core
 
 Pros: it's a transport-level concern.
 
@@ -52,7 +52,7 @@ Cons: the tunnel has two sides (relay server + local agent), with
 auth/session/routing surface. That's more than a transport — it's a mini-product
 on top of the transport.
 
-### D. Inside `@casys/mcp-bridge`, as a new `adapters/network/` sibling
+### D. Inside `@mcpview/bridge`, as a new `adapters/network/` sibling
 
 Pros:
 
@@ -80,7 +80,7 @@ Cons:
 
 ## Decision
 
-**D — `@casys/mcp-bridge`, with a new `src/adapters/network/` sub-module.**
+**D — `@mcpview/bridge`, with a new `src/adapters/network/` sub-module.**
 
 The `core/` primitives (WebSocketTransport, MessageRouter, protocol builders,
 BridgeSession, auth handler) are reused as-is. The network adapter sits next to
@@ -116,7 +116,7 @@ _uses_.
 - Migrate types from `mcp-compose/src/deploy/types.ts` (the bits that describe
   the tunnel, **not** the deploy-specific request/result).
 - Update `mcp-compose/src/deploy/readme.md` and `contract.md` to point at
-  `@casys/mcp-bridge`'s network adapter instead of describing the tunnel inline.
+  `@mcpview/bridge`'s network adapter instead of describing the tunnel inline.
 - Update `mcp-bridge/README.md` to describe the new generalized scope.
 
 ### What this ADR does NOT decide

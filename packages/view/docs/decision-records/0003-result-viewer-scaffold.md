@@ -3,8 +3,9 @@
 Date: 2026-07-31 Status: Accepted
 
 Historical package note: the generator moved to the Deno/JSR-only
-`jsr:@casys/mcp-view-components/scaffold` subpath in the 2026-08-31 package split. The npm package
-deliberately excludes it. The 0.4.0 paths below record the original decision.
+`jsr:@casys/mcp-view-components/scaffold` subpath in the 2026-08-31 package split (that package is
+now `@mcpview/components`, see root ADR 0003). The npm package deliberately excludes it. The 0.4.0
+paths below record the original decision, under the package names of the time.
 
 ## Context
 

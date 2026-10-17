@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { VIEWER_SESSION_APPLY_ACTION } from "@casys/mcp-view-contracts";
+import { VIEWER_SESSION_APPLY_ACTION } from "@mcpview/contracts";
 
 import type { ComposeEventClient, ComposeEventHandler } from "./compose-events.ts";
 import type { AppHandle } from "./types.ts";

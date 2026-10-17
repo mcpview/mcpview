@@ -1,5 +1,5 @@
 /**
- * Structured error base class for @casys/mcp-view.
+ * Structured error base class for @mcpview/view.
  *
  * All errors thrown by the SDK extend this class with a stable `.code`
  * field (machine-parseable) and optional structured data. Agents and

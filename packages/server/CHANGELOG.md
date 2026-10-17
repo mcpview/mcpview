@@ -1,6 +1,7 @@
 # Changelog
 
-All notable changes to `@casys/mcp-server` will be documented in this file.
+All notable changes to `@mcpview/server` (published as `@casys/mcp-server` up to
+0.27.2 and as `@casys/mcp-platform` for 0.28.x) will be documented in this file.
 
 ## [Unreleased]
 
@@ -8,19 +9,22 @@ All notable changes to `@casys/mcp-server` will be documented in this file.
 
 ### Changed
 
-- **Package renamed back: the framework is again `@casys/mcp-server`.** Same
-  code, same API — `packages/platform/` moved back to `packages/server/`
-  following the repository rename to
-  [superWorldSavior/mcp-server](https://github.com/superWorldSavior/mcp-server).
-  The 0.28.x entries below were released as `@casys/mcp-platform`; that name
-  continues as a deprecated alias (0.28.2) re-exporting this package, so 0.28.x
-  imports keep working unchanged. Version 0.29.0 sits above both the last
-  platform release (0.28.1) and the last release under this name (0.27.2, the
-  alias interlude) so upgrade ordering stays unambiguous on JSR and npm, and the
-  npm publication is no longer marked deprecated. Operational identifiers
-  (`mcp-server.yaml`, `MCP_AUTH_*`, Prometheus `mcp_server_` prefix) are
-  unchanged, as they were through the first rename. See ADR 0003
-  (`docs/decision-records/0003-framework-name-mcp-server.md`).
+- **Package renamed: the framework is now `@mcpview/server`.** Renamed from
+  `@casys/mcp-server` to `@mcpview/server`. The whole family moves to the
+  `@mcpview` scope on JSR and npm (repository `mcpview/mcpview`, site
+  https://mcpview.dev, maintained by Casys). Same code, same API:
+  `packages/server/` keeps its place and only the dependency and import name
+  change. The 0.28.x entries below were released as `@casys/mcp-platform` and
+  the 0.27.x entries and earlier as `@casys/mcp-server`; the version line
+  continues here. 0.29.0 sits above both previous lines (0.27.2 and 0.28.1) so
+  upgrade ordering stays unambiguous.
+- Both old names stay published as deprecated aliases that re-export this
+  package unchanged: `@casys/mcp-server@0.28.0` and
+  `@casys/mcp-platform@0.29.0`. Operational identifiers (`mcp-server.yaml`,
+  `MCP_AUTH_*`, the Prometheus `mcp_server_` metric prefix) and every class and
+  API name are unchanged. See the
+  [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md)
+  and ADR 0003 (`docs/decision-records/0003-mcpview-brand.md`).
 
 ## [0.28.1] — 2026-09-19
 

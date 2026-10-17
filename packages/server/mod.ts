@@ -1,5 +1,5 @@
 /**
- * @casys/mcp-server — Hono-style framework for MCP servers
+ * @mcpview/server — Hono-style framework for MCP servers
  *
  * Production-ready MCP server framework with built-in middleware pipeline,
  * auth, concurrency control, backpressure, and observability.
@@ -8,7 +8,7 @@
  *
  * @example
  * ```typescript
- * import { McpApp } from "@casys/mcp-server";
+ * import { McpApp } from "@mcpview/server";
  *
  * const app = new McpApp({
  *   name: "my-server",
@@ -35,7 +35,7 @@
  * });
  * ```
  *
- * @module @casys/mcp-server
+ * @module @mcpview/server
  */
 
 // Main server class — canonical name
@@ -123,11 +123,11 @@ export {
 } from "./src/ui/viewer-utils.ts";
 
 // NOTE: UI composition helpers (`composeEvents`, `uiMeta`, `COMPOSE_EVENT_METHOD`
-// and their types) are NOT re-exported here. They live in `@casys/mcp-compose`
+// and their types) are NOT re-exported here. They live in `@mcpview/compose`
 // and must be imported from there directly:
-//   import { composeEvents, uiMeta } from "@casys/mcp-compose/sdk";
-// Dropping the convenience re-export removes @casys/mcp-server's dependency on
-// @casys/mcp-compose entirely — server stays a lean MCP framework that only
+//   import { composeEvents, uiMeta } from "@mcpview/compose/sdk";
+// Dropping the convenience re-export removes @mcpview/server's dependency on
+// @mcpview/compose entirely — server stays a lean MCP framework that only
 // touches the official protocol packages.
 
 // Middleware pipeline

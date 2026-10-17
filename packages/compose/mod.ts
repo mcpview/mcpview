@@ -10,7 +10,7 @@
  *
  * @example Basic usage
  * ```typescript
- * import { createCollector, buildCompositeUi, renderComposite } from "@casys/mcp-compose";
+ * import { createCollector, buildCompositeUi, renderComposite } from "@mcpview/compose";
  *
  * // 1. Collect UI resources from MCP tool results
  * const collector = createCollector();

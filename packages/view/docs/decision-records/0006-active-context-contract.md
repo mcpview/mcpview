@@ -14,7 +14,7 @@ model through `ui/update-model-context`. Sources: `src/ui/shared/active-context.
 Eight viewers use it on the 3.2.0-beta.1 line; the 3.1.0 stable release limits it to KPI and funnel.
 
 The MCP Apps SDK only provides the raw primitive: each call overwrites the previous context, the
-host may defer it, and modalities are announced by the host. Nothing in `@casys/mcp-view` covers it
+host may defer it, and modalities are announced by the host. Nothing in `@mcpview/view` covers it
 (view ADR 0001 §3).
 
 Neighbours, as read on 2026-10-17: mcp-use 2.10 (2026-10-14) ships `useModelContext()`, a keyed
@@ -27,7 +27,7 @@ reconciliation on data refresh and navigation scoping; the gap is narrower than 
 
 ## Decision
 
-### Snapshot (wire contract, in `@casys/mcp-view-contracts`)
+### Snapshot (wire contract, in `@mcpview/contracts`)
 
 - Schema `io.casys.active-context/1.0`; readers also accept the pilot's
   `casys.erpnext/active-context` v2.
@@ -41,7 +41,7 @@ reconciliation on data refresh and navigation scoping; the gap is narrower than 
   `{ schema, version, items: [] }`; readers treat a payload without `schema` (the pilot sends `{}`)
   as empty.
 
-### Replication (engine, in `@casys/mcp-view/context`)
+### Replication (engine, in `@mcpview/view/context`)
 
 - One serialized write queue per App instance (iframe). State is committed for display only after
   the host acknowledges; `pending` is shown immediately; a failure stays visible until dismissed or
@@ -75,9 +75,9 @@ reconciliation on data refresh and navigation scoping; the gap is narrower than 
 Eviction (`onFull: "evict-oldest" | "reject"`), resource policy (`"latest" | "none"`), gesture
 mapping (click, double-click, keyboard) and the undo window are parameters with the pilot values as
 defaults. The pilot's "toggle then compensate" gesture changed three times in three weeks: the
-gesture subpath (`@casys/mcp-view/gesture`) stays experimental until it stabilizes. The replay
-journal also protects newer clicks during a late undo, a refresh during undo and root clears, so a
-`reject` policy alone does not remove it.
+gesture subpath (`@mcpview/view/gesture`) stays experimental until it stabilizes. The replay journal
+also protects newer clicks during a late undo, a refresh during undo and root clears, so a `reject`
+policy alone does not remove it.
 
 ### Data and host safety
 
@@ -98,7 +98,7 @@ journal also protects newer clicks during a late undo, a refresh during undo and
 
 - `io.casys.semantic-selection` (view-to-view events through Compose) stays a separate contract;
   `ref` is the bridge.
-- Navigation stacks: a separate subpath (`@casys/mcp-view/navigation`), covered by root ADR 0002.
+- Navigation stacks: a separate subpath (`@mcpview/view/navigation`), covered by root ADR 0002.
 
 ## Consequences
 

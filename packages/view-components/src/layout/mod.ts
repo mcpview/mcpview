@@ -1,4 +1,4 @@
-/** Responsive viewer layout for `@casys/mcp-view-components` Apps. */
+/** Responsive viewer layout for `@mcpview/components` Apps. */
 
 export {
   isNarrow,

@@ -3,7 +3,7 @@
  * List view: shows 3 mocked invoices. Click a row → ctx.navigate("detail", { id }).
  */
 
-import { defineView } from "@casys/mcp-view";
+import { defineView } from "@mcpview/view";
 import type { AppState, Invoice } from "./state.ts";
 
 const MOCK_INVOICES: Invoice[] = [

@@ -262,7 +262,7 @@ export interface BuildJwtAuthProviderOptions {
  *
  * @example Custom OIDC provider factory
  * ```typescript
- * import { buildJwtAuthProvider, type JwtAuthProvider } from "@casys/mcp-server";
+ * import { buildJwtAuthProvider, type JwtAuthProvider } from "@mcpview/server";
  *
  * export interface KeycloakPresetOptions {
  *   keycloakHost: string;

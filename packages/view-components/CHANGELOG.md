@@ -1,11 +1,29 @@
 # Changelog
 
-All notable changes to `@casys/mcp-view-components` will be documented in this file.
+All notable changes to `@mcpview/components` (published as `@casys/mcp-view-components` up to 0.9.2)
+will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.10.0] - 2026-10-17
+
+### Changed
+
+- Renamed from `@casys/mcp-view-components` to `@mcpview/components`. The whole family moves to the
+  `@mcpview` scope on JSR and npm (repository `mcpview/mcpview`, site https://mcpview.dev,
+  maintained by Casys). Same code and same API: only the dependency and import name change. Version
+  numbers continue from 0.9.2, and `@casys/mcp-view-components@0.10.0` stays published as a
+  deprecated alias with the same entry points (`.`, `./preact`, `./preact/components`, `./scaffold`,
+  `./surface`, `./layout`, `./fonts`).
+- Depends on `@mcpview/view@^0.10.0` and `@mcpview/contracts@^0.2.0`. The result-viewer scaffold now
+  generates projects that import `@mcpview/view` and `@mcpview/components`, pinned to the releases
+  it was built against.
+- Wire identifiers (`io.casys.mcp.view-components/v1`, `io.casys.mcp.surface/v1`) are unchanged.
+- See the
+  [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md).
 
 ## [0.9.2] - 2026-09-18
 

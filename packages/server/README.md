@@ -1,7 +1,7 @@
-# @casys/mcp-server
+# @mcpview/server
 
-[![npm](https://img.shields.io/npm/v/@casys/mcp-server)](https://www.npmjs.com/package/@casys/mcp-server)
-[![JSR](https://jsr.io/badges/@casys/mcp-server)](https://jsr.io/@casys/mcp-server)
+[![npm](https://img.shields.io/npm/v/@mcpview/server)](https://www.npmjs.com/package/@mcpview/server)
+[![JSR](https://jsr.io/badges/@mcpview/server)](https://jsr.io/@mcpview/server)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **The "Hono for MCP"** — a production-grade framework for building Model Context
@@ -20,12 +20,12 @@ rate-limit → auth → custom middleware → scope-check → validation → bac
 
 ---
 
-## Why @casys/mcp-server?
+## Why @mcpview/server?
 
 The official SDK gives you the protocol. This framework gives you the production
 stack.
 
-|                             | Official SDK |       @casys/mcp-server        |
+|                             | Official SDK |        @mcpview/server         |
 | --------------------------- | :----------: | :----------------------------: |
 | MCP protocol compliance     |     Yes      |              Yes               |
 | Concurrency control         |      --      |   3 backpressure strategies    |
@@ -44,38 +44,38 @@ stack.
 
 ```bash
 # Deno (primary target — JSR)
-deno add jsr:@casys/mcp-server
+deno add jsr:@mcpview/server
 
 # Node (secondary — npm, native ESM build)
-npm install @casys/mcp-server
+npm install @mcpview/server
 ```
 
-> **Renamed back in 0.29.0:** this framework was briefly published as
-> `@casys/mcp-platform` (0.28.x). That name continues as a deprecated alias
-> re-exporting this package, so 0.28.x imports keep working unchanged.
->
-> Coming from `@casys/mcp-platform`? See the
-> [package migration guide](https://github.com/superWorldSavior/mcp-server/blob/main/docs/migration/mcp-server-to-mcp-platform.md).
+> **Moved to the `@mcpview` scope in 0.29.0:** this framework was published as
+> `@casys/mcp-server` (up to 0.27.x) and as `@casys/mcp-platform` (0.28.x). Both
+> names continue as deprecated aliases that re-export this package unchanged, so
+> existing imports keep working. Coming from either? See the
+> [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md).
 
 ## Which companion package should I use?
 
-Start with `@casys/mcp-server` to build and operate an MCP server. Add a
-companion only for the boundary it owns:
+Start with `@mcpview/server` to build and operate an MCP server. Add a companion
+only for the boundary it owns:
 
-| Package                                                                                                           | Use it when you need to...                                                        |
-| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [`@casys/mcp-compose`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/compose)                 | Compose and synchronize multiple MCP Apps in one dashboard.                       |
-| [`@casys/mcp-bridge`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/bridge)                   | Bridge MCP Apps to external hosts or route selected calls to a private network.   |
-| [`@casys/mcp-view-contracts`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/view-contracts)   | Share dependency-free App, resource, composition, and recorded-session contracts. |
-| [`@casys/mcp-view`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/view)                       | Build the browser-side lifecycle, routing, results, and events of an MCP App.     |
-| [`@casys/mcp-view-components`](https://github.com/superWorldSavior/mcp-server/tree/main/packages/view-components) | Add the optional presentation runtime, theme, and component kit to an MCP App.    |
+| Package                                                                                        | Use it when you need to...                                                        |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [`@mcpview/compose`](https://github.com/mcpview/mcpview/tree/main/packages/compose)            | Compose and synchronize multiple MCP Apps in one dashboard.                       |
+| [`@mcpview/bridge`](https://github.com/mcpview/mcpview/tree/main/packages/bridge)              | Bridge MCP Apps to external hosts or route selected calls to a private network.   |
+| [`@mcpview/contracts`](https://github.com/mcpview/mcpview/tree/main/packages/view-contracts)   | Share dependency-free App, resource, composition, and recorded-session contracts. |
+| [`@mcpview/view`](https://github.com/mcpview/mcpview/tree/main/packages/view)                  | Build the browser-side lifecycle, routing, results, and events of an MCP App.     |
+| [`@mcpview/components`](https://github.com/mcpview/mcpview/tree/main/packages/view-components) | Add the optional presentation runtime, theme, and component kit to an MCP App.    |
 
-`@casys/mcp-platform` is the deprecated compatibility alias, not a separate
-framework or an additional layer to install for new projects.
+`@casys/mcp-server` and `@casys/mcp-platform` are deprecated compatibility
+aliases, not separate frameworks or additional layers to install for new
+projects.
 
 ## Runtime targets
 
-`@casys/mcp-server` is **Deno-first**. The canonical deployment path is Deno 2.x
+`@mcpview/server` is **Deno-first**. The canonical deployment path is Deno 2.x
 running on [Deno Deploy](https://deno.com/deploy) or self-hosted Deno, with a
 Node 20+ distribution as a secondary target. The npm package contains compiled
 ESM JavaScript and TypeScript declarations; its runtime selector loads the Node
@@ -91,8 +91,8 @@ HTTP adapter without evaluating the Deno adapter.
 If you need to target Cloudflare Workers or the browser, use
 [`@modelcontextprotocol/server`](https://www.npmjs.com/package/@modelcontextprotocol/server)
 directly with its workerd / browser shims — that package focuses on the protocol
-and runtime portability, while `@casys/mcp-server` focuses on the production
-stack (auth, middleware, observability, multi-tenant, MCP Apps helpers) for Deno
+and runtime portability, while `@mcpview/server` focuses on the production stack
+(auth, middleware, observability, multi-tenant, MCP Apps helpers) for Deno
 deployments.
 
 ---
@@ -102,7 +102,7 @@ deployments.
 ### STDIO Server (5 lines)
 
 ```typescript
-import { McpApp } from "@casys/mcp-server";
+import { McpApp } from "@mcpview/server";
 
 const server = new McpApp({ name: "my-server", version: "1.0.0" });
 
@@ -125,13 +125,13 @@ await server.start();
 Provider repositories that expose a native stdio CLI should test their actual
 documented command, transport flags, protocol eras, stdout discipline, and EOF
 cleanup. Use the
-[native stdio provider testing guide](https://github.com/superWorldSavior/mcp-server/blob/main/docs/guides/native-stdio-provider-testing.md)
+[native stdio provider testing guide](https://github.com/mcpview/mcpview/blob/main/docs/guides/native-stdio-provider-testing.md)
 as a test-only adoption kit.
 
 ### HTTP Server with Auth
 
 ```typescript
-import { createGoogleAuthProvider, McpApp } from "@casys/mcp-server";
+import { createGoogleAuthProvider, McpApp } from "@mcpview/server";
 
 const server = new McpApp({
   name: "my-api",
@@ -173,7 +173,7 @@ self-contained: the server does not issue `Mcp-Session-Id`, keep an MCP session,
 or expose the legacy SSE stream on `GET /mcp`.
 
 See the
-[HTTP security guide](https://github.com/superWorldSavior/mcp-server/blob/main/docs/guides/securing-your-http-server.md)
+[HTTP security guide](https://github.com/mcpview/mcpview/blob/main/docs/guides/securing-your-http-server.md)
 to choose between a shared static allowlist, identity-aware static credentials,
 and OIDC/JWT.
 
@@ -205,7 +205,7 @@ await server.startHttp({
 Composable onion model — same mental model as Hono, Koa, or Express.
 
 ```typescript
-import type { Middleware } from "@casys/mcp-server";
+import type { Middleware } from "@mcpview/server";
 
 const timing: Middleware = async (ctx, next) => {
   const start = performance.now();
@@ -232,7 +232,7 @@ import {
   createGitHubAuthProvider, // GitHub Actions OIDC
   createGoogleAuthProvider, // Google OIDC
   createOIDCAuthProvider, // Generic OIDC (Keycloak, Okta, etc.)
-} from "@casys/mcp-server";
+} from "@mcpview/server";
 
 const auth0 = createAuth0AuthProvider({
   domain: "my-tenant.auth0.com",
@@ -245,7 +245,7 @@ const auth0 = createAuth0AuthProvider({
 Or use `JwtAuthProvider` directly for custom setups:
 
 ```typescript
-import { JwtAuthProvider } from "@casys/mcp-server";
+import { JwtAuthProvider } from "@mcpview/server";
 
 const provider = new JwtAuthProvider({
   issuer: "https://my-idp.example.com",
@@ -304,7 +304,7 @@ Multi-instance or restart-safe deployments must inject one durable atomic store
 shared by every instance:
 
 ```typescript
-import type { MrtrReplayStore } from "@casys/mcp-server";
+import type { MrtrReplayStore } from "@mcpview/server";
 
 const replayStore: MrtrReplayStore = {
   async consume(nonce, expiresAt) {
@@ -351,7 +351,7 @@ pointing to your own DCR proxy:
 
 ```typescript
 // routes/.well-known/oauth-authorization-server.ts (Fresh example)
-import { createAsMetadataHandler } from "@casys/mcp-server";
+import { createAsMetadataHandler } from "@mcpview/server";
 
 const handle = createAsMetadataHandler({
   upstreamIssuer: "https://my-tenant.zitadel.cloud",
@@ -471,7 +471,7 @@ Tool handlers receive **untrusted JSON input**. Treat args as hostile:
 Register interactive UIs as MCP resources:
 
 ```typescript
-import { MCP_APP_MIME_TYPE, McpApp } from "@casys/mcp-server";
+import { MCP_APP_MIME_TYPE, McpApp } from "@mcpview/server";
 
 server.registerResource(
   { uri: "ui://my-server/viewer", name: "Data Viewer" },
@@ -539,7 +539,7 @@ capabilities (per the SDK 1.29 `extensions` field). Read it from a tool handler
 to decide between rich UI and a text-only fallback:
 
 ```typescript
-import { MCP_APP_MIME_TYPE, McpApp } from "@casys/mcp-server";
+import { MCP_APP_MIME_TYPE, McpApp } from "@mcpview/server";
 
 const app = new McpApp({ name: "weather-server", version: "1.0.0" });
 
@@ -628,7 +628,7 @@ server.getResourceUris();
 Each component works independently:
 
 ```typescript
-import { RateLimiter, RequestQueue, SchemaValidator } from "@casys/mcp-server";
+import { RateLimiter, RequestQueue, SchemaValidator } from "@mcpview/server";
 
 // Rate limiter
 const limiter = new RateLimiter({ maxRequests: 10, windowMs: 1000 });

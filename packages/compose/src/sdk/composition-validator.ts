@@ -91,7 +91,7 @@ interface ToolWithMeta {
  *
  * @example
  * ```typescript
- * import { uiMeta, validateComposition } from "@casys/mcp-compose";
+ * import { uiMeta, validateComposition } from "@mcpview/compose";
  *
  * const tools = [
  *   { name: "erp:customers", ...uiMeta({ resourceUri: "ui://erp/customers", emits: ["rowSelected"] }) },

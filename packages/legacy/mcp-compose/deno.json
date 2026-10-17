@@ -1,0 +1,59 @@
+{
+  "name": "@casys/mcp-compose",
+  "version": "0.10.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./mod.ts",
+    "./core": "./core.ts",
+    "./sdk": "./sdk.ts",
+    "./host": "./host.ts",
+    "./runtime": "./runtime.ts",
+    "./deploy": "./deploy.ts"
+  },
+  "publish": {
+    "include": [
+      "mod.ts",
+      "core.ts",
+      "sdk.ts",
+      "host.ts",
+      "runtime.ts",
+      "deploy.ts",
+      "README.md",
+      "LICENSE"
+    ],
+    "exclude": [
+      "**/*_test.ts"
+    ]
+  },
+  "tasks": {
+    "build:npm": "deno run -A ../../../scripts/build-alias-npm.ts --target=@mcpview/compose --cjs",
+    "test": "deno test --allow-read --allow-env mod_test.ts",
+    "check": "deno check mod.ts core.ts sdk.ts host.ts runtime.ts deploy.ts mod_test.ts",
+    "lint": "deno lint",
+    "fmt": "deno fmt",
+    "publish:check": "deno publish --dry-run --allow-dirty",
+    "release:check": "deno task check && deno task lint && deno task test && deno task publish:check",
+    "release:tag": "deno run -A ../../../scripts/release-tag.ts mcp-compose"
+  },
+  "fmt": {
+    "lineWidth": 100,
+    "indentWidth": 2
+  },
+  "lint": {
+    "exclude": [
+      "dist-node"
+    ],
+    "rules": {
+      "tags": [
+        "recommended"
+      ]
+    }
+  },
+  "compilerOptions": {
+    "strict": true
+  },
+  "imports": {
+    "@mcpview/compose": "jsr:@mcpview/compose@^0.10.0",
+    "@std/assert": "jsr:@std/assert@^1.0.0"
+  }
+}

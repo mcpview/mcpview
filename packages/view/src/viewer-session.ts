@@ -1,6 +1,6 @@
 /** Whole-resource recorded-session action lifecycle. */
 
-import { VIEWER_SESSION_APPLY_ACTION } from "@casys/mcp-view-contracts";
+import { VIEWER_SESSION_APPLY_ACTION } from "@mcpview/contracts";
 
 import type { ComposeEventClient, ComposeEventPayload } from "./compose-events.ts";
 import type { AppContext, AppHandle, ViewerSessionSubscription } from "./types.ts";

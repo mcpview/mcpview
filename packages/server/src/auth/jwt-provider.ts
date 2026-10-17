@@ -138,7 +138,7 @@ interface CachedAuth {
  *
  * @example URL resource (auto-derives metadata URL)
  * ```typescript
- * import { httpsUrl, JwtAuthProvider } from "@casys/mcp-server";
+ * import { httpsUrl, JwtAuthProvider } from "@mcpview/server";
  *
  * const provider = new JwtAuthProvider({
  *   kind: "url",
@@ -151,7 +151,7 @@ interface CachedAuth {
  *
  * @example Opaque resource (explicit metadata URL required)
  * ```typescript
- * import { httpsUrl, JwtAuthProvider } from "@casys/mcp-server";
+ * import { httpsUrl, JwtAuthProvider } from "@mcpview/server";
  *
  * // RFC 9728 § 2 Option B: OIDC project ID as JWT audience
  * const provider = new JwtAuthProvider({

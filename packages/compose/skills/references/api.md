@@ -1,10 +1,10 @@
-# @casys/mcp-compose — API Reference
+# @mcpview/compose — API Reference
 
 Full exports by subpath, with signatures and notes.
 
 ---
 
-## `/core` — `@casys/mcp-compose/core`
+## `/core` — `@mcpview/compose/core`
 
 ### Functions
 
@@ -14,7 +14,7 @@ Creates a new UI resource collector. Accumulates `CollectedUiResource` objects f
 that carry `_meta.ui.resourceUri`.
 
 ```typescript
-import { createCollector } from "@casys/mcp-compose/core";
+import { createCollector } from "@mcpview/compose/core";
 const collector = createCollector();
 ```
 
@@ -178,7 +178,7 @@ interface McpUiPermissions {
 
 ---
 
-## `/sdk` — `@casys/mcp-compose/sdk`
+## `/sdk` — `@mcpview/compose/sdk`
 
 ### Functions
 
@@ -187,7 +187,7 @@ interface McpUiPermissions {
 Creates an MCP SDK-aware collector. Wraps the core collector with typed input for `CallToolResult`.
 
 ```typescript
-import { createMcpSdkCollector } from "@casys/mcp-compose/sdk";
+import { createMcpSdkCollector } from "@mcpview/compose/sdk";
 const collector = createMcpSdkCollector();
 ```
 
@@ -218,7 +218,7 @@ Returns an event handler object for cross-UI event routing. See `/sdk` types for
 `ComposeEventHandler`, `ComposeEventPayload`.
 
 ```typescript
-import { composeEvents } from "@casys/mcp-compose/sdk";
+import { composeEvents } from "@mcpview/compose/sdk";
 ```
 
 #### `validateComposition(descriptor): CompositionValidationResult`
@@ -249,7 +249,7 @@ interface McpSdkCallToolResult {
 
 ---
 
-## `/host` — `@casys/mcp-compose/host`
+## `/host` — `@mcpview/compose/host`
 
 ### Functions
 
@@ -258,7 +258,7 @@ interface McpSdkCallToolResult {
 Renders a `CompositeUiDescriptor` to a complete self-contained HTML document.
 
 ```typescript
-import { renderComposite } from "@casys/mcp-compose/host";
+import { renderComposite } from "@mcpview/compose/host";
 
 function renderComposite(descriptor: CompositeUiDescriptor): string;
 ```
@@ -306,7 +306,7 @@ interface HostConfig {
 
 ---
 
-## `/runtime` — `@casys/mcp-compose/runtime`
+## `/runtime` — `@mcpview/compose/runtime`
 
 ### Functions
 
@@ -316,7 +316,7 @@ High-level entry point: reads template + manifest files, starts MCP servers, cal
 returns composed HTML.
 
 ```typescript
-import { composeDashboardFromFiles } from "@casys/mcp-compose/runtime";
+import { composeDashboardFromFiles } from "@mcpview/compose/runtime";
 
 async function composeDashboardFromFiles(
   request: ComposeRequest,
@@ -401,7 +401,7 @@ interface TemplateToolCall {
 
 ---
 
-## `/deploy` — `@casys/mcp-compose/deploy`
+## `/deploy` — `@mcpview/compose/deploy`
 
 Types only in v0.4.0 — no exported functions yet.
 

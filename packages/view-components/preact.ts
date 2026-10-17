@@ -1,7 +1,7 @@
 /**
- * Preact integration for componentized `@casys/mcp-view-components` Apps.
+ * Preact integration for componentized `@mcpview/components` Apps.
  *
- * Import as `@casys/mcp-view-components/preact`.
+ * Import as `@mcpview/components/preact`.
  *
  * @module
  */

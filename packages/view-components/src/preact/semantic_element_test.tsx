@@ -2,7 +2,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { render } from "preact";
-import type { ComposedSemanticRef } from "@casys/mcp-view-contracts";
+import type { ComposedSemanticRef } from "@mcpview/contracts";
 import {
   CollectionCard,
   ElementBody,

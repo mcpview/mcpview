@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertRejects, assertStrictEquals, assertThrows } from "@std/assert";
 
-import { CASYS_SURFACE_CONTEXT_KEY } from "@casys/mcp-view-contracts";
+import { CASYS_SURFACE_CONTEXT_KEY } from "@mcpview/contracts";
 import {
   componentCatalogCapabilities,
   defineComponentRegistry,

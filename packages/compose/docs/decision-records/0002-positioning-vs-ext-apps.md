@@ -15,7 +15,7 @@ package. It ships:
 - A React adapter.
 - Agent Skills for scaffolding via Claude Code plugins.
 
-This overlaps significantly with what `@casys/mcp-compose` was doing when it was written (before the
+This overlaps significantly with what `@mcpview/compose` was doing when it was written (before the
 official lib existed): its own `ui/compose/event` event bus, its own types, its own postMessage
 handling.
 
@@ -53,12 +53,15 @@ Concretely:
   `@deprecated` aliases for backwards compat.
 - `LATEST_PROTOCOL_VERSION` from ext-apps drives compose's advertised `protocolVersion` (re-exported
   as `MCP_APPS_PROTOCOL_VERSION`).
-- The View-side SDK wrapping `App` lives in a **sibling package** `@casys/mcp-view`
+- The View-side SDK wrapping `App` lives in a **sibling package** `@mcpview/view`
   (`packages/view/`), not in compose — see the addendum below. This keeps compose server-only.
 - Host-side (the event bus in `host/renderer/js/event-bus.ts`) stays compose-native because
   `AppBridge` does not support multi-iframe routing.
 
 ### Addendum (2026-04-18) — split of `view/` into its own package
+
+Package names in this addendum are the ones of the time; the family is published as `@mcpview/*`
+since root ADR 0003.
 
 Initial attempt shipped the View-side SDK as `@casys/mcp-compose/view` (sub-export of compose). JSR
 publish rejected triple-slash `/// <reference

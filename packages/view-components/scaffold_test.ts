@@ -33,7 +33,7 @@ Deno.test("result-viewer scaffold creates a standalone component project", async
     assertStringIncludes(main, "strict: true");
     assertStringIncludes(main, "documentLanguage: messages.locale");
     assertStringIncludes(main, "createTranslator");
-    assertStringIncludes(main, 'from "@casys/mcp-view-components/surface"');
+    assertStringIncludes(main, 'from "@mcpview/components/surface"');
     assert(!main.includes("createMcpApp"), "the scaffold must not hand-roll the App lifecycle");
     const styles = await Deno.readTextFile(join(target, "src/styles.css"));
     assertStringIncludes(styles, "var(--color-background-primary");
@@ -41,13 +41,13 @@ Deno.test("result-viewer scaffold creates a standalone component project", async
 
     const configPath = join(target, "deno.json");
     const generatedConfig = await Deno.readTextFile(configPath);
-    assertStringIncludes(generatedConfig, '"@casys/mcp-view": "jsr:@casys/mcp-view@0.9.5"');
+    assertStringIncludes(generatedConfig, '"@mcpview/view": "jsr:@mcpview/view@0.10.0"');
     assertStringIncludes(
       generatedConfig,
-      '"@casys/mcp-view-components": "jsr:@casys/mcp-view-components@0.9.2"',
+      '"@mcpview/components": "jsr:@mcpview/components@0.10.0"',
     );
     assertStringIncludes(generatedConfig, '"minimumDependencyAge"');
-    assertStringIncludes(generatedConfig, '"jsr:@casys/mcp-view-components"');
+    assertStringIncludes(generatedConfig, '"jsr:@mcpview/components"');
     const coreModule = new URL("../view/mod.ts", import.meta.url).href;
     const componentsModule = new URL("./mod.ts", import.meta.url).href;
     const surfaceModule = new URL("./surface.ts", import.meta.url).href;
@@ -55,9 +55,9 @@ Deno.test("result-viewer scaffold creates a standalone component project", async
     await Deno.writeTextFile(
       configPath,
       generatedConfig
-        .replace("jsr:@casys/mcp-view@0.9.5", coreModule)
-        .replace("jsr:@casys/mcp-view-components@0.9.2/surface", surfaceModule)
-        .replace("jsr:@casys/mcp-view-components@0.9.2", componentsModule),
+        .replace("jsr:@mcpview/view@0.10.0", coreModule)
+        .replace("jsr:@mcpview/components@0.10.0/surface", surfaceModule)
+        .replace("jsr:@mcpview/components@0.10.0", componentsModule),
     );
 
     // A bare path is accepted where the fleet passes file URLs; /surface is derived from it.
@@ -158,7 +158,7 @@ function assertInlineScriptsParse(html: string): void {
   }
 }
 
-Deno.test("the scaffold pins the @casys/mcp-view release it was built against", async () => {
+Deno.test("the scaffold pins the @mcpview/view release it was built against", async () => {
   // The generated project and its build step both name the core package; a
   // core bump that skips the scaffold ships a viewer on the previous runtime.
   const version = JSON.parse(
@@ -167,9 +167,9 @@ Deno.test("the scaffold pins the @casys/mcp-view release it was built against", 
   const source = await Deno.readTextFile(
     new URL("./src/scaffold/result-viewer-templates.ts", import.meta.url),
   );
-  const pins = [...source.matchAll(/@casys\/mcp-view@([0-9][A-Za-z0-9.-]*)/g)]
+  const pins = [...source.matchAll(/@mcpview\/view@([0-9][A-Za-z0-9.-]*)/g)]
     .map((match) => match[1]);
-  assert(pins.length > 0, "the scaffold pins no version of @casys/mcp-view");
+  assert(pins.length > 0, "the scaffold pins no version of @mcpview/view");
   for (const pin of pins) {
     assertEquals(
       pin,
@@ -190,7 +190,7 @@ Deno.test("the scaffold emits the version of the package that ships it", async (
 
   for (const path of ["scaffold.ts", "src/scaffold/result-viewer-templates.ts"]) {
     const source = await Deno.readTextFile(new URL(`./${path}`, import.meta.url));
-    const pins = [...source.matchAll(/@casys\/mcp-view-components@([0-9][A-Za-z0-9.-]*)/g)]
+    const pins = [...source.matchAll(/@mcpview\/components@([0-9][A-Za-z0-9.-]*)/g)]
       .map((match) => match[1]);
     assert(pins.length > 0, `${path} pins no version of its own package`);
     for (const pin of pins) {

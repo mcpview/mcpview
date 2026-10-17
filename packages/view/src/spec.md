@@ -1,4 +1,4 @@
-# `@casys/mcp-view` — Specification
+# `@mcpview/view` — Specification
 
 ## Overview
 
@@ -50,11 +50,11 @@ const detailView = defineView<State, { id: string }, Invoice>({
 
 ### Optional renderer adapters
 
-`@casys/mcp-view/react` exports `defineReactView()`. It returns a normal `ViewDefinition`, mounts
-with ReactDOM, and guarantees that the active root is unmounted on route leave or App teardown.
-React, ReactDOM, and their types are optional npm peers; importing the main package does not load a
+`@mcpview/view/react` exports `defineReactView()`. It returns a normal `ViewDefinition`, mounts with
+ReactDOM, and guarantees that the active root is unmounted on route leave or App teardown. React,
+ReactDOM, and their types are optional npm peers; importing the main package does not load a
 renderer. Component surfaces, the theme, and Preact bindings live in the separate
-`@casys/mcp-view-components` package.
+`@mcpview/components` package.
 
 ### Structured results, recorded sessions, and Compose events
 
@@ -70,8 +70,8 @@ renderer. Component surfaces, the theme, and Preact bindings live in the separat
   Dispatcher disposal synchronously unsubscribes, drops pending sessions, and revokes navigation on
   the callback handle/context facade. It never waits for arbitrary callback code already in flight;
   the router independently rejects work after App disposal.
-- `@casys/mcp-view/contracts` is a compatibility re-export of the standalone dependency-free
-  `@casys/mcp-view-contracts` package.
+- `@mcpview/view/contracts` is a compatibility re-export of the standalone dependency-free
+  `@mcpview/contracts` package.
 
 #### `AppConfig<S>` fields
 
@@ -184,7 +184,7 @@ field. Match on `.code`, not on `.message`.
   entry points for Node-compatible tooling.
 - **Optional renderer.** The main npm export has no React dependency. React and ReactDOM are
   optional peers used only by the `/react` subpath.
-- Published as dedicated workspace member `@casys/mcp-view` (`packages/view/`). See
+- Published as dedicated workspace member `@mcpview/view` (`packages/view/`). See
   `packages/compose/docs/decision-records/0002` addendum for the rationale of the split.
 
 ## Non-goals (MVP)
@@ -206,5 +206,5 @@ The type surface is designed so each of the above can be added without breaking 
 ## Component and scaffold boundary
 
 Component catalogs, generic presentation roles, the ERPNext-derived theme, Preact bindings, and the
-result-viewer scaffold live in `@casys/mcp-view-components`. They are intentionally absent from this
+result-viewer scaffold live in `@mcpview/components`. They are intentionally absent from this
 package so a lifecycle-only consumer does not download or install the visual kit.

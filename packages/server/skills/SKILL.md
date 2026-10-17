@@ -1,16 +1,16 @@
 ---
-name: casys-mcp-server
+name: mcpview-server
 description: >
-  Reference skill for Casys MCP Platform (@casys/mcp-server) and its deprecated
-  @casys/mcp-platform compatibility package. Trigger when the user imports either
-  package, builds or extends an MCP server, registers tools or resources, configures
-  auth (Google, Auth0, GitHub, OIDC), adds middleware, sets up HTTP or STDIO transport,
+  Reference skill for the mcpview MCP server framework (@mcpview/server) and its
+  deprecated @casys/mcp-server and @casys/mcp-platform compatibility packages.
+  Trigger when the user imports any of them, builds or extends an MCP server,
+  registers tools or resources, configures auth (Google, Auth0, GitHub, OIDC), adds middleware, sets up HTTP or STDIO transport,
   embeds an MCP server in Hono/Fresh/Express, or works with MCP Apps (ui:// resources,
   SEP-1865). Also trigger for package migration, concurrency/backpressure tuning,
   rate limiting, schema validation, or observability on MCP servers.
 ---
 
-# Casys MCP Platform (`@casys/mcp-server`)
+# mcpview server framework (`@mcpview/server`)
 
 Hono-style framework for MCP servers. Wraps `@modelcontextprotocol/sdk` with a
 middleware pipeline, auth, concurrency control, and HTTP transport.
@@ -22,14 +22,15 @@ middleware pipeline, auth, concurrency control, and HTTP transport.
 
 ## Identity and compatibility
 
-- `@casys/mcp-server` is the canonical framework package. Use it for new code
-  and current product naming.
-- `@casys/mcp-platform` is the deprecated compatibility package. It re-exports
-  the server API unchanged so existing 0.28.x imports can keep working.
+- `@mcpview/server` is the canonical framework package. Use it for new code and
+  current product naming.
+- `@casys/mcp-server` and `@casys/mcp-platform` are deprecated compatibility
+  packages. They re-export the server API unchanged so existing imports keep
+  working; see `docs/migration/casys-to-mcpview.md`.
 - `ConcurrentMCPServer` is a deprecated class alias of `McpApp`; this is
-  separate from the package-level compatibility alias.
-- The frontmatter name is `casys-mcp-server`, matching the canonical package
-  name since the framework was renamed back in 0.29.0.
+  separate from the package-level compatibility aliases.
+- The frontmatter name is `mcpview-server`, matching the canonical package name
+  since the family moved to the `@mcpview` scope.
 
 Do not rewrite a project's legacy imports unless the user asks for the package
 migration. When migrating, change the package/import name without implying an
@@ -39,14 +40,14 @@ API rewrite.
 
 ```sh
 # Deno
-deno add jsr:@casys/mcp-server
+deno add jsr:@mcpview/server
 
 # Node / npm
-npm install @casys/mcp-server
+npm install @mcpview/server
 ```
 
 ```typescript
-import { McpApp } from "@casys/mcp-server";
+import { McpApp } from "@mcpview/server";
 ```
 
 ---
@@ -235,7 +236,7 @@ import {
   createGitHubAuthProvider,
   createGoogleAuthProvider,
   createOIDCAuthProvider,
-} from "@casys/mcp-server";
+} from "@mcpview/server";
 
 // Google
 const provider = createGoogleAuthProvider({
@@ -302,7 +303,7 @@ app.registerResources(resources: MCPResource[], handlers: Map<string, ResourceHa
 ```
 
 ```typescript
-import { MCP_APP_MIME_TYPE } from "@casys/mcp-server";
+import { MCP_APP_MIME_TYPE } from "@mcpview/server";
 
 app.registerResource(
   { uri: "ui://my-server/viewer", name: "Viewer", mimeType: MCP_APP_MIME_TYPE },
@@ -359,7 +360,7 @@ OTel tracing is auto-enabled if `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 ### Minimal STDIO server
 
 ```typescript
-import { McpApp } from "@casys/mcp-server";
+import { McpApp } from "@mcpview/server";
 
 const app = new McpApp({ name: "my-server", version: "1.0.0" });
 
@@ -378,7 +379,7 @@ await app.start();
 ### HTTP server with Google auth
 
 ```typescript
-import { createGoogleAuthProvider, McpApp } from "@casys/mcp-server";
+import { createGoogleAuthProvider, McpApp } from "@mcpview/server";
 
 const app = new McpApp({
   name: "my-server",

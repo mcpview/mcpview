@@ -1,5 +1,5 @@
 /**
- * @module @casys/mcp-bridge
+ * @module @mcpview/bridge
  *
  * Bridge MCP Apps (interactive UI delivered via the MCP protocol) to
  * messaging platforms such as Telegram Mini Apps and LINE LIFF.

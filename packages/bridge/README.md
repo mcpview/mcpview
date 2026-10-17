@@ -1,12 +1,12 @@
-# @casys/mcp-bridge
+# @mcpview/bridge
 
-[![npm](https://img.shields.io/npm/v/@casys/mcp-bridge)](https://www.npmjs.com/package/@casys/mcp-bridge)
-[![JSR](https://jsr.io/badges/@casys/mcp-bridge)](https://jsr.io/@casys/mcp-bridge)
+[![npm](https://img.shields.io/npm/v/@mcpview/bridge)](https://www.npmjs.com/package/@mcpview/bridge)
+[![JSR](https://jsr.io/badges/@mcpview/bridge)](https://jsr.io/@mcpview/bridge)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Bridge MCP traffic across hosts that cannot talk directly.
 
-`@casys/mcp-bridge` started as a bridge for
+`@mcpview/bridge` started as a bridge for
 [MCP Apps](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
 interactive UIs: turn any MCP tool with a `ui://` resource into a Telegram Mini
 App or LINE LIFF app.
@@ -22,7 +22,7 @@ UI bridge:
   MCP Server (tools with ui:// resources)
           |
           v
-  @casys/mcp-bridge Resource Server
+  @mcpview/bridge Resource Server
           |
           v
   Telegram Mini App / LINE LIFF WebView
@@ -44,10 +44,10 @@ Network bridge:
 
 ```bash
 # npm
-npm install @casys/mcp-bridge
+npm install @mcpview/bridge
 
 # Deno
-deno add jsr:@casys/mcp-bridge
+deno add jsr:@mcpview/bridge
 ```
 
 ---
@@ -57,7 +57,7 @@ deno add jsr:@casys/mcp-bridge
 ### 1. Create a resource server
 
 ```typescript
-import { JsonRpcMcpBackend, startResourceServer } from "@casys/mcp-bridge";
+import { JsonRpcMcpBackend, startResourceServer } from "@mcpview/bridge";
 
 const server = startResourceServer({
   assetDirectories: {
@@ -165,7 +165,7 @@ This is the Casys relay mode. It is the path used by products such as
 `erp-platform`, where an online MCP endpoint handles tenant auth and routing,
 then sends selected tool calls through the tunnel to a local runtime. For a
 local ERP, that runtime typically runs `mcp-erp` next to ERPNext/Dolibarr and
-uses `@casys/mcp-bridge/adapters/network` only for the relay transport.
+uses `@mcpview/bridge/adapters/network` only for the relay transport.
 
 `daemon` here describes the runtime role, not necessarily a separate package:
 the tunnel client can live in a standalone wrapper, or inside the MCP server
@@ -176,18 +176,18 @@ binary/process.
 When the goal is to publish a local/private MCP server directly to ChatGPT,
 Codex, the Responses API, or AgentKit, use OpenAI's official
 [`tunnel-client`](https://github.com/openai/tunnel-client) around your
-`@casys/mcp-server` server instead of reimplementing OpenAI's control plane in
+`@mcpview/server` server instead of reimplementing OpenAI's control plane in
 `mcp-bridge`.
 
 ```text
-Local MCP server built with @casys/mcp-server
+Local MCP server built with @mcpview/server
   -> Streamable HTTP / stdio
   -> OpenAI tunnel-client
   -> OpenAI-hosted tunnel endpoint
   -> ChatGPT / Codex / Responses API / AgentKit
 ```
 
-`@casys/mcp-bridge` remains the reusable bridge layer for Casys-owned relays and
+`@mcpview/bridge` remains the reusable bridge layer for Casys-owned relays and
 host integrations. It does not implement OpenAI tunnel IDs, runtime/admin API
 keys, connector management, or OpenAI's hosted control-plane protocol.
 
@@ -198,8 +198,8 @@ keys, connector management, or OpenAI's hosted control-plane protocol.
 ### Resource Server
 
 ```typescript
-import { JsonRpcMcpBackend, startResourceServer } from "@casys/mcp-bridge";
-import type { ResourceServerConfig } from "@casys/mcp-bridge";
+import { JsonRpcMcpBackend, startResourceServer } from "@mcpview/bridge";
+import type { ResourceServerConfig } from "@mcpview/bridge";
 
 const config: ResourceServerConfig = {
   assetDirectories: {
@@ -231,7 +231,7 @@ import {
   isRequest,
   isResponse,
   MessageRouter,
-} from "@casys/mcp-bridge";
+} from "@mcpview/bridge";
 
 const router = new MessageRouter();
 router.onRequest("tools/call", async (params) => {
@@ -243,14 +243,14 @@ router.onRequest("tools/call", async (params) => {
 
 ```typescript
 // Telegram — used internally by bridge.js, or standalone
-import { TelegramPlatformAdapter } from "@casys/mcp-bridge";
+import { TelegramPlatformAdapter } from "@mcpview/bridge";
 
 const adapter = new TelegramPlatformAdapter();
 const hostContext = await adapter.initialize();
 // { colorScheme: "dark", viewportHeight: 640, ... }
 
 // LINE LIFF
-import { LineAdapter } from "@casys/mcp-bridge";
+import { LineAdapter } from "@mcpview/bridge";
 ```
 
 ### Network Tunnel Primitives
@@ -261,7 +261,7 @@ Relay side:
 import {
   attachNetworkTunnelSocket,
   NetworkRelay,
-} from "@casys/mcp-bridge/adapters/network";
+} from "@mcpview/bridge/adapters/network";
 
 const relay = new NetworkRelay({
   requestTimeoutMs: 30_000,
@@ -298,7 +298,7 @@ Local runtime side:
 import {
   NetworkTunnelClient,
   WebSocketNetworkTransport,
-} from "@casys/mcp-bridge/adapters/network";
+} from "@mcpview/bridge/adapters/network";
 
 const client = new NetworkTunnelClient({
   transport: new WebSocketNetworkTransport({
@@ -323,7 +323,7 @@ await client.start("wss://app.example.com/mcp/_tunnel");
 ### Resource URI Parsing
 
 ```typescript
-import { parseResourceUri, resolveToHttp } from "@casys/mcp-bridge";
+import { parseResourceUri, resolveToHttp } from "@mcpview/bridge";
 
 const uri = parseResourceUri("ui://my-server/dashboard.html?tab=metrics");
 const httpUrl = resolveToHttp(uri, "https://my-domain.com");
@@ -368,11 +368,11 @@ deno task demo
 
 ## Companion Package
 
-Built to work with [@casys/mcp-server](https://jsr.io/@casys/mcp-server), the
+Built to work with [@mcpview/server](https://jsr.io/@mcpview/server), the
 production MCP server framework.
 
-Use `@casys/mcp-server` to build MCP tools with `ui://` resources, and
-`@casys/mcp-bridge` to deliver them to messaging platforms or to route selected
+Use `@mcpview/server` to build MCP tools with `ui://` resources, and
+`@mcpview/bridge` to deliver them to messaging platforms or to route selected
 private-network tool calls through a Casys-owned relay.
 
 ---

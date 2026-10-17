@@ -1,16 +1,26 @@
-# @casys/mcp-view-contracts
+# @mcpview/contracts
 
 Dependency-free contracts for MCP App resources, composition, and recorded viewer sessions.
 
 The package is safe to import from MCP servers, hosts, agents, and browser Apps. Its public module
 graph has no DOM, MCP Apps runtime, MCP SDK, React, or Preact dependency.
 
+## Install
+
+```bash
+# Deno (JSR)
+deno add jsr:@mcpview/contracts
+
+# Node (npm)
+npm i @mcpview/contracts
+```
+
 ```ts
 import {
   defineViewAppManifest,
   VIEW_APP_MANIFEST_SCHEMA,
   VIEWER_SESSION_APPLY_ACTION,
-} from "@casys/mcp-view-contracts";
+} from "@mcpview/contracts";
 
 export const manifest = defineViewAppManifest({
   schemaVersion: VIEW_APP_MANIFEST_SCHEMA,

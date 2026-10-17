@@ -19,7 +19,7 @@ import {
   defineView,
   readResultData,
   type ResultData,
-} from "@casys/mcp-view";
+} from "@mcpview/view";
 import {
   activeComponentSurface,
   applySurfaceContext,

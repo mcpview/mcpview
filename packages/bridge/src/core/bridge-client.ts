@@ -301,7 +301,7 @@ export class BridgeClient {
     }
 
     const info = this.options.bridgeInfo ?? {
-      name: "@casys/mcp-bridge",
+      name: "@mcpview/bridge",
       version: "0.2.0",
     };
 

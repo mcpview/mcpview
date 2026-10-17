@@ -14,7 +14,7 @@
 
 import { assert } from "@std/assert";
 
-import type { AppConfig, AppHandle, ViewDefinition } from "@casys/mcp-view";
+import type { AppConfig, AppHandle, ViewDefinition } from "@mcpview/view";
 import { defineComponentRegistry, defineViewComponent } from "../components.ts";
 import type { SurfaceAppRuntime, SurfaceAppState, SurfaceStatus } from "../surface-app.ts";
 

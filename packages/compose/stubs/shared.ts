@@ -4,7 +4,7 @@
  * @module stubs/shared
  */
 
-import type { McpApp } from "@casys/mcp-server";
+import type { McpApp } from "@mcpview/server";
 
 /** MCP Apps MIME type for HTML UI resources. */
 export const MCP_APP_MIME_TYPE = "text/html;profile=mcp-app";

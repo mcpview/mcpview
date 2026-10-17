@@ -4,6 +4,11 @@ name: Release
 # Creates a GitHub Release with the matching CHANGELOG section as the body.
 # Publishing to JSR/npm is still handled by `publish.yml` on push to main —
 # this workflow only handles the human-facing GitHub Release artefact.
+#
+# Tag prefixes: the six `@mcpview/*` packages use their directory name under
+# `packages/` (server, view, ...), and the seven deprecated `@casys/*` aliases
+# in `packages/legacy/` use their old name without the scope (mcp-server,
+# mcp-platform, mcp-view, ...). `scripts/release-tag.ts` creates these tags.
 
 on:
   push:
@@ -14,7 +19,13 @@ on:
       - "view-v*"
       - "view-contracts-v*"
       - "view-components-v*"
-      - "platform-v*"
+      - "mcp-server-v*"
+      - "mcp-platform-v*"
+      - "mcp-view-v*"
+      - "mcp-view-contracts-v*"
+      - "mcp-view-components-v*"
+      - "mcp-compose-v*"
+      - "mcp-bridge-v*"
 
 jobs:
   github-release:
@@ -33,19 +44,25 @@ jobs:
         run: |
           # `<pkg>-v<version>` → split on the last `-v` (`view-components-v0.6.0`)
           pkg="${TAG%-v*}"
-          version="${TAG#*-v}"
+          version="${TAG##*-v}"
           if [[ -z "$pkg" || -z "$version" ]]; then
             echo "::error::Cannot parse tag as <pkg>-v<version>"
             exit 1
           fi
-          if [[ ! -f "packages/${pkg}/CHANGELOG.md" ]]; then
-            echo "::error::packages/${pkg}/CHANGELOG.md not found"
+          # `mcp-*` prefixes are the deprecated aliases in packages/legacy/.
+          if [[ -f "packages/${pkg}/CHANGELOG.md" ]]; then
+            dir="packages/${pkg}"
+          elif [[ -f "packages/legacy/${pkg}/CHANGELOG.md" ]]; then
+            dir="packages/legacy/${pkg}"
+          else
+            echo "::error::No CHANGELOG.md under packages/${pkg} or packages/legacy/${pkg}"
             exit 1
           fi
           {
             echo "pkg=${pkg}"
             echo "version=${version}"
-            echo "changelog=packages/${pkg}/CHANGELOG.md"
+            echo "dir=${dir}"
+            echo "changelog=${dir}/CHANGELOG.md"
           } >> "$GITHUB_OUTPUT"
 
       - name: Extract changelog section
@@ -72,10 +89,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
-          PKG: ${{ steps.parse.outputs.pkg }}
+          PKG_DIR: ${{ steps.parse.outputs.dir }}
           VERSION: ${{ steps.parse.outputs.version }}
         run: |
+          # The release title is the published package name, read from its manifest.
+          PKG_NAME=$(jq -r .name "${PKG_DIR}/deno.json")
           gh release create "$TAG" \
-            --title "@casys/mcp-${PKG} ${VERSION}" \
+            --title "${PKG_NAME} ${VERSION}" \
             --notes-file release-notes.md \
             --verify-tag

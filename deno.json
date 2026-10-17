@@ -1,14 +1,23 @@
 {
   "license": "MIT",
   "workspace": [
+    "./packages/view-contracts",
     "./packages/server",
-    "./packages/platform",
+    "./packages/view",
+    "./packages/view-components",
     "./packages/compose",
     "./packages/bridge",
-    "./packages/view-contracts",
-    "./packages/view",
-    "./packages/view-components"
+    "./packages/legacy/mcp-server",
+    "./packages/legacy/mcp-platform",
+    "./packages/legacy/mcp-view",
+    "./packages/legacy/mcp-view-components",
+    "./packages/legacy/mcp-view-contracts",
+    "./packages/legacy/mcp-compose",
+    "./packages/legacy/mcp-bridge"
   ],
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.0"
+  },
   "exclude": [
     "**/dist/",
     "**/dist-node/",

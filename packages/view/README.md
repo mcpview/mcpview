@@ -1,11 +1,21 @@
-# `@casys/mcp-view`
+# `@mcpview/view`
 
 Browser-side core runtime for MCP Apps. It creates the ext-apps connection, applies host styles,
 provides memory-only view routing, handles result and teardown lifecycle, capability-gates calls to
 the originating MCP server, and exposes the optional Compose event channel.
 
+## Install
+
+```bash
+# Deno (JSR)
+deno add jsr:@mcpview/view
+
+# Node (npm)
+npm i @mcpview/view
+```
+
 ```ts
-import { createMcpApp, defineView } from "@casys/mcp-view";
+import { createMcpApp, defineView } from "@mcpview/view";
 
 const app = await createMcpApp({
   info: { name: "Engineering Viewer", version: "0.1.0" },
@@ -21,8 +31,8 @@ The root export has no component kit, theme, React, or Preact export. React rema
 adapter subpath for existing component trees:
 
 ```tsx
-import { readStructuredContent } from "@casys/mcp-view";
-import { defineReactView } from "@casys/mcp-view/react";
+import { readStructuredContent } from "@mcpview/view";
+import { defineReactView } from "@mcpview/view/react";
 
 const detail = defineReactView<State, { id: string }, Invoice>({
   async onEnter(ctx, { id }) {
@@ -41,12 +51,12 @@ React and ReactDOM are optional npm peers and are never loaded by the main expor
 
 ## Package boundaries
 
-- `@casys/mcp-view-contracts` owns the dependency-free App/resource manifest, composition, semantic
+- `@mcpview/contracts` owns the dependency-free App/resource manifest, composition, semantic
   selection, and recorded-session compatibility contracts. The compatibility subpath
-  `@casys/mcp-view/contracts` re-exports it.
-- `@casys/mcp-view-components` owns component catalogs, surface mounting, generic presentation
-  roles, the ERPNext-inspired theme, Preact bindings, and the Deno/JSR result-viewer scaffold.
-- `@casys/mcp-view` owns only the iframe lifecycle, routing, results, events, tools, sampling, and
+  `@mcpview/view/contracts` re-exports it.
+- `@mcpview/components` owns component catalogs, surface mounting, generic presentation roles, the
+  ERPNext-inspired theme, Preact bindings, and the Deno/JSR result-viewer scaffold.
+- `@mcpview/view` owns only the iframe lifecycle, routing, results, events, tools, sampling, and
   optional React adapter.
 
 Domain rendering stays in the owning MCP App. The generic component package deliberately contains no
@@ -61,7 +71,7 @@ import {
   defineViewAppManifest,
   VIEW_APP_MANIFEST_SCHEMA,
   VIEWER_SESSION_APPLY_ACTION,
-} from "@casys/mcp-view-contracts";
+} from "@mcpview/contracts";
 
 export const manifest = defineViewAppManifest({
   schemaVersion: VIEW_APP_MANIFEST_SCHEMA,
@@ -106,7 +116,7 @@ and `app.ctx.navigate` on the session callback facade. It does not wait for or c
 callback code already in flight; that code may finish, but it cannot navigate late through the
 revoked facade. The underlying router remains independently fail-closed after App disposal.
 
-The surface Apps of `@casys/mcp-view-components` (`/surface`, `/preact`) take the same flow as a
+The surface Apps of `@mcpview/components` (`/surface`, `/preact`) take the same flow as a
 `viewerSession: { validate, toState }` pair and keep the projected state across remounts.
 
 ## Host tool notifications
@@ -133,5 +143,5 @@ fallback is explicitly requested. Neither helper prefers model-facing text over 
 
 For an executable two-view core bundle, see [`examples/basic`](./examples/basic/README.md). Run the
 componentized result-viewer generator from JSR with
-`deno run -A jsr:@casys/mcp-view-components@0.7.0/scaffold result-viewer <target>`. The Deno-only
-scaffold is deliberately absent from the npm package.
+`deno run -A jsr:@mcpview/components@0.10.0/scaffold result-viewer <target>`. The Deno-only scaffold
+is deliberately absent from the npm package.

@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * import { ErrorCode } from "@casys/mcp-compose";
+ * import { ErrorCode } from "@mcpview/compose";
  *
  * if (issue.code === ErrorCode.ORPHAN_SYNC_REFERENCE) {
  *   console.log("Sync rule references unknown tool:", issue.message);

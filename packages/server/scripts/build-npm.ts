@@ -1,5 +1,5 @@
 /**
- * Build @casys/mcp-server as native ESM JavaScript for npm.
+ * Build @mcpview/server as native ESM JavaScript for npm.
  *
  * Deno remains the canonical source/runtime. dnt translates the same public
  * entry point, import map, and runtime selector into JavaScript plus declaration
@@ -29,14 +29,17 @@ await build({
     deno: false,
   },
   package: {
-    name: "@casys/mcp-server",
+    name: "@mcpview/server",
     version,
     description: "MCP server framework for Deno and Node",
     license: "MIT",
     repository: {
       type: "git",
-      url: "git+https://github.com/superWorldSavior/mcp-server.git",
+      url: "git+https://github.com/mcpview/mcpview.git",
+      directory: "packages/server",
     },
+    homepage: "https://mcpview.dev",
+    bugs: { url: "https://github.com/mcpview/mcpview/issues" },
     keywords: [
       "mcp",
       "model-context-protocol",

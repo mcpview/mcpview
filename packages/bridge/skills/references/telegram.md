@@ -1,4 +1,4 @@
-# @casys/mcp-bridge — Telegram Mini App Patterns
+# @mcpview/bridge — Telegram Mini App Patterns
 
 Reference for Telegram-specific behavior in `@casys/mcp-bridge` v0.2.0.
 
@@ -9,7 +9,7 @@ Reference for Telegram-specific behavior in `@casys/mcp-bridge` v0.2.0.
 ### 1. Server-side (Deno)
 
 ```ts
-import { JsonRpcMcpBackend, startResourceServer } from "@casys/mcp-bridge";
+import { JsonRpcMcpBackend, startResourceServer } from "@mcpview/bridge";
 
 const backend = new JsonRpcMcpBackend({
   endpointUrl: "http://localhost:3000/mcp",
@@ -154,7 +154,7 @@ Also accepted:
 **Custom auth handler** (if you need more control):
 
 ```ts
-import { createTelegramAuthHandler } from "@casys/mcp-bridge";
+import { createTelegramAuthHandler } from "@mcpview/bridge";
 
 const server = startResourceServer({
   platform: "telegram",

@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- mcp-compose CLI installed (`deno install -g jsr:@casys/mcp-compose`)
+- mcp-compose CLI installed (`deno install -g jsr:@mcpview/compose`)
 - An agent (LLM) that guides the process
 - Data sources: local databases, cloud APIs, or both
 

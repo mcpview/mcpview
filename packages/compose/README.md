@@ -21,7 +21,7 @@ When an MCP App needs its initial tool result, `resources/read`, or an App-initi
 the explicit runtime host:
 
 ```ts
-import { composeAndServeDashboard } from "@casys/mcp-compose/runtime";
+import { composeAndServeDashboard } from "@mcpview/compose/runtime";
 
 const dashboard = await composeAndServeDashboard({ manifests, template });
 console.log(dashboard.url);
@@ -55,8 +55,16 @@ routing, no coordinated layout.
 
 ## Install
 
+```bash
+# Deno (JSR)
+deno add jsr:@mcpview/compose
+
+# Node (npm)
+npm i @mcpview/compose
+```
+
 ```typescript
-import { buildCompositeUi, createCollector, renderComposite } from "jsr:@casys/mcp-compose";
+import { buildCompositeUi, createCollector, renderComposite } from "@mcpview/compose";
 ```
 
 ## Quick Start
@@ -69,7 +77,7 @@ import {
   createCollector,
   renderComposite,
   validateSyncRules,
-} from "@casys/mcp-compose";
+} from "@mcpview/compose";
 
 // 1. Collect UI resources from MCP tool results
 const collector = createCollector();
@@ -214,7 +222,7 @@ contract and A2UI boundary.
 Validate sync rules before composition:
 
 ```typescript
-import { validateSyncRules } from "@casys/mcp-compose";
+import { validateSyncRules } from "@mcpview/compose";
 
 const result = validateSyncRules(
   [{ from: "a", event: "click", to: "unknown", action: "update" }],
@@ -236,7 +244,7 @@ const result = validateComposition(tools, [], [{
 ## Collector API
 
 ```typescript
-import { createCollector } from "@casys/mcp-compose";
+import { createCollector } from "@mcpview/compose";
 
 const collector = createCollector();
 
@@ -253,7 +261,7 @@ collector.clear(); // Reset
 For projects using `@modelcontextprotocol/sdk`:
 
 ```typescript
-import { createMcpSdkCollector } from "@casys/mcp-compose";
+import { createMcpSdkCollector } from "@mcpview/compose";
 
 const collector = createMcpSdkCollector();
 
@@ -274,7 +282,7 @@ const resources = collector.getResources();
 Use `uiMeta()` to declare `emits` and `accepts` on your tools:
 
 ```typescript
-import { uiMeta } from "@casys/mcp-compose/sdk";
+import { uiMeta } from "@mcpview/compose/sdk";
 
 const tools = [
   {
@@ -288,10 +296,10 @@ const tools = [
 ];
 ```
 
-If your server uses `@casys/mcp-server`, import the helpers from the compose SDK:
+If your server uses `@mcpview/server`, import the helpers from the compose SDK:
 
 ```typescript
-import { composeEvents, uiMeta } from "@casys/mcp-compose/sdk";
+import { composeEvents, uiMeta } from "@mcpview/compose/sdk";
 ```
 
 ### UI-side events with `composeEvents()`
@@ -300,7 +308,7 @@ UIs emit and listen to cross-UI events via a dedicated `ui/compose/event` channe
 MCP Apps protocol:
 
 ```typescript
-import { composeEvents } from "@casys/mcp-compose/sdk";
+import { composeEvents } from "@mcpview/compose/sdk";
 
 const events = composeEvents();
 events.emit("invoice.selected", { invoiceId: "INV-001" });
@@ -314,7 +322,7 @@ The runtime module starts MCP servers, calls tools, and feeds results through th
 produce complete dashboards:
 
 ```typescript
-import { composeDashboardFromFiles } from "@casys/mcp-compose/runtime";
+import { composeDashboardFromFiles } from "@mcpview/compose/runtime";
 
 const result = await composeDashboardFromFiles(
   "./manifests/", // directory of .json manifest files
@@ -328,7 +336,7 @@ The API above keeps the historical static rendering path. For a live local MCP A
 the same template/manifests and call `composeAndServeDashboard()` instead:
 
 ```ts
-import { composeAndServeDashboard, loadManifests, loadTemplate } from "@casys/mcp-compose/runtime";
+import { composeAndServeDashboard, loadManifests, loadTemplate } from "@mcpview/compose/runtime";
 
 const manifests = await loadManifests("./manifests");
 const template = await loadTemplate("./dashboards/sales.json");

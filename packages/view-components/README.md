@@ -1,4 +1,4 @@
-# @casys/mcp-view-components
+# @mcpview/components
 
 Optional presentation runtime and light-first component kit for MCP Apps. It gives provider-owned
 viewers a shared visual grammar without moving their data, semantics, or rendering authority into
@@ -10,17 +10,27 @@ dashboard that contains every provider capability. In a composed host such as th
 Whiteboard, `chip`, `row`, and `card` densities project the same semantic object while the
 whole-view App remains the exact viewer opened for that object.
 
+## Install
+
+```bash
+# Deno (JSR)
+deno add jsr:@mcpview/components
+
+# Node (npm)
+npm i @mcpview/components
+```
+
 ## Package boundary
 
-- `@casys/mcp-view-contracts` is dependency-free and owns serializable contracts.
-- `@casys/mcp-view` owns the MCP App lifecycle and transport.
-- `@casys/mcp-view-components` is optional. Apps that do not want the kit do not import it.
+- `@mcpview/contracts` is dependency-free and owns serializable contracts.
+- `@mcpview/view` owns the MCP App lifecycle and transport.
+- `@mcpview/components` is optional. Apps that do not want the kit do not import it.
 - Providers resolve references and validate values, units, limits, verdicts, and provenance. The
   components display those values and never infer them.
 - The host composes and opens recorded views. It does not become a native CAD, Modelica, FEA, or
   SysML renderer.
 
-The package root is renderer-neutral and carries no MCP Apps runtime: `@casys/mcp-view` and
+The package root is renderer-neutral and carries no MCP Apps runtime: `@mcpview/view` and
 `@modelcontextprotocol/ext-apps` are reached only through the `/surface` entry, which owns the App
 lifecycle. The responsive layout decision and its hooks live in the `/layout` entry, which takes the
 host context as a value and loads no App runtime. The embedded webfonts are reached only through the
@@ -28,7 +38,7 @@ host context as a value and loads no App runtime. The embedded webfonts are reac
 `/layout`, whose hooks are Preact:
 
 ```ts
-import { defineComponentRegistry, installMcpViewTheme } from "@casys/mcp-view-components";
+import { defineComponentRegistry, installMcpViewTheme } from "@mcpview/components";
 import {
   ArtifactRow,
   BadgeGroup,
@@ -58,7 +68,7 @@ import {
   TextInput,
   TreeList,
   TypeBadge,
-} from "@casys/mcp-view-components/preact";
+} from "@mcpview/components/preact";
 ```
 
 ## Presentation vocabulary
@@ -166,9 +176,8 @@ Preact-to-DOM bridge; those bridges drifted in tone, ARIA role, and class. `rend
 that bridge, made canonical. Without `container` it returns the rendered `.mcp-view-state` element,
 so what you mount carries the class, the tone and the alert role; `className` lands on that same
 node. Pass `container` to render into a node you already own, which is then what comes back. It
-lives in the pure presentation module `@casys/mcp-view-components/preact/components` and does not
-import `@casys/mcp-view`, so it is reachable from any entry that does not need the surface
-lifecycle.
+lives in the pure presentation module `@mcpview/components/preact/components` and does not import
+`@mcpview/view`, so it is reachable from any entry that does not need the surface lifecycle.
 
 Without `container` it returns the rendered `.mcp-view-state` element; with one it renders into the
 node you passed and returns that.
@@ -187,7 +196,7 @@ because it describes the room actually granted. `boundsStyle` bounds the root on
 the viewer stays intrinsic and lets the host auto-resize.
 
 ```tsx
-import { useViewerLayout } from "@casys/mcp-view-components/layout";
+import { useViewerLayout } from "@mcpview/components/layout";
 
 const Viewer = ({ data, context }: PreactSurfaceComponentProps<RunModel>) => {
   const { ref, layout, boundsStyle } = useViewerLayout<HTMLDivElement>(context.hostContext);
@@ -202,7 +211,7 @@ const Viewer = ({ data, context }: PreactSurfaceComponentProps<RunModel>) => {
 ```
 
 `hints` is any `{ deviceCapabilities?, containerDimensions? }` — the kit's `McpViewHostContext`
-satisfies it structurally, so the entry never imports `@casys/mcp-view`. Touch follows the host's
+satisfies it structurally, so the entry never imports `@mcpview/view`. Touch follows the host's
 `deviceCapabilities` (`touch && hover !== true`: a touch-screen laptop driven by a mouse is no
 phone) and only falls back to `matchMedia("(pointer: coarse)")` when the host says nothing.
 `?layout=mobile` in the page query string forces a treatment for reviewing it without the matching
@@ -219,7 +228,7 @@ unavailable evidence and literal verification state remain visible. The existing
 the frame, so the preset adds no card, shadow or application chrome.
 
 ```tsx
-import { FocusedView } from "@casys/mcp-view-components/preact/components";
+import { FocusedView } from "@mcpview/components/preact/components";
 
 <FocusedView
   label={labels.geometry}
@@ -277,8 +286,8 @@ access nor a CSP that allows font requests, so the preferred faces would silentl
 Font License 1.1). It is opt-in: import it only from the viewer bundle that wants it.
 
 ```ts
-import { installMcpViewTheme } from "@casys/mcp-view-components";
-import { installMcpViewFonts } from "@casys/mcp-view-components/fonts";
+import { installMcpViewTheme } from "@mcpview/components";
+import { installMcpViewFonts } from "@mcpview/components/fonts";
 
 installMcpViewFonts();
 installMcpViewTheme();
@@ -298,8 +307,8 @@ A viewer supplies its registry, the projection and how a status is rendered; eve
 `strict`, `theme`, the status labels, `onError`, `viewerSession` — has a documented default.
 
 ```ts
-import { createTranslator } from "@casys/mcp-view-components";
-import { startSurfaceApp } from "@casys/mcp-view-components/surface";
+import { createTranslator } from "@mcpview/components";
+import { startSurfaceApp } from "@mcpview/components/surface";
 
 const messages = createTranslator({
   defaultLocale: "en",
@@ -406,9 +415,9 @@ and whose `dispose()` tears it down. Option conflicts throw `SurfaceAppError`, a
 stable `code` (`SURFACE_APP_PROJECTION_CONFLICT`) and a `data.recovery` sentence; `show()` on a
 handle the host already tore down rejects with `SURFACE_APP_CLOSED`.
 
-Whole-view recorded sessions are declared in `@casys/mcp-view-contracts` and consumed through the
-core resource lifecycle. `viewerSession` pairs a `validate` guard with a `toState` projection; the
-App subscribes before it connects and the runtime buffers what arrives during the handshake, so a
+Whole-view recorded sessions are declared in `@mcpview/contracts` and consumed through the core
+resource lifecycle. `viewerSession` pairs a `validate` guard with a `toState` projection; the App
+subscribes before it connects and the runtime buffers what arrives during the handshake, so a
 one-shot session cannot be lost and no individual component claims `viewer.session.apply`. The 0.6
 `validateSession`/`mapSessionToData`/`onInvalidSession` options of `startPreactSurfaceApp()` are
 gone in 0.7.0; `viewerSession: { validate, toState, onInvalid }` is the one form.
@@ -505,7 +514,7 @@ translator from the current host locale when rendering, so the same recorded res
 interface language without changing its data.
 
 ```ts
-import { createTranslator } from "@casys/mcp-view-components";
+import { createTranslator } from "@mcpview/components";
 
 const en = {
   technicalDetails: "Technical details",
@@ -553,15 +562,15 @@ they can reuse the same helper without importing a new localization runtime.
 
 The project generator intentionally uses Deno filesystem APIs and `deno fmt`. The generated
 `src/main.ts` is a component registry plus one `fromToolResult` projection handed to
-`startSurfaceApp()` from `@casys/mcp-view-components/surface`; it hand-rolls no App lifecycle. Its
+`startSurfaceApp()` from `@mcpview/components/surface`; it hand-rolls no App lifecycle. Its
 `build.ts` accepts `MCP_VIEW_MODULE` and `MCP_VIEW_COMPONENTS_MODULE` overrides (the `mod.ts` of a
 local checkout); the `/surface` entry is derived from the latter unless
 `MCP_VIEW_COMPONENTS_SURFACE_MODULE` names it. Run the generator from JSR:
 
 ```sh
-deno run -A jsr:@casys/mcp-view-components@0.9.2/scaffold result-viewer ./result-viewer
+deno run -A jsr:@mcpview/components@0.10.0/scaffold result-viewer ./result-viewer
 ```
 
 The npm package contains only the runtime and presentation entry points. It does not export or ship
-`@casys/mcp-view-components/scaffold`; Node ESM imports and CommonJS requires of that subpath are
-expected to fail with `ERR_PACKAGE_PATH_NOT_EXPORTED` rather than loading a Deno-only module.
+`@mcpview/components/scaffold`; Node ESM imports and CommonJS requires of that subpath are expected
+to fail with `ERR_PACKAGE_PATH_NOT_EXPORTED` rather than loading a Deno-only module.

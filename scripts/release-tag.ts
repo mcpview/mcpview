@@ -1,35 +1,46 @@
 #!/usr/bin/env -S deno run -A
 /**
- * Release tag helper for the @casys mcp-server monorepo.
+ * Release tag helper for the mcpview monorepo.
  *
- * Reads the version of a workspace package from `packages/<pkg>/deno.json`,
- * verifies that the matching CHANGELOG section exists and that `[Unreleased]`
- * has been promoted, then creates the annotated git tag `<pkg>-v<version>`
- * locally. The tag is *not* pushed — that's the operator's call.
+ * Reads the version of a workspace package from its `deno.json`, verifies that
+ * the matching CHANGELOG section exists and that `[Unreleased]` has been
+ * promoted, then creates the annotated git tag `<pkg>-v<version>` locally. The
+ * tag is *not* pushed — that's the operator's call.
  *
  * Usage:
- *   deno task release:tag    (from inside packages/<pkg>/)
+ *   deno task release:tag    (from inside the package directory)
  *   deno run -A scripts/release-tag.ts <pkg>
  *
- * Where <pkg> is one of: server, compose, bridge, view, view-contracts,
- * view-components, platform.
+ * Where <pkg> is one of the `@mcpview/*` packages (server, compose, bridge,
+ * view, view-contracts, view-components) or one of the deprecated `@casys/*`
+ * aliases, tagged by their old name without the scope (mcp-server,
+ * mcp-platform, mcp-view, mcp-view-components, mcp-view-contracts, mcp-compose,
+ * mcp-bridge). Keep this table, `.github/workflows/release.yml`, and the
+ * root `deno.json` workspace in step.
  */
 
-const PACKAGES = [
-  "server",
-  "compose",
-  "bridge",
-  "view",
-  "view-contracts",
-  "view-components",
-  "platform",
-] as const;
-type Pkg = (typeof PACKAGES)[number];
+const PACKAGE_DIRS = {
+  "view-contracts": "packages/view-contracts",
+  server: "packages/server",
+  view: "packages/view",
+  "view-components": "packages/view-components",
+  compose: "packages/compose",
+  bridge: "packages/bridge",
+  "mcp-server": "packages/legacy/mcp-server",
+  "mcp-platform": "packages/legacy/mcp-platform",
+  "mcp-view": "packages/legacy/mcp-view",
+  "mcp-view-components": "packages/legacy/mcp-view-components",
+  "mcp-view-contracts": "packages/legacy/mcp-view-contracts",
+  "mcp-compose": "packages/legacy/mcp-compose",
+  "mcp-bridge": "packages/legacy/mcp-bridge",
+} as const;
+type Pkg = keyof typeof PACKAGE_DIRS;
+const PACKAGES = Object.keys(PACKAGE_DIRS) as Pkg[];
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 
 function isPkg(s: string): s is Pkg {
-  return (PACKAGES as readonly string[]).includes(s);
+  return Object.hasOwn(PACKAGE_DIRS, s);
 }
 
 const pkg = Deno.args[0];
@@ -40,10 +51,12 @@ if (!pkg || !isPkg(pkg)) {
   Deno.exit(2);
 }
 
-const denoJsonPath = `${repoRoot}packages/${pkg}/deno.json`;
-const changelogPath = `${repoRoot}packages/${pkg}/CHANGELOG.md`;
+const packageDir = PACKAGE_DIRS[pkg];
+const denoJsonPath = `${repoRoot}${packageDir}/deno.json`;
+const changelogPath = `${repoRoot}${packageDir}/CHANGELOG.md`;
 
 const denoJson = JSON.parse(await Deno.readTextFile(denoJsonPath)) as {
+  name?: string;
   version?: string;
 };
 const version = denoJson.version;
@@ -83,8 +96,8 @@ if (new TextDecoder().decode(existing.stdout).trim() === tag) {
   Deno.exit(1);
 }
 
-const tagBody = `Release @casys/mcp-${pkg} ${version}.\n\n` +
-  `See packages/${pkg}/CHANGELOG.md for details.`;
+const tagBody = `Release ${denoJson.name ?? pkg} ${version}.\n\n` +
+  `See ${packageDir}/CHANGELOG.md for details.`;
 const tagResult = await new Deno.Command("git", {
   args: ["tag", "-a", tag, "-m", tagBody],
   cwd: repoRoot,

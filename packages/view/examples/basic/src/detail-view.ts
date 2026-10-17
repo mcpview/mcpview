@@ -3,7 +3,7 @@
  * Detail view: shows one invoice + Back button. Back → ctx.navigate("list").
  */
 
-import { defineView } from "@casys/mcp-view";
+import { defineView } from "@mcpview/view";
 import type { AppState, Invoice } from "./state.ts";
 
 export const detailView = defineView<AppState, { id: string }, Invoice | null>({

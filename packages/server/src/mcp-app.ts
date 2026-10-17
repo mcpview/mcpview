@@ -3581,7 +3581,7 @@ export class McpApp {
    * Node (Express, Hono-on-Node) instead of giving up port ownership to
    * {@link startHttp}.
    *
-   * **Runtime targets:** `@casys/mcp-server` is Deno-first — the canonical
+   * **Runtime targets:** `@mcpview/server` is Deno-first — the canonical
    * deployment path is Deno 2.x on Deno Deploy or self-hosted Deno, with
    * a Node 20+ distribution via `scripts/build-node.sh` as a secondary
    * target. Cloudflare Workers, workerd, and browser runtimes are not
@@ -4617,7 +4617,7 @@ export interface RegisterViewersConfig {
   /** Custom function to generate human-readable names. Default: kebab-to-Title. */
   humanName?: (viewerName: string) => string;
   /** MCP Apps CSP — declares external domains the viewer needs (tiles, APIs, CDNs).
-   *  Uses McpUiCsp from @casys/mcp-compose (resourceDomains, connectDomains). */
+   *  Uses McpUiCsp from @mcpview/compose (resourceDomains, connectDomains). */
   csp?: {
     resourceDomains?: string[];
     connectDomains?: string[];
