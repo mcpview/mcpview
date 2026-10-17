@@ -1,4 +1,4 @@
-# @casys/mcp-platform — Common Patterns
+# @casys/mcp-server — Common Patterns
 
 ---
 
@@ -7,7 +7,7 @@
 Minimal server for local tools (Claude Desktop, cline, etc.):
 
 ```typescript
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({
   name: "my-server",
@@ -40,7 +40,7 @@ await app.start();
 ## 2. HTTP server with Auth0 auth
 
 ```typescript
-import { createAuth0AuthProvider, McpApp } from "@casys/mcp-platform";
+import { createAuth0AuthProvider, McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({
   name: "my-api-server",
@@ -85,7 +85,7 @@ console.log(`Listening on ${http.addr.port}`);
 ## 3. Custom middleware (logging, tracing, tenant context)
 
 ```typescript
-import { McpApp, type Middleware } from "@casys/mcp-platform";
+import { McpApp, type Middleware } from "@casys/mcp-server";
 
 const loggingMiddleware: Middleware = async (ctx, next) => {
   const start = Date.now();
@@ -134,7 +134,7 @@ app.use(authAwareMiddleware);
 Register both a resource (HTML viewer) and a tool that references it:
 
 ```typescript
-import { MCP_APP_MIME_TYPE, McpApp } from "@casys/mcp-platform";
+import { MCP_APP_MIME_TYPE, McpApp } from "@casys/mcp-server";
 import { uiMeta } from "@casys/mcp-compose/sdk";
 
 const app = new McpApp({
@@ -191,7 +191,7 @@ await app.startHttp({ port: 3000 });
 For servers with multiple MCP App UIs:
 
 ```typescript
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({ name: "my-server", version: "1.0.0" });
 
@@ -227,7 +227,7 @@ import {
   createAuth0AuthProvider,
   createMultiTenantMiddleware,
   McpApp,
-} from "@casys/mcp-platform";
+} from "@casys/mcp-server";
 
 const tenantCache = new Map<string, ReturnType<McpApp["getFetchHandler"]>>();
 
@@ -271,7 +271,7 @@ async function getHandlerForTenant(tenantId: string) {
 
 ```typescript
 import { Hono } from "hono";
-import { createGoogleAuthProvider, McpApp } from "@casys/mcp-platform";
+import { createGoogleAuthProvider, McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({ name: "my-server", version: "1.0.0" });
 app.registerTool(
@@ -306,7 +306,7 @@ Deno.serve({ port: 8000 }, honoApp.fetch);
 ```typescript
 // routes/mcp/[...path].tsx
 import type { Handlers } from "$fresh/server.ts";
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 
 // Instantiate once at module level (Fresh keeps this in memory)
 const app = new McpApp({ name: "fresh-mcp", version: "1.0.0" });
@@ -331,7 +331,7 @@ export const handlers: Handlers = {
 Convert known errors to `isError: true` MCP results instead of JSON-RPC errors:
 
 ```typescript
-import { McpApp, type ToolErrorMapper } from "@casys/mcp-platform";
+import { McpApp, type ToolErrorMapper } from "@casys/mcp-server";
 
 class NotFoundError extends Error {
   constructor(public readonly id: string) {
@@ -425,7 +425,7 @@ Use `StructuredToolResult` when the data payload is large and you want to keep
 the LLM context clean:
 
 ```typescript
-import { type StructuredToolResult } from "@casys/mcp-platform";
+import { type StructuredToolResult } from "@casys/mcp-server";
 
 app.registerTool(
   {
@@ -461,7 +461,7 @@ app.registerTool(
 Register and unregister tools while the server is running:
 
 ```typescript
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({ name: "relay", version: "1.0.0" });
 
@@ -491,7 +491,7 @@ function onServiceDisconnected(service: { name: string; tools: MCPTool[] }) {
 ## 13. GitHub Actions OIDC auth (machine-to-machine)
 
 ```typescript
-import { createGitHubAuthProvider, McpApp } from "@casys/mcp-platform";
+import { createGitHubAuthProvider, McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({
   name: "ci-tools",
@@ -531,7 +531,7 @@ await app.startHttp({ port: 3000, requireAuth: true });
 React after the MCP handshake completes (e.g., to check client capabilities):
 
 ```typescript
-import { MCP_APP_MIME_TYPE, McpApp } from "@casys/mcp-platform";
+import { MCP_APP_MIME_TYPE, McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({ name: "my-server", version: "1.0.0" });
 

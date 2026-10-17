@@ -27,7 +27,6 @@ jobs:
         # Already-published versions are skipped automatically.
 
   publish-npm-server:
-    needs: publish-npm-platform
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -74,9 +73,9 @@ jobs:
           tar -tzf "$TARBALL" | grep -Fx 'package/README.md' >/dev/null
           tar -tzf "$TARBALL" | grep -Fx 'package/CHANGELOG.md' >/dev/null
           # ESM-only output: without "type": "module" the .js entry parses as
-          # CommonJS on Node <20.19 (engines floor is >=20). Node 22+ silently
-          # detects the module syntax, so assert the field instead of relying
-          # on the import smoke test below.
+          # CommonJS on Node <20.19 (engines floor is >=20). The node@20 smoke
+          # run below cannot catch it (latest 20.x detects module syntax), so
+          # assert the field directly.
           node -p "require('./dist-node/package.json').type" | grep -Fx 'module' >/dev/null
 
           CONSUMER_DIR=$(mktemp -d)
@@ -84,20 +83,15 @@ jobs:
             cd "$CONSUMER_DIR"
             npm init --yes >/dev/null
             npm pkg set type=module
-            # Installs the tarball plus its @casys/mcp-platform dependency from
-            # the registry — this validates the dependency wiring end to end.
-            npm install --ignore-scripts --no-audit --no-fund \
-              "$TARBALL" typescript@5.9.3 @types/node@22
-            node --input-type=module --eval 'const pkg = await import("@casys/mcp-server"); if (typeof pkg.McpApp !== "function") throw new Error("alias re-export missing")'
-            cp "$GITHUB_WORKSPACE/packages/server/scripts/smoke-node-consumer.ts" .
-            npx tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM,DOM.Iterable smoke-node-consumer.ts
+            npm install --ignore-scripts --no-audit --no-fund "$TARBALL" typescript@5.9.3 @types/node@22
+          )
 
-            # Also exercise the declared lower bound. The first pass above
-            # covers the newest compatible 0.28.x; this downgrade makes sure a
-            # later platform patch cannot accidentally raise the alias floor.
-            npm install --ignore-scripts --no-audit --no-fund @casys/mcp-platform@0.28.0
-            node -p 'require("./node_modules/@casys/mcp-platform/package.json").version' | grep -Fx '0.28.0' >/dev/null
-            node --input-type=module --eval 'const pkg = await import("@casys/mcp-server"); if (typeof pkg.McpApp !== "function") throw new Error("alias lower-bound re-export missing")'
+          npx --yes node@20 scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@casys/mcp-server/esm/mod.js"
+          node scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@casys/mcp-server/esm/mod.js"
+          cp scripts/smoke-node-consumer.ts "$CONSUMER_DIR/smoke-node-consumer.ts"
+          (
+            cd "$CONSUMER_DIR"
+            node --input-type=module --eval 'const pkg = await import("@casys/mcp-server"); if (typeof pkg.McpApp !== "function") throw new Error("package export missing")'
             npx tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM,DOM.Iterable smoke-node-consumer.ts
           )
 
@@ -215,6 +209,7 @@ jobs:
           npm publish --access public
 
   publish-npm-platform:
+    needs: publish-npm-server
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -258,10 +253,12 @@ jobs:
           TARBALL_NAME=$(npm pack ./dist-node --pack-destination "$PACK_DIR" --json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8"))[0].filename')
           TARBALL="$PACK_DIR/$TARBALL_NAME"
           tar -tzf "$TARBALL" | grep -Fx 'package/LICENSE' >/dev/null
+          tar -tzf "$TARBALL" | grep -Fx 'package/README.md' >/dev/null
+          tar -tzf "$TARBALL" | grep -Fx 'package/CHANGELOG.md' >/dev/null
           # ESM-only output: without "type": "module" the .js entry parses as
-          # CommonJS on Node <20.19 (engines floor is >=20). The node@20 smoke
-          # run below cannot catch it (latest 20.x detects module syntax), so
-          # assert the field directly.
+          # CommonJS on Node <20.19 (engines floor is >=20). Node 22+ silently
+          # detects the module syntax, so assert the field instead of relying
+          # on the import smoke test below.
           node -p "require('./dist-node/package.json').type" | grep -Fx 'module' >/dev/null
 
           CONSUMER_DIR=$(mktemp -d)
@@ -269,15 +266,20 @@ jobs:
             cd "$CONSUMER_DIR"
             npm init --yes >/dev/null
             npm pkg set type=module
-            npm install --ignore-scripts --no-audit --no-fund "$TARBALL" typescript@5.9.3 @types/node@22
-          )
+            # Installs the tarball plus its @casys/mcp-server dependency from
+            # the registry — this validates the dependency wiring end to end.
+            npm install --ignore-scripts --no-audit --no-fund \
+              "$TARBALL" typescript@5.9.3 @types/node@22
+            node --input-type=module --eval 'const pkg = await import("@casys/mcp-platform"); if (typeof pkg.McpApp !== "function") throw new Error("alias re-export missing")'
+            cp "$GITHUB_WORKSPACE/packages/platform/scripts/smoke-node-consumer.ts" .
+            npx tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM,DOM.Iterable smoke-node-consumer.ts
 
-          npx --yes node@20 scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@casys/mcp-platform/esm/mod.js"
-          node scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@casys/mcp-platform/esm/mod.js"
-          cp scripts/smoke-node-consumer.ts "$CONSUMER_DIR/smoke-node-consumer.ts"
-          (
-            cd "$CONSUMER_DIR"
-            node --input-type=module --eval 'const pkg = await import("@casys/mcp-platform"); if (typeof pkg.McpApp !== "function") throw new Error("package export missing")'
+            # Also exercise the declared lower bound. The first pass above
+            # covers the newest compatible 0.29.x; this downgrade makes sure a
+            # later server patch cannot accidentally raise the alias floor.
+            npm install --ignore-scripts --no-audit --no-fund @casys/mcp-server@0.29.0
+            node -p 'require("./node_modules/@casys/mcp-server/package.json").version' | grep -Fx '0.29.0' >/dev/null
+            node --input-type=module --eval 'const pkg = await import("@casys/mcp-platform"); if (typeof pkg.McpApp !== "function") throw new Error("alias lower-bound re-export missing")'
             npx tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM,DOM.Iterable smoke-node-consumer.ts
           )
 

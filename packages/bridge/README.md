@@ -176,11 +176,11 @@ binary/process.
 When the goal is to publish a local/private MCP server directly to ChatGPT,
 Codex, the Responses API, or AgentKit, use OpenAI's official
 [`tunnel-client`](https://github.com/openai/tunnel-client) around your
-`@casys/mcp-platform` server instead of reimplementing OpenAI's control plane in
+`@casys/mcp-server` server instead of reimplementing OpenAI's control plane in
 `mcp-bridge`.
 
 ```text
-Local MCP server built with @casys/mcp-platform
+Local MCP server built with @casys/mcp-server
   -> Streamable HTTP / stdio
   -> OpenAI tunnel-client
   -> OpenAI-hosted tunnel endpoint
@@ -368,10 +368,10 @@ deno task demo
 
 ## Companion Package
 
-Built to work with [@casys/mcp-platform](https://jsr.io/@casys/mcp-platform),
-the production MCP server framework.
+Built to work with [@casys/mcp-server](https://jsr.io/@casys/mcp-server), the
+production MCP server framework.
 
-Use `@casys/mcp-platform` to build MCP tools with `ui://` resources, and
+Use `@casys/mcp-server` to build MCP tools with `ui://` resources, and
 `@casys/mcp-bridge` to deliver them to messaging platforms or to route selected
 private-network tool calls through a Casys-owned relay.
 

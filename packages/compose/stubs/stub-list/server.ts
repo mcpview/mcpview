@@ -6,7 +6,7 @@
  * @module stubs/stub-list
  */
 
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 import { buildStubHtml, MCP_APP_MIME_TYPE, startStubServer } from "../shared.ts";
 
 // Env var check (tests the requiredEnv flow)

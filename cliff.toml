@@ -1,4 +1,4 @@
-# git-cliff configuration for the @casys mcp-platform monorepo.
+# git-cliff configuration for the @casys mcp-server monorepo.
 #
 # Per-package draft generation is driven by the `tag_pattern` and `include_paths`
 # fields, set on the CLI via `git cliff --tag-pattern '<pkg>-v.*' \

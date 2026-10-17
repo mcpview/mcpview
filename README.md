@@ -1,11 +1,11 @@
 # Casys MCP Platform
 
-[![JSR](https://jsr.io/badges/@casys/mcp-platform)](https://jsr.io/@casys/mcp-platform)
-[![npm](https://img.shields.io/npm/v/@casys/mcp-platform)](https://www.npmjs.com/package/@casys/mcp-platform)
+[![JSR](https://jsr.io/badges/@casys/mcp-server)](https://jsr.io/@casys/mcp-server)
+[![npm](https://img.shields.io/npm/v/@casys/mcp-server)](https://www.npmjs.com/package/@casys/mcp-server)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**A production-ready MCP server framework, with companion packages for Apps,
-composition, and bridges.**
+**MCP server framework for Deno and Node**, with companion packages for Apps,
+composition, and bridges.
 
 The official SDK gives you the protocol. Casys MCP Platform gives you the server
 framework around it: composable middleware, OAuth2 auth, concurrency control,
@@ -14,7 +14,7 @@ composition, all in TypeScript.
 
 The repository contains **seven workspace packages**: one canonical framework,
 one deprecated compatibility alias, and five companion packages. The
-production-ready claim applies to `@casys/mcp-platform`; the companion packages
+production-ready claim applies to `@casys/mcp-server`; the companion packages
 are currently experimental and may change before 1.0.
 
 ```
@@ -25,24 +25,24 @@ rate-limit → auth → custom middleware → scope-check → validation → bac
 
 ## Packages
 
-| Package                                                   | Status               | Description                                                                                 |
-| --------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
-| [`@casys/mcp-platform`](packages/platform/)               | **Production**       | Canonical server framework: middleware, auth, STDIO, stateless HTTP, and observability.     |
-| [`@casys/mcp-server`](packages/server/)                   | **Deprecated alias** | Thin compatibility re-export of `@casys/mcp-platform`; it is not a separate implementation. |
-| [`@casys/mcp-compose`](packages/compose/)                 | **Experimental**     | Collect, synchronize, and host multiple MCP Apps in one composed dashboard.                 |
-| [`@casys/mcp-bridge`](packages/bridge/)                   | **Experimental**     | Bridge MCP Apps and selected private-network tool calls across hosts and relays.            |
-| [`@casys/mcp-view-contracts`](packages/view-contracts/)   | **Experimental**     | Dependency-free App/resource, composition, and recorded-session contracts.                  |
-| [`@casys/mcp-view`](packages/view/)                       | **Experimental**     | Browser-side MCP Apps lifecycle, routing, results, events, and tool calls.                  |
-| [`@casys/mcp-view-components`](packages/view-components/) | **Experimental**     | Optional presentation runtime, theme, Preact kit, and Deno/JSR scaffold.                    |
+| Package                                                   | Status               | Description                                                                               |
+| --------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------------- |
+| [`@casys/mcp-server`](packages/server/)                   | **Production**       | Canonical server framework: middleware, auth, STDIO, stateless HTTP, and observability.   |
+| [`@casys/mcp-platform`](packages/platform/)               | **Deprecated alias** | Thin compatibility re-export of `@casys/mcp-server`; it is not a separate implementation. |
+| [`@casys/mcp-compose`](packages/compose/)                 | **Experimental**     | Collect, synchronize, and host multiple MCP Apps in one composed dashboard.               |
+| [`@casys/mcp-bridge`](packages/bridge/)                   | **Experimental**     | Bridge MCP Apps and selected private-network tool calls across hosts and relays.          |
+| [`@casys/mcp-view-contracts`](packages/view-contracts/)   | **Experimental**     | Dependency-free App/resource, composition, and recorded-session contracts.                |
+| [`@casys/mcp-view`](packages/view/)                       | **Experimental**     | Browser-side MCP Apps lifecycle, routing, results, events, and tool calls.                |
+| [`@casys/mcp-view-components`](packages/view-components/) | **Experimental**     | Optional presentation runtime, theme, Preact kit, and Deno/JSR scaffold.                  |
 
 ## Which package should I use?
 
-Most MCP server projects need only `@casys/mcp-platform`.
+Most MCP server projects need only `@casys/mcp-server`.
 
 | You want to…                                                     | Use                                                                                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Build and run an MCP server                                      | `@casys/mcp-platform`                                                                                               |
-| Keep an existing `@casys/mcp-server` application running         | The alias still works; [migrate to the canonical name](docs/migration/mcp-server-to-mcp-platform.md) when practical |
+| Build and run an MCP server                                      | `@casys/mcp-server`                                                                                                 |
+| Keep an existing `@casys/mcp-platform` application running       | The alias still works; [migrate to the canonical name](docs/migration/mcp-server-to-mcp-platform.md) when practical |
 | Share manifests and recorded-view contracts across runtimes      | `@casys/mcp-view-contracts`                                                                                         |
 | Build the browser runtime inside one MCP App                     | `@casys/mcp-view`                                                                                                   |
 | Add the optional theme, components, Preact bindings, or scaffold | `@casys/mcp-view-components` together with `@casys/mcp-view`                                                        |
@@ -55,19 +55,20 @@ Most MCP server projects need only `@casys/mcp-platform`.
 
 ```bash
 # npm
-npm install @casys/mcp-platform
+npm install @casys/mcp-server
 
 # Deno
-deno add jsr:@casys/mcp-platform
+deno add jsr:@casys/mcp-server
 ```
 
-Migrating an existing project? See
-[From `@casys/mcp-server` to `@casys/mcp-platform`](docs/migration/mcp-server-to-mcp-platform.md).
+Coming from `@casys/mcp-platform` (0.28.x)? The framework was renamed back to
+`@casys/mcp-server` in 0.29.0 — see the
+[package migration guide](docs/migration/mcp-server-to-mcp-platform.md).
 
 ### STDIO Server
 
 ```typescript
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 
 const server = new McpApp({ name: "my-server", version: "1.0.0" });
 
@@ -90,7 +91,7 @@ await server.start();
 ### Stateless HTTP Server with Auth
 
 ```typescript
-import { createAuth0AuthProvider, McpApp } from "@casys/mcp-platform";
+import { createAuth0AuthProvider, McpApp } from "@casys/mcp-server";
 
 const server = new McpApp({
   name: "my-api",
@@ -123,7 +124,7 @@ Prefer a **static bearer token** for same-network deployments (Docker/VPN/LAN) �
 no IdP required:
 
 ```typescript
-import { createStaticTokenAuthProvider, McpApp } from "@casys/mcp-platform";
+import { createStaticTokenAuthProvider, McpApp } from "@casys/mcp-server";
 
 const app = new McpApp({
   name: "my-api",
@@ -144,7 +145,7 @@ scopes.
 
 ## Why Casys MCP Platform?
 
-|                          |  Official SDK   |         @casys/mcp-platform         |
+|                          |  Official SDK   |          @casys/mcp-server          |
 | ------------------------ | :-------------: | :---------------------------------: |
 | MCP protocol compliance  |       Yes       |                 Yes                 |
 | Composable middleware    |        —        |     Onion model (like Hono/Koa)     |
@@ -163,7 +164,7 @@ scopes.
 
 ## Platform Overview
 
-### @casys/mcp-platform — The Framework
+### @casys/mcp-server — The Framework
 
 The core of the platform. Build MCP servers with the same developer experience
 as Hono or Koa — register tools, plug in middleware, start serving.
@@ -180,15 +181,15 @@ as Hono or Koa — register tools, plug in middleware, start serving.
 - **Observability** — OpenTelemetry spans + Prometheus metrics out of the box
 - **MCP Apps** — serve interactive UIs as MCP resources
 
-[Full documentation and API reference](packages/platform/README.md)
+[Full documentation and API reference](packages/server/README.md)
 
-### @casys/mcp-server — Compatibility Alias
+### @casys/mcp-platform — Compatibility Alias
 
 > _Deprecated — existing imports work, but new code should use the canonical
 > package._
 
 This package contains no independent framework implementation. It re-exports the
-public API of `@casys/mcp-platform` so consumers can migrate the package name
+public API of `@casys/mcp-server` so consumers can migrate the package name
 without combining that change with an application rewrite.
 
 [Migration guide](docs/migration/mcp-server-to-mcp-platform.md)
@@ -223,8 +224,8 @@ private-network tool calls through Casys-owned relays. Telegram Mini Apps and
 LINE LIFF are the UI bridge adapters; `adapters/network` contains the outbound
 WebSocket tunnel primitives used by SaaS-to-local runtimes.
 
-For direct publication of a local `@casys/mcp-platform` to ChatGPT, Codex, or
-the Responses API, use OpenAI's official `tunnel-client` around the MCP server
+For direct publication of a local `@casys/mcp-server` to ChatGPT, Codex, or the
+Responses API, use OpenAI's official `tunnel-client` around the MCP server
 rather than reimplementing OpenAI's hosted tunnel protocol in this package.
 
 [Documentation](packages/bridge/README.md)
@@ -239,12 +240,12 @@ each package.
 
 ```bash
 # From the repository root: run every package test suite
-for pkg in platform server compose bridge view-contracts view view-components; do
+for pkg in server platform compose bridge view-contracts view view-components; do
   (cd "packages/$pkg" && deno task test) || exit 1
 done
 
 # Or run one package from the repository root
-(cd packages/platform && deno task test)
+(cd packages/server && deno task test)
 ```
 
 ## License

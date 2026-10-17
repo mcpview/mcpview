@@ -1,5 +1,5 @@
 /**
- * OpenTelemetry Integration for @casys/mcp-platform
+ * OpenTelemetry Integration for @casys/mcp-server
  *
  * Provides tracing for tool calls, auth, and middleware pipeline.
  *

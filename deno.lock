@@ -1035,6 +1035,12 @@
       },
       "packages/platform": {
         "dependencies": [
+          "jsr:@casys/mcp-server@0.29",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/server": {
+        "dependencies": [
           "jsr:@deno/dnt@0.41",
           "jsr:@std/assert@1",
           "jsr:@std/yaml@1",
@@ -1045,12 +1051,6 @@
           "npm:ajv@^8.17.1",
           "npm:hono@4",
           "npm:jose@6"
-        ]
-      },
-      "packages/server": {
-        "dependencies": [
-          "jsr:@casys/mcp-platform@0.28",
-          "jsr:@std/assert@1"
         ]
       },
       "packages/view": {

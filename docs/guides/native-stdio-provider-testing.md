@@ -5,7 +5,7 @@ that imports the provider or an in-memory transport that bypasses its CLI. This
 guide is a test-only adoption kit for that boundary. It does not add a framework
 runtime API or a shared CLI parser.
 
-The framework's own `packages/platform/src/stdio-e2e_test.ts` proves
+The framework's own `packages/server/src/stdio-e2e_test.ts` proves
 `McpApp.start()` over a real subprocess. A provider test has a different job: it
 must prove that the provider's documented executable, flags, permissions, and
 shutdown behavior reach that native stdio path correctly.

@@ -5,7 +5,7 @@
  * @module stubs/stub-detail
  */
 
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 import { buildStubHtml, MCP_APP_MIME_TYPE, startStubServer } from "../shared.ts";
 
 const ITEMS: Record<

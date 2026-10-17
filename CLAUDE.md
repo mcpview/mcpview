@@ -7,14 +7,13 @@ code in this repository.
 
 This is a **monorepo** containing 7 packages that form the Casys MCP Platform:
 
-- **`@casys/mcp-platform`** (`packages/platform/`) — A production-grade
-  framework for building MCP (Model Context Protocol) servers in TypeScript.
-  Think "Hono for MCP". Built on the official `@modelcontextprotocol/sdk`, it
-  adds middleware, auth, concurrency control, and observability.
-  **Server-side.**
-- **`@casys/mcp-server`** (`packages/server/`) — Deprecated compatibility
-  package containing only a re-export of `@casys/mcp-platform`; it is not a
-  second framework implementation. **Server-side.**
+- **`@casys/mcp-server`** (`packages/server/`) — A production-grade framework
+  for building MCP (Model Context Protocol) servers in TypeScript. Think "Hono
+  for MCP". Built on the official `@modelcontextprotocol/sdk`, it adds
+  middleware, auth, concurrency control, and observability. **Server-side.**
+- **`@casys/mcp-platform`** (`packages/platform/`) — Deprecated compatibility
+  package containing only a re-export of `@casys/mcp-server`; it is not a second
+  framework implementation. **Server-side.**
 - **`@casys/mcp-compose`** (`packages/compose/`) — Collects and synchronizes
   multiple MCP Apps and can host them in a composed multi-iframe dashboard. Its
   collector, renderer, and hosting runtime are server-side; its event SDK runs
@@ -33,11 +32,11 @@ This is a **monorepo** containing 7 packages that form the Casys MCP Platform:
   servers to external systems and protocols, with a client script injected into
   MCP Apps. **Mixed server/browser package.**
 
-Only `@casys/mcp-platform` is described as production-ready. Compose, bridge,
-and the view family are experimental and may change before 1.0. The deprecated
-server package is a transition path for existing consumers.
+Only `@casys/mcp-server` is described as production-ready. Compose, bridge, and
+the view family are experimental and may change before 1.0. The deprecated
+platform package is a transition path for existing consumers.
 
-Platform and server are server runtimes for Deno + Node. Compose and bridge are
+Server and platform are server runtimes for Deno + Node. Compose and bridge are
 also dual-published for Deno + Node but contain explicit browser-side helpers.
 View and view-components target browsers via a bundler (esbuild recommended —
 see `packages/view/examples/basic/build.ts`), and view-contracts is
@@ -49,14 +48,14 @@ All packages are published to both **JSR** (`jsr:@casys/<package>`) and **npm**
 ## Monorepo Structure
 
 ```
-mcp-platform/               # repo root (Deno workspace)
+mcp-server/                 # repo root (Deno workspace)
 ├── deno.json                # workspace config, lists all member packages
 ├── packages/
-│   ├── platform/            # @casys/mcp-platform
+│   ├── server/              # @casys/mcp-server
 │   │   ├── mod.ts
 │   │   ├── deno.json
 │   │   └── src/
-│   ├── server/                # @casys/mcp-server (deprecated alias)
+│   ├── platform/            # @casys/mcp-platform (deprecated alias)
 │   ├── compose/             # @casys/mcp-compose (server runtime + iframe SDK)
 │   │   ├── mod.ts
 │   │   ├── deno.json
@@ -80,26 +79,26 @@ mcp-platform/               # repo root (Deno workspace)
 ```bash
 # Root deno.json declares the workspace but has no tasks.
 # Run all package tests from the repository root:
-for pkg in platform server compose bridge view-contracts view view-components; do
+for pkg in server platform compose bridge view-contracts view view-components; do
   (cd "packages/$pkg" && deno task test) || exit 1
 done
 
 # Run tests for one package from the repository root
-(cd packages/platform && deno task test)
 (cd packages/server && deno task test)
+(cd packages/platform && deno task test)
 
 # Run a single test file within a package
-(cd packages/platform && deno test --allow-net --allow-read --allow-write --allow-env --allow-run --no-check src/<file>_test.ts)
+(cd packages/server && deno test --allow-net --allow-read --allow-write --allow-env --allow-run --no-check src/<file>_test.ts)
 
-# Targeted test suites (packages/platform)
-(cd packages/platform && deno task test:security) # HTTP security tests only
-(cd packages/platform && deno task test:http)     # HTTP + security tests
+# Targeted test suites (packages/server)
+(cd packages/server && deno task test:security) # HTTP security tests only
+(cd packages/server && deno task test:http)     # HTTP + security tests
 
-# Build Node.js distribution for platform (output: packages/platform/dist-node/)
-(cd packages/platform && deno task build:npm)
+# Build Node.js distribution for server (output: packages/server/dist-node/)
+(cd packages/server && deno task build:npm)
 
 # Run one package's release pre-flight
-(cd packages/platform && deno task release:check)
+(cd packages/server && deno task release:check)
 ```
 
 Tasks live in each package's `deno.json`; never assume the same task exists at
@@ -108,10 +107,10 @@ most companion packages expose them as package tasks.
 
 ## Architecture
 
-### `@casys/mcp-platform` (`packages/platform/`)
+### `@casys/mcp-server` (`packages/server/`)
 
-Entry point is `packages/platform/mod.ts` which re-exports the entire public
-API. The central class is `McpApp` in `packages/platform/src/mcp-app.ts`.
+Entry point is `packages/server/mod.ts` which re-exports the entire public API.
+The central class is `McpApp` in `packages/server/src/mcp-app.ts`.
 (`ConcurrentMCPServer` remains exported as a `@deprecated` alias for backwards
 compatibility — it points to the same class and will be removed in v1.0.)
 
@@ -181,14 +180,14 @@ is injected into MCP Apps and executes in the browser.
 
 - **Deno workspace**: Cross-package imports resolve automatically via the
   workspace defined in the root `deno.json`. No manual path mapping required.
-- **Compatibility alias**: `packages/server/mod.ts` stays a thin
-  `export * from "@casys/mcp-platform"`; its parity test protects that umbrella
-  contract. Framework implementation changes belong in `packages/platform/`.
+- **Compatibility alias**: `packages/platform/mod.ts` stays a thin
+  `export * from "@casys/mcp-server"`; its parity test protects that umbrella
+  contract. Framework implementation changes belong in `packages/server/`.
 - **Test convention**: `*_test.ts` files colocated with source. Uses Deno's
   native test runner with `@std/assert`.
-- **Node.js compatibility**: `packages/platform/scripts/build-node.sh` is a
+- **Node.js compatibility**: `packages/server/scripts/build-node.sh` is a
   backwards-compatible wrapper around the package's dnt build. The build emits
-  native ESM JavaScript and declarations in `packages/platform/dist-node/` and
+  native ESM JavaScript and declarations in `packages/server/dist-node/` and
   preserves the runtime selector. The HTTP layer uses Hono for portable routing.
 - **Transport contract**: STDIO serves local/CLI clients. HTTP is stateless
   only: JSON-RPC uses `POST /mcp`, no `Mcp-Session-Id` is created or required,
@@ -202,4 +201,4 @@ is injected into MCP Apps and executes in the browser.
   are browser-side, while `@casys/mcp-view-contracts` is runtime-neutral.
   Compose and bridge deliberately cross the boundary through isolated iframe
   SDK/client modules; keep DOM globals out of their server runtime paths and out
-  of `@casys/mcp-platform` and `@casys/mcp-server`.
+  of `@casys/mcp-server` and `@casys/mcp-platform`.

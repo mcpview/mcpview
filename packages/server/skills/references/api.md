@@ -1,6 +1,6 @@
-# @casys/mcp-platform — Full API Reference
+# @casys/mcp-server — Full API Reference
 
-Canonical package: `@casys/mcp-platform` (JSR and npm)
+Canonical package: `@casys/mcp-server` (JSR and npm)
 
 Compatibility package: `@casys/mcp-server` (deprecated re-export)
 
@@ -12,7 +12,7 @@ package, lockfile, or package manifest as the version authority.
 ## McpApp class
 
 ```typescript
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@casys/mcp-server";
 ```
 
 ### Constructor
@@ -495,7 +495,7 @@ These are also exported for direct use outside of `McpApp`:
 ### RateLimiter
 
 ```typescript
-import { RateLimiter } from "@casys/mcp-platform";
+import { RateLimiter } from "@casys/mcp-server";
 
 const limiter = new RateLimiter({ maxRequests: 100, windowMs: 60_000 });
 limiter.checkLimit(key: string): boolean
@@ -507,7 +507,7 @@ limiter.getMetrics(): { keys: number; totalRequests: number }
 ### RequestQueue
 
 ```typescript
-import { RequestQueue } from "@casys/mcp-platform";
+import { RequestQueue } from "@casys/mcp-server";
 
 const queue = new RequestQueue({ maxConcurrent: 5, strategy: "queue", sleepMs: 10 });
 queue.getMetrics(): QueueMetrics
@@ -516,7 +516,7 @@ queue.getMetrics(): QueueMetrics
 ### SchemaValidator
 
 ```typescript
-import { SchemaValidator } from "@casys/mcp-platform";
+import { SchemaValidator } from "@casys/mcp-server";
 
 const validator = new SchemaValidator();
 validator.addSchema(toolName: string, schema: Record<string, unknown>): void
@@ -539,7 +539,7 @@ import {
   createGoogleAuthProvider, // issuer: https://accounts.google.com
   createOIDCAuthProvider, // generic, any OIDC-compliant provider
   JwtAuthProvider, // underlying class (use presets when possible)
-} from "@casys/mcp-platform";
+} from "@casys/mcp-server";
 ```
 
 All presets accept `PresetOptions`:
@@ -558,7 +558,7 @@ Auth0 additionally requires `domain: string`. `createOIDCAuthProvider` accepts
 ### Multi-tenant auth
 
 ```typescript
-import { createMultiTenantMiddleware } from "@casys/mcp-platform";
+import { createMultiTenantMiddleware } from "@casys/mcp-server";
 
 app.use(createMultiTenantMiddleware({
   resolver: async (ctx) => ({
@@ -577,7 +577,7 @@ import {
   MCP_APP_MIME_TYPE, // "text/html;profile=mcp-app"
   MCP_APPS_EXTENSION_ID, // "io.modelcontextprotocol/ui"
   MCP_APPS_PROTOCOL_VERSION, // "2026-01-26"
-} from "@casys/mcp-platform";
+} from "@casys/mcp-server";
 ```
 
 ### getMcpAppsCapability (standalone)
@@ -606,9 +606,9 @@ there directly. See the mcp-compose skill for the full compose API.
 ## Security utilities
 
 ```typescript
-import { buildCspHeader, injectCspMetaTag } from "@casys/mcp-platform";
-import { injectChannelAuth } from "@casys/mcp-platform";
-import { MessageSigner } from "@casys/mcp-platform";
+import { buildCspHeader, injectCspMetaTag } from "@casys/mcp-server";
+import { injectChannelAuth } from "@casys/mcp-server";
+import { MessageSigner } from "@casys/mcp-server";
 ```
 
 ---
@@ -616,7 +616,7 @@ import { MessageSigner } from "@casys/mcp-platform";
 ## Inspector
 
 ```typescript
-import { launchInspector } from "@casys/mcp-platform";
+import { launchInspector } from "@casys/mcp-server";
 
 await launchInspector({ port: 5173 });
 ```
@@ -635,7 +635,7 @@ import {
   recordAuthEvent,
   ServerMetrics,
   startToolCallSpan,
-} from "@casys/mcp-platform";
+} from "@casys/mcp-server";
 ```
 
 OTel tracing is auto-enabled when `OTEL_EXPORTER_OTLP_ENDPOINT` is set in the

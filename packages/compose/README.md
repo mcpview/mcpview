@@ -288,7 +288,7 @@ const tools = [
 ];
 ```
 
-If your server uses `@casys/mcp-platform`, import the helpers from the compose SDK:
+If your server uses `@casys/mcp-server`, import the helpers from the compose SDK:
 
 ```typescript
 import { composeEvents, uiMeta } from "@casys/mcp-compose/sdk";

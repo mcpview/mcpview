@@ -344,7 +344,7 @@ export class StaticTokenAuthProvider extends AuthProvider {
  *
  * @example
  * ```typescript
- * import { createStaticTokenAuthProvider, McpApp } from "@casys/mcp-platform";
+ * import { createStaticTokenAuthProvider, McpApp } from "@casys/mcp-server";
  *
  * const app = new McpApp({
  *   name: "my-server",

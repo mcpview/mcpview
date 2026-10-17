@@ -82,7 +82,7 @@ publishing a temporary version.
 
 ## ERPNext compatibility rule
 
-ERPNext already uses `@casys/mcp-platform`, registers proper MCP App resources, embeds the official
+ERPNext already uses `@casys/mcp-server`, registers proper MCP App resources, embeds the official
 `ext-apps` client, and installs handlers before `connect()`. This migration does not edit its
 source, dependencies, bundles, or visible behavior. The product-specific component palette is a
 separate MCP service with one read-only BOM tool; it reuses the published provider client and owns

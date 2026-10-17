@@ -3581,7 +3581,7 @@ export class McpApp {
    * Node (Express, Hono-on-Node) instead of giving up port ownership to
    * {@link startHttp}.
    *
-   * **Runtime targets:** `@casys/mcp-platform` is Deno-first — the canonical
+   * **Runtime targets:** `@casys/mcp-server` is Deno-first — the canonical
    * deployment path is Deno 2.x on Deno Deploy or self-hosted Deno, with
    * a Node 20+ distribution via `scripts/build-node.sh` as a secondary
    * target. Cloudflare Workers, workerd, and browser runtimes are not

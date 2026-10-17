@@ -1,5 +1,12 @@
 # Migrate from `@casys/mcp-server` to `@casys/mcp-platform`
 
+> **Note:** renamed back in 0.29.0. The framework is again `@casys/mcp-server`;
+> `@casys/mcp-platform` 0.28.2 is now the deprecated alias re-exporting it. This
+> guide documents the 0.28.0 move and is kept for history — to migrate today,
+> apply the steps in reverse (install `@casys/mcp-server`, remove
+> `@casys/mcp-platform`, swap the import specifier). There are no API changes in
+> either direction.
+
 The framework implementation moved to `@casys/mcp-platform` in 0.28.0.
 `@casys/mcp-server` 0.27.1 became a deprecated compatibility package that
 re-exports the platform API. This is a package-name migration, not an
@@ -94,6 +101,6 @@ remaining source imports:
 rg '(@casys/mcp-server|jsr:@casys/mcp-server)'
 ```
 
-See the [platform documentation](../../packages/platform/README.md) for the
-canonical API and the [alias README](../../packages/server/README.md) for the
+See the [framework documentation](../../packages/server/README.md) for the
+canonical API and the [alias README](../../packages/platform/README.md) for the
 compatibility package boundary.

@@ -1,11 +1,7 @@
-import {
-  createStaticTokenAuthProvider,
-  McpApp,
-  type McpUiToolMeta,
-} from "@casys/mcp-platform";
+import { createStaticTokenAuthProvider, McpApp, type McpUiToolMeta } from "@casys/mcp-platform";
 
 const ui: McpUiToolMeta = {
-  resourceUri: "ui://node-consumer/smoke",
+  resourceUri: "ui://node-consumer/platform-alias-smoke",
   visibility: ["model", "app"],
   emits: ["ready"],
 };
@@ -14,7 +10,7 @@ const provider = createStaticTokenAuthProvider(
   { resource: "https://node-consumer.example" },
 );
 const app = new McpApp({
-  name: "node-consumer-type-smoke",
+  name: "platform-alias-type-smoke",
   version: "0.0.0",
   auth: { provider },
 });

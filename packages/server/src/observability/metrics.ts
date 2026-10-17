@@ -1,5 +1,5 @@
 /**
- * Server Metrics Collector for @casys/mcp-platform
+ * Server Metrics Collector for @casys/mcp-server
  *
  * In-memory counters, histograms, and gauges with Prometheus text format export.
  * Designed to be embedded in McpApp — no external dependencies.

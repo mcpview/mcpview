@@ -1,5 +1,5 @@
 /**
- * Observability module for @casys/mcp-platform
+ * Observability module for @casys/mcp-server
  *
  * - OTel tracing (spans on tool calls, auth events)
  * - Metrics collection (counters, histograms, gauges)

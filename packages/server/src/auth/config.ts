@@ -98,7 +98,7 @@ export interface OIDCAuthConfig extends AuthConfigBase {
  * compile error if they don't match a variant's required fields. Migration:
  * ensure the literal satisfies the discriminated variant (e.g.,
  * `provider: "auth0"` requires `domain`). See
- * `Casys-AI/mcp-server#11`.
+ * `superWorldSavior/mcp-platform#11`.
  */
 export type AuthConfig =
   | GitHubAuthConfig

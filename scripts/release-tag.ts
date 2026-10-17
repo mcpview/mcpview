@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 /**
- * Release tag helper for the @casys mcp-platform monorepo.
+ * Release tag helper for the @casys mcp-server monorepo.
  *
  * Reads the version of a workspace package from `packages/<pkg>/deno.json`,
  * verifies that the matching CHANGELOG section exists and that `[Unreleased]`
