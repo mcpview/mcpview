@@ -4,10 +4,10 @@ Date: 2026-04-18 Status: Accepted
 
 ## Context
 
-`@casys/mcp-view` v0.1.0 is the initial release of the View-side SDK for MCP Apps. It ships three
+`@mcpview/view` v0.1.0 is the initial release of the View-side SDK for MCP Apps. It ships three
 primitives: `navigate`, `callTool`, `capabilities`.
 
-This package was extracted from @casys/mcp-compose; see
+This package was extracted from @mcpview/compose; see
 packages/compose/docs/decision-records/0002-positioning-vs-ext-apps.md for the rationale of the
 split.
 

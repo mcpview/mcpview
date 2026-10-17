@@ -1,33 +1,34 @@
 name: Publish
 
-# Triggered on push to main. Publishes workspace packages to JSR and npm.
-# Each npm job is idempotent: it checks `npm view <pkg>@<ver>`
-# before publishing so already-published versions exit cleanly without
-# masking auth/build/network failures.
+# Triggered on push to main. Publishes the six `@mcpview/*` packages and the
+# seven deprecated `@casys/*` aliases (packages/legacy/) to npm and JSR. Each
+# npm job is idempotent: it checks `npm view <pkg>@<ver>` before publishing so
+# already-published versions exit cleanly without masking auth/build/network
+# failures.
+#
+# Publication order follows the dependency graph:
+#
+#   contracts -> server -> view -> components -> compose -> bridge -> aliases
+#
+#   npm   view family (contracts -> view -> components, one job so the family
+#         is verified and guarded as a unit), server, compose, and bridge run
+#         first; the alias job needs all four because every alias smoke test
+#         installs its target from the registry.
+#   JSR   one sequential job, in the order above. It waits for every npm job of
+#         the six packages, so a failed content guard stops both registries; the
+#         aliases publish last, in their own job.
+#
+# Guards kept from the single-scope setup: published npm versions are immutable
+# (the view family compares the rebuilt tarballs with the registry copies and
+# refuses a silent rewrite), and every alias is smoke-tested against both the
+# newest compatible target and the declared lower bound of its range.
 
 on:
   push:
     branches: [main]
 
 jobs:
-  publish-jsr:
-    # The view-family npm job performs the immutable-version content guard.
-    # Keep JSR behind it so a stale core version cannot publish only the two
-    # new split packages on either registry.
-    needs: publish-npm-view-family
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v5
-      - name: Publish all packages to JSR
-        run: npx jsr publish
-        # Publishes all workspace members whose version isn't already on JSR.
-        # Already-published versions are skipped automatically.
-
   publish-npm-server:
-    needs: publish-npm-platform
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -60,7 +61,7 @@ jobs:
             exit 1
           fi
           echo "npm authenticated as ${WHO}"
-      - name: Build and publish @casys/mcp-server to npm
+      - name: Build and publish @mcpview/server to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -74,9 +75,9 @@ jobs:
           tar -tzf "$TARBALL" | grep -Fx 'package/README.md' >/dev/null
           tar -tzf "$TARBALL" | grep -Fx 'package/CHANGELOG.md' >/dev/null
           # ESM-only output: without "type": "module" the .js entry parses as
-          # CommonJS on Node <20.19 (engines floor is >=20). Node 22+ silently
-          # detects the module syntax, so assert the field instead of relying
-          # on the import smoke test below.
+          # CommonJS on Node <20.19 (engines floor is >=20). The node@20 smoke
+          # run below cannot catch it (latest 20.x detects module syntax), so
+          # assert the field directly.
           node -p "require('./dist-node/package.json').type" | grep -Fx 'module' >/dev/null
 
           CONSUMER_DIR=$(mktemp -d)
@@ -84,20 +85,15 @@ jobs:
             cd "$CONSUMER_DIR"
             npm init --yes >/dev/null
             npm pkg set type=module
-            # Installs the tarball plus its @casys/mcp-platform dependency from
-            # the registry — this validates the dependency wiring end to end.
-            npm install --ignore-scripts --no-audit --no-fund \
-              "$TARBALL" typescript@5.9.3 @types/node@22
-            node --input-type=module --eval 'const pkg = await import("@casys/mcp-server"); if (typeof pkg.McpApp !== "function") throw new Error("alias re-export missing")'
-            cp "$GITHUB_WORKSPACE/packages/server/scripts/smoke-node-consumer.ts" .
-            npx tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM,DOM.Iterable smoke-node-consumer.ts
+            npm install --ignore-scripts --no-audit --no-fund "$TARBALL" typescript@5.9.3 @types/node@22
+          )
 
-            # Also exercise the declared lower bound. The first pass above
-            # covers the newest compatible 0.28.x; this downgrade makes sure a
-            # later platform patch cannot accidentally raise the alias floor.
-            npm install --ignore-scripts --no-audit --no-fund @casys/mcp-platform@0.28.0
-            node -p 'require("./node_modules/@casys/mcp-platform/package.json").version' | grep -Fx '0.28.0' >/dev/null
-            node --input-type=module --eval 'const pkg = await import("@casys/mcp-server"); if (typeof pkg.McpApp !== "function") throw new Error("alias lower-bound re-export missing")'
+          npx --yes node@20 scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@mcpview/server/esm/mod.js"
+          node scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@mcpview/server/esm/mod.js"
+          cp scripts/smoke-node-consumer.ts "$CONSUMER_DIR/smoke-node-consumer.ts"
+          (
+            cd "$CONSUMER_DIR"
+            node --input-type=module --eval 'const pkg = await import("@mcpview/server"); if (typeof pkg.McpApp !== "function") throw new Error("package export missing")'
             npx tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM,DOM.Iterable smoke-node-consumer.ts
           )
 
@@ -143,7 +139,7 @@ jobs:
             exit 1
           fi
           echo "npm authenticated as ${WHO}"
-      - name: Build and publish @casys/mcp-compose to npm
+      - name: Build and publish @mcpview/compose to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -199,7 +195,7 @@ jobs:
             exit 1
           fi
           echo "npm authenticated as ${WHO}"
-      - name: Build and publish @casys/mcp-bridge to npm
+      - name: Build and publish @mcpview/bridge to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -214,8 +210,30 @@ jobs:
           fi
           npm publish --access public
 
-  publish-npm-platform:
+  publish-npm-aliases:
+    # Each alias installs its target from the npm registry during its smoke
+    # test, so the four jobs that publish the six @mcpview/* packages go first.
+    needs:
+      - publish-npm-view-family
+      - publish-npm-server
+      - publish-npm-compose
+      - publish-npm-bridge
     runs-on: ubuntu-latest
+    strategy:
+      # Aliases are independent of one another: keep going so one failure does
+      # not hide the state of the others. max-parallel 1 publishes them in the
+      # order listed.
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        alias:
+          - mcp-server
+          - mcp-platform
+          - mcp-view-contracts
+          - mcp-view
+          - mcp-view-components
+          - mcp-compose
+          - mcp-bridge
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v7
@@ -247,39 +265,18 @@ jobs:
             exit 1
           fi
           echo "npm authenticated as ${WHO}"
-      - name: Build and publish @casys/mcp-platform to npm
+      - name: Build, verify, and publish the @casys/${{ matrix.alias }} alias to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          cd packages/platform
+          cd "packages/legacy/${{ matrix.alias }}"
           deno task build:npm
 
-          PACK_DIR=$(mktemp -d)
-          TARBALL_NAME=$(npm pack ./dist-node --pack-destination "$PACK_DIR" --json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8"))[0].filename')
-          TARBALL="$PACK_DIR/$TARBALL_NAME"
-          tar -tzf "$TARBALL" | grep -Fx 'package/LICENSE' >/dev/null
-          # ESM-only output: without "type": "module" the .js entry parses as
-          # CommonJS on Node <20.19 (engines floor is >=20). The node@20 smoke
-          # run below cannot catch it (latest 20.x detects module syntax), so
-          # assert the field directly.
-          node -p "require('./dist-node/package.json').type" | grep -Fx 'module' >/dev/null
-
-          CONSUMER_DIR=$(mktemp -d)
-          (
-            cd "$CONSUMER_DIR"
-            npm init --yes >/dev/null
-            npm pkg set type=module
-            npm install --ignore-scripts --no-audit --no-fund "$TARBALL" typescript@5.9.3 @types/node@22
-          )
-
-          npx --yes node@20 scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@casys/mcp-platform/esm/mod.js"
-          node scripts/smoke-node.mjs "$CONSUMER_DIR/node_modules/@casys/mcp-platform/esm/mod.js"
-          cp scripts/smoke-node-consumer.ts "$CONSUMER_DIR/smoke-node-consumer.ts"
-          (
-            cd "$CONSUMER_DIR"
-            node --input-type=module --eval 'const pkg = await import("@casys/mcp-platform"); if (typeof pkg.McpApp !== "function") throw new Error("package export missing")'
-            npx tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM,DOM.Iterable smoke-node-consumer.ts
-          )
+          # Tarball contents, manifest deprecation notice, ESM/CJS entry-point
+          # parity with the target for every sub-path, a strict NodeNext type
+          # check, then the same against the declared lower bound of the
+          # dependency range (the target is installed from the registry).
+          deno run -A ../../../scripts/verify-alias-npm.ts
 
           PKG_NAME=$(node -p "require('./dist-node/package.json').name")
           PKG_VERSION=$(node -p "require('./dist-node/package.json').version")
@@ -358,8 +355,8 @@ jobs:
               "$CONTRACTS_TARBALL" "$VIEW_TARBALL"
             node --input-type=module --eval '
               import { readFileSync } from "node:fs";
-              const core = await import("@casys/mcp-view");
-              const contracts = await import("@casys/mcp-view/contracts");
+              const core = await import("@mcpview/view");
+              const contracts = await import("@mcpview/view/contracts");
               if (typeof core.createMcpApp !== "function" ||
                   "installMcpViewTheme" in core ||
                   "defineComponentRegistry" in core ||
@@ -372,7 +369,7 @@ jobs:
               const installedPaths = Object.keys(
                 JSON.parse(readFileSync("package-lock.json", "utf8")).packages ?? {},
               );
-              for (const dependency of ["preact", "@casys/mcp-view-components"]) {
+              for (const dependency of ["preact", "@mcpview/components"]) {
                 if (installedPaths.some((path) =>
                   path === `node_modules/${dependency}` || path.endsWith(`/node_modules/${dependency}`)
                 )) {
@@ -380,9 +377,9 @@ jobs:
                 }
               }
               for (const subpath of [
-                "@casys/mcp-view/preact",
-                "@casys/mcp-view/preact/components",
-                "@casys/mcp-view/scaffold",
+                "@mcpview/view/preact",
+                "@mcpview/view/preact/components",
+                "@mcpview/view/scaffold",
               ]) {
                 let rejected = false;
                 try {
@@ -395,8 +392,8 @@ jobs:
               }
             '
             node --input-type=commonjs --eval '
-              const core = require("@casys/mcp-view");
-              const contracts = require("@casys/mcp-view/contracts");
+              const core = require("@mcpview/view");
+              const contracts = require("@mcpview/view/contracts");
               if (typeof core.createMcpApp !== "function" ||
                   "installMcpViewTheme" in core ||
                   "defineComponentRegistry" in core ||
@@ -407,9 +404,9 @@ jobs:
                 throw new Error("core-only CommonJS contracts export missing");
               }
               for (const subpath of [
-                "@casys/mcp-view/preact",
-                "@casys/mcp-view/preact/components",
-                "@casys/mcp-view/scaffold",
+                "@mcpview/view/preact",
+                "@mcpview/view/preact/components",
+                "@mcpview/view/scaffold",
               ]) {
                 let rejected = false;
                 try {
@@ -432,15 +429,15 @@ jobs:
               "$CONTRACTS_TARBALL" "$VIEW_TARBALL" "$COMPONENTS_TARBALL" \
               preact@10.28.3 react@18.3.1 react-dom@18.3.1
             node --input-type=module --eval '
-              const contracts = await import("@casys/mcp-view-contracts");
-              const core = await import("@casys/mcp-view");
-              const compatibility = await import("@casys/mcp-view/contracts");
-              const components = await import("@casys/mcp-view-components");
-              const surface = await import("@casys/mcp-view-components/surface");
-              const preact = await import("@casys/mcp-view-components/preact");
-              const presentation = await import("@casys/mcp-view-components/preact/components");
-              const fonts = await import("@casys/mcp-view-components/fonts");
-              const layout = await import("@casys/mcp-view-components/layout");
+              const contracts = await import("@mcpview/contracts");
+              const core = await import("@mcpview/view");
+              const compatibility = await import("@mcpview/view/contracts");
+              const components = await import("@mcpview/components");
+              const surface = await import("@mcpview/components/surface");
+              const preact = await import("@mcpview/components/preact");
+              const presentation = await import("@mcpview/components/preact/components");
+              const fonts = await import("@mcpview/components/fonts");
+              const layout = await import("@mcpview/components/layout");
               if (typeof contracts.defineViewAppManifest !== "function") throw new Error("contracts missing");
               if (typeof core.createMcpApp !== "function" || "installMcpViewTheme" in core) throw new Error("core boundary invalid");
               if (compatibility.VIEWER_SESSION_APPLY_ACTION !== "viewer.session.apply") throw new Error("compatibility export missing");
@@ -452,7 +449,7 @@ jobs:
               if (typeof layout.resolveViewerLayout !== "function" || typeof layout.useViewerLayout !== "function" || "useViewerLayout" in components) throw new Error("layout boundary invalid");
               let scaffoldRejected = false;
               try {
-                await import("@casys/mcp-view-components/scaffold");
+                await import("@mcpview/components/scaffold");
               } catch (error) {
                 if (error?.code !== "ERR_PACKAGE_PATH_NOT_EXPORTED") throw error;
                 scaffoldRejected = true;
@@ -460,12 +457,12 @@ jobs:
               if (!scaffoldRejected) throw new Error("Deno-only scaffold leaked into npm ESM exports");
             '
             node --input-type=commonjs --eval '
-              const components = require("@casys/mcp-view-components");
-              const surface = require("@casys/mcp-view-components/surface");
-              const preact = require("@casys/mcp-view-components/preact");
-              const presentation = require("@casys/mcp-view-components/preact/components");
-              const fonts = require("@casys/mcp-view-components/fonts");
-              const layout = require("@casys/mcp-view-components/layout");
+              const components = require("@mcpview/components");
+              const surface = require("@mcpview/components/surface");
+              const preact = require("@mcpview/components/preact");
+              const presentation = require("@mcpview/components/preact/components");
+              const fonts = require("@mcpview/components/fonts");
+              const layout = require("@mcpview/components/layout");
               if (typeof components.defineComponentRegistry !== "function") throw new Error("CommonJS components runtime missing");
               if (typeof surface.startSurfaceApp !== "function") throw new Error("CommonJS surface App runtime missing");
               if (typeof preact.startPreactSurfaceApp !== "function") throw new Error("CommonJS Preact runtime missing");
@@ -474,7 +471,7 @@ jobs:
               if (typeof layout.resolveViewerLayout !== "function" || typeof layout.useViewerLayout !== "function") throw new Error("CommonJS layout entry missing");
               let scaffoldRejected = false;
               try {
-                require("@casys/mcp-view-components/scaffold");
+                require("@mcpview/components/scaffold");
               } catch (error) {
                 if (error?.code !== "ERR_PACKAGE_PATH_NOT_EXPORTED") throw error;
                 scaffoldRejected = true;
@@ -526,3 +523,73 @@ jobs:
           publish_if_missing packages/view-contracts/dist-node
           publish_if_missing packages/view/dist-node
           publish_if_missing packages/view-components/dist-node
+
+  publish-jsr:
+    # Waits for every npm job of the six packages. The view-family job performs
+    # the immutable-version content guard; keeping JSR behind it means a stale
+    # core version cannot publish only some of the packages on either registry.
+    needs:
+      - publish-npm-view-family
+      - publish-npm-server
+      - publish-npm-compose
+      - publish-npm-bridge
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      # `deno publish` rather than `npx jsr publish`: the jsr CLI treats a
+      # directory with a package.json (packages/bridge has one) as a Node
+      # project and silently adds --no-check and the sloppy-imports flags.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # One package per step, in dependency order, so that every dependency is
+      # on the registry before its dependents: view needs contracts, and
+      # components needs both. Already-published versions are skipped
+      # automatically, which keeps reruns safe.
+      - name: Publish @mcpview/contracts to JSR
+        run: cd packages/view-contracts && deno publish
+      - name: Publish @mcpview/server to JSR
+        run: cd packages/server && deno publish
+      - name: Publish @mcpview/view to JSR
+        run: cd packages/view && deno publish
+      - name: Publish @mcpview/components to JSR
+        run: cd packages/view-components && deno publish
+      - name: Publish @mcpview/compose to JSR
+        run: cd packages/compose && deno publish
+      - name: Publish @mcpview/bridge to JSR
+        run: cd packages/bridge && deno publish
+
+  publish-jsr-aliases:
+    # The aliases depend on the six packages above (published to JSR in the
+    # previous job) and on their own npm publication.
+    needs:
+      - publish-jsr
+      - publish-npm-aliases
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # Each @casys/* package must be linked to this repository on JSR for
+      # OIDC publishing to be accepted.
+      - name: Publish @casys/mcp-server to JSR
+        run: cd packages/legacy/mcp-server && deno publish
+      - name: Publish @casys/mcp-platform to JSR
+        run: cd packages/legacy/mcp-platform && deno publish
+      - name: Publish @casys/mcp-view-contracts to JSR
+        run: cd packages/legacy/mcp-view-contracts && deno publish
+      - name: Publish @casys/mcp-view to JSR
+        run: cd packages/legacy/mcp-view && deno publish
+      - name: Publish @casys/mcp-view-components to JSR
+        run: cd packages/legacy/mcp-view-components && deno publish
+      - name: Publish @casys/mcp-compose to JSR
+        run: cd packages/legacy/mcp-compose && deno publish
+      - name: Publish @casys/mcp-bridge to JSR
+        run: cd packages/legacy/mcp-bridge && deno publish

@@ -6,16 +6,16 @@ export const resultViewerTemplates: Readonly<Record<string, string>> = {
     "lib": ["deno.ns", "deno.window", "dom", "dom.iterable", "dom.asynciterable", "esnext"]
   },
   "imports": {
-    "@casys/mcp-view": "jsr:@casys/mcp-view@0.9.5",
-    "@casys/mcp-view-components": "jsr:@casys/mcp-view-components@0.9.2",
-    "@casys/mcp-view-components/surface": "jsr:@casys/mcp-view-components@0.9.2/surface"
+    "@mcpview/view": "jsr:@mcpview/view@0.10.0",
+    "@mcpview/components": "jsr:@mcpview/components@0.10.0",
+    "@mcpview/components/surface": "jsr:@mcpview/components@0.10.0/surface"
   },
   "minimumDependencyAge": {
     "age": "P1D",
     "exclude": [
-      "jsr:@casys/mcp-view",
-      "jsr:@casys/mcp-view-components",
-      "jsr:@casys/mcp-view-contracts"
+      "jsr:@mcpview/view",
+      "jsr:@mcpview/components",
+      "jsr:@mcpview/contracts"
     ]
   },
   "tasks": {
@@ -48,9 +48,9 @@ export const resultViewerTemplates: Readonly<Record<string, string>> = {
     `import { dirname, fromFileUrl, join, resolve, toFileUrl } from "jsr:@std/path@^1.1.0";
 
 const here = dirname(fromFileUrl(import.meta.url));
-const mcpViewModule = moduleSpecifier(Deno.env.get("MCP_VIEW_MODULE") ?? "jsr:@casys/mcp-view@0.9.5");
+const mcpViewModule = moduleSpecifier(Deno.env.get("MCP_VIEW_MODULE") ?? "jsr:@mcpview/view@0.10.0");
 const mcpViewComponentsModule = moduleSpecifier(
-  Deno.env.get("MCP_VIEW_COMPONENTS_MODULE") ?? "jsr:@casys/mcp-view-components@0.9.2",
+  Deno.env.get("MCP_VIEW_COMPONENTS_MODULE") ?? "jsr:@mcpview/components@0.10.0",
 );
 const mcpViewSurfaceModule = moduleSpecifier(
   Deno.env.get("MCP_VIEW_COMPONENTS_SURFACE_MODULE") ?? subpathModule(mcpViewComponentsModule, "surface"),
@@ -65,9 +65,9 @@ try {
       lib: ["deno.ns", "deno.window", "dom", "dom.iterable", "dom.asynciterable", "esnext"]
     },
     imports: {
-      "@casys/mcp-view": mcpViewModule,
-      "@casys/mcp-view-components": mcpViewComponentsModule,
-      "@casys/mcp-view-components/surface": mcpViewSurfaceModule,
+      "@mcpview/view": mcpViewModule,
+      "@mcpview/components": mcpViewComponentsModule,
+      "@mcpview/components/surface": mcpViewSurfaceModule,
       "@modelcontextprotocol/ext-apps": "npm:@modelcontextprotocol/ext-apps@^1.7.4",
       "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.29.0",
       "@modelcontextprotocol/sdk/types.js": "npm:@modelcontextprotocol/sdk@^1.29.0/types.js"
@@ -239,7 +239,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 `,
-  "src/render.ts": `import type { SurfaceStatus } from "@casys/mcp-view-components/surface";
+  "src/render.ts": `import type { SurfaceStatus } from "@mcpview/components/surface";
 import { formatMetricValue, formatNumber, type Metric, type ResultModel, type ViewerData } from "./model.ts";
 
 /** Statuses shown before, between and instead of results. Loading is frame-first. */
@@ -324,14 +324,14 @@ body { font: 14px/1.5 var(--mcp-view-font-body, system-ui, sans-serif); }
   defineCustomComponent,
   defineKeyValueComponent,
   defineMetricGridComponent,
-} from "@casys/mcp-view-components";
+} from "@mcpview/components";
 import {
   startSurfaceApp,
   type SurfaceAppContext,
   type SurfaceDisplayState,
   type SurfaceStatus,
   type SurfaceToolResult,
-} from "@casys/mcp-view-components/surface";
+} from "@mcpview/components/surface";
 import { formatMetricValue, formatNumber, isEmptyResult, parseStructuredResult, toolErrorMessage, type ViewerData } from "./model.ts";
 import { escapeHtml, renderStatus } from "./render.ts";
 

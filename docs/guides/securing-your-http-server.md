@@ -2,7 +2,7 @@
 
 MCP over **STDIO** needs no auth — it is a local pipe. **HTTP mode is different:
 anyone who can reach the port can call every tool.** This guide covers the
-static and OIDC auth modes `@casys/mcp-platform` ships and how to pick one.
+static and OIDC auth modes `@mcpview/server` ships and how to pick one.
 
 > **Bind to loopback unless you mean to expose it.** `startHttp({ hostname })`
 > controls the bind address, and reaching the port is what grants access. Bind
@@ -30,7 +30,7 @@ header, and none applies to STDIO.
 ## Shared-authority static allowlist
 
 ```typescript
-import { createStaticTokenAuthProvider, McpApp } from "@casys/mcp-platform";
+import { createStaticTokenAuthProvider, McpApp } from "@mcpview/server";
 
 const app = new McpApp({
   name: "my-server",
@@ -62,7 +62,7 @@ When the resource server provisions one token per person or integration, pass
 credential objects instead:
 
 ```typescript
-import { createStaticTokenAuthProvider, McpApp } from "@casys/mcp-platform";
+import { createStaticTokenAuthProvider, McpApp } from "@mcpview/server";
 
 const provider = createStaticTokenAuthProvider(
   [
@@ -105,7 +105,7 @@ For per-user identity, expiry, and SSO, validate JWTs against your provider's
 JWKS endpoint:
 
 ```typescript
-import { createOIDCAuthProvider, McpApp } from "@casys/mcp-platform";
+import { createOIDCAuthProvider, McpApp } from "@mcpview/server";
 
 const app = new McpApp({
   name: "my-server",

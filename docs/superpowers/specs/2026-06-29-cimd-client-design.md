@@ -1,4 +1,4 @@
-# Design Spec — CIMD Client Support (`@casys/mcp-server`)
+# Design Spec — CIMD Client Support (`@mcpview/server`)
 
 |             |                                                                            |
 | ----------- | -------------------------------------------------------------------------- |
@@ -20,7 +20,7 @@ pre-registration, app-level identity, smaller phishing surface than DCR.
 
 ### The AS/RS constraint (the design's central fact)
 
-`@casys/mcp-server` is a **Resource Server**: it serves protected-resource
+`@mcpview/server` is a **Resource Server**: it serves protected-resource
 metadata (`mcp-app.ts:1180`) and validates `iss`/`aud` on JWTs
 (`jwt-provider.ts`). It does **not** control `/authorize`, `/token`, or the
 validation of a `client_id`-URL — that belongs to the Authorization Server (the

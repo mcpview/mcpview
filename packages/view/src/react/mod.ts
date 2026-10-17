@@ -1,4 +1,4 @@
-/** React 18 integration for `@casys/mcp-view`. */
+/** React 18 integration for `@mcpview/view`. */
 
 export { defineReactView, reactDomRenderer } from "./adapter.ts";
 export type {

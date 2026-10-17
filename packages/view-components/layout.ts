@@ -1,7 +1,7 @@
 /**
- * Responsive viewer layout for `@casys/mcp-view-components` Apps.
+ * Responsive viewer layout for `@mcpview/components` Apps.
  *
- * Import as `@casys/mcp-view-components/layout`. The decision
+ * Import as `@mcpview/components/layout`. The decision
  * (`resolveViewerLayout`, `layoutWidth`, `touchInput`, `viewerBoundsStyle`) is
  * pure; the Preact hooks (`useViewerLayout`, `useContainerWidth`,
  * `useCoarsePointer`) measure the DOM but take the host context as a

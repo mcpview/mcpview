@@ -1,6 +1,6 @@
-# @casys/mcp-compose — Reference Skill
+# @mcpview/compose — Reference Skill
 
-**Registry:** `jsr:@casys/mcp-compose`\
+**Registry:** `jsr:@mcpview/compose`\
 **Purpose:** Lightweight UI composition library for assembling MCP tool results into multi-panel
 dashboards.
 
@@ -11,7 +11,7 @@ No runtime dependencies beyond optional MCP SDK integration.
 ## Installation
 
 ```sh
-deno add jsr:@casys/mcp-compose
+deno add jsr:@mcpview/compose
 ```
 
 ---
@@ -32,8 +32,8 @@ Collector  →  Composer  →  Renderer
 ## Quick example
 
 ```typescript
-import { buildCompositeUi, createCollector } from "@casys/mcp-compose/core";
-import { renderComposite } from "@casys/mcp-compose/host";
+import { buildCompositeUi, createCollector } from "@mcpview/compose/core";
+import { renderComposite } from "@mcpview/compose/host";
 
 // Stage 1 — collect
 const collector = createCollector();
@@ -58,14 +58,14 @@ const html = renderComposite(descriptor);
 
 ## Subpath exports
 
-| Subpath              | Contents                                                                  |
-| -------------------- | ------------------------------------------------------------------------- |
-| `@casys/mcp-compose` | Root re-exports (same as `/core` + `uiMeta` from `/sdk`)                  |
-| `/core`              | Types, `createCollector`, `buildCompositeUi`, `validateSyncRules`         |
-| `/sdk`               | `createMcpSdkCollector`, `uiMeta`, `composeEvents`, `validateComposition` |
-| `/host`              | `renderComposite`, `serveDashboard`                                       |
-| `/runtime`           | `composeDashboard`, `composeDashboardFromFiles`                           |
-| `/deploy`            | Deploy types (`DeployRequest`, `DeployResult`, etc.)                      |
+| Subpath            | Contents                                                                  |
+| ------------------ | ------------------------------------------------------------------------- |
+| `@mcpview/compose` | Root re-exports (same as `/core` + `uiMeta` from `/sdk`)                  |
+| `/core`            | Types, `createCollector`, `buildCompositeUi`, `validateSyncRules`         |
+| `/sdk`             | `createMcpSdkCollector`, `uiMeta`, `composeEvents`, `validateComposition` |
+| `/host`            | `renderComposite`, `serveDashboard`                                       |
+| `/runtime`         | `composeDashboard`, `composeDashboardFromFiles`                           |
+| `/deploy`          | Deploy types (`DeployRequest`, `DeployResult`, etc.)                      |
 
 ---
 
@@ -140,7 +140,7 @@ Use when working with `@modelcontextprotocol/sdk` `CallToolResult` objects.
 Import from `/sdk`:
 
 ```typescript
-import { createMcpSdkCollector } from "@casys/mcp-compose/sdk";
+import { createMcpSdkCollector } from "@mcpview/compose/sdk";
 
 const collector = createMcpSdkCollector();
 
@@ -204,7 +204,7 @@ Validation is **explicit, not automatic**. Call `validateSyncRules` before `buil
 want to surface issues:
 
 ```typescript
-import { validateSyncRules } from "@casys/mcp-compose/core";
+import { validateSyncRules } from "@mcpview/compose/core";
 
 const resources = collector.getResources();
 const knownSources = resources.map((r) => r.source);
@@ -231,7 +231,7 @@ Returns `{ valid: boolean, issues: ValidationIssue[] }`.
 Use `uiMeta()` from `/sdk` to declare `_meta.ui` in an MCP tool definition:
 
 ```typescript
-import { uiMeta } from "@casys/mcp-compose/sdk";
+import { uiMeta } from "@mcpview/compose/sdk";
 
 const tool = {
   name: "erp:customers",
@@ -252,7 +252,7 @@ Only defined fields are included in the output — undefined optional fields are
 ## Serve locally
 
 ```typescript
-import { serveDashboard } from "@casys/mcp-compose/host";
+import { serveDashboard } from "@mcpview/compose/host";
 
 const handle = await serveDashboard(html, { port: 3000, open: true });
 console.log(handle.url); // http://localhost:3000
@@ -267,7 +267,7 @@ Default port is `0` (OS picks a free port). Default `open: true` launches the br
 ## Full pipeline from files (runtime)
 
 ```typescript
-import { composeDashboardFromFiles } from "@casys/mcp-compose/runtime";
+import { composeDashboardFromFiles } from "@mcpview/compose/runtime";
 
 const result = await composeDashboardFromFiles({
   templatePath: "./dashboard.yaml",

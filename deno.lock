@@ -1013,6 +1013,9 @@
     }
   },
   "workspace": {
+    "dependencies": [
+      "jsr:@std/assert@1"
+    ],
     "members": {
       "packages/bridge": {
         "dependencies": [
@@ -1033,7 +1036,49 @@
           "npm:jose@6"
         ]
       },
-      "packages/platform": {
+      "packages/legacy/mcp-bridge": {
+        "dependencies": [
+          "jsr:@mcpview/bridge@0.4",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/legacy/mcp-compose": {
+        "dependencies": [
+          "jsr:@mcpview/compose@0.10",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/legacy/mcp-platform": {
+        "dependencies": [
+          "jsr:@mcpview/server@0.29",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/legacy/mcp-server": {
+        "dependencies": [
+          "jsr:@mcpview/server@0.29",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/legacy/mcp-view": {
+        "dependencies": [
+          "jsr:@mcpview/view@0.10",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/legacy/mcp-view-components": {
+        "dependencies": [
+          "jsr:@mcpview/components@0.10",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/legacy/mcp-view-contracts": {
+        "dependencies": [
+          "jsr:@mcpview/contracts@0.2",
+          "jsr:@std/assert@1"
+        ]
+      },
+      "packages/server": {
         "dependencies": [
           "jsr:@deno/dnt@0.41",
           "jsr:@std/assert@1",
@@ -1045,12 +1090,6 @@
           "npm:ajv@^8.17.1",
           "npm:hono@4",
           "npm:jose@6"
-        ]
-      },
-      "packages/server": {
-        "dependencies": [
-          "jsr:@casys/mcp-platform@0.28",
-          "jsr:@std/assert@1"
         ]
       },
       "packages/view": {

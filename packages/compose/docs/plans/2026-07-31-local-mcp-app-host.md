@@ -1,7 +1,7 @@
 # Local MCP Apps Host: Delivery Plan
 
 Status: in progress\
-Owner: `@casys/mcp-compose`
+Owner: `@mcpview/compose`
 
 ## Goal
 

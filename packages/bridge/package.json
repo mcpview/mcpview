@@ -1,6 +1,6 @@
 {
-  "name": "@casys/mcp-bridge",
-  "version": "0.3.1",
+  "name": "@mcpview/bridge",
+  "version": "0.4.0",
   "description": "Bridge MCP Apps (interactive UI via MCP protocol) to messaging platforms (Telegram Mini Apps, LINE LIFF)",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,5 +1,5 @@
 /**
- * React 18 adapter for `@casys/mcp-view` view definitions.
+ * React 18 adapter for `@mcpview/view` view definitions.
  *
  * The core router deliberately knows only about DOM `Node`s. This adapter
  * creates one DOM container per route entry, mounts a React root into it, and

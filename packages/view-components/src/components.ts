@@ -1,6 +1,6 @@
 /** Renderer-neutral component catalog and surface runtime for MCP Apps. */
 
-import type { AppContext } from "@casys/mcp-view";
+import type { AppContext } from "@mcpview/view";
 import {
   type AdvertisedComponentCatalog,
   CASYS_COMPONENT_CATALOG_CAPABILITY_KEY,
@@ -11,13 +11,13 @@ import {
   type SurfaceGap,
   type ViewComponentDescriptor,
   type ViewComponentEventPorts,
-} from "@casys/mcp-view-contracts";
+} from "@mcpview/contracts";
 
 export {
   CASYS_COMPONENT_CATALOG_CAPABILITY_KEY,
   CASYS_SURFACE_CONTEXT_KEY,
   readSurfaceContext,
-} from "@casys/mcp-view-contracts";
+} from "@mcpview/contracts";
 export type {
   AdvertisedComponentCatalog,
   ComponentSurface,
@@ -29,7 +29,7 @@ export type {
   SurfaceLayoutType,
   ViewComponentDescriptor,
   ViewComponentEventPorts,
-} from "@casys/mcp-view-contracts";
+} from "@mcpview/contracts";
 
 export type McpViewHostContext = AppContext<unknown>["hostContext"];
 

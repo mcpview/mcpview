@@ -1,5 +1,5 @@
 /**
- * `@casys/mcp-view` — View-side SDK for MCP Apps
+ * `@mcpview/view` — View-side SDK for MCP Apps
  *
  * Lets MCP App authors build SPAs with internal routing instead of using
  * `ui/message` for every navigation (which pollutes the chat thread and
@@ -11,7 +11,7 @@
  *
  * @example Basic SPA with list + detail views
  * ```typescript
- * import { createMcpApp, defineView } from "@casys/mcp-view";
+ * import { createMcpApp, defineView } from "@mcpview/view";
  *
  * const list = defineView({
  *   async onEnter(ctx) {

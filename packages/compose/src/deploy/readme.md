@@ -5,10 +5,10 @@ Cloud deployment layer — publish dashboards as shareable links on Deno Deploy.
 > **Architectural note (2026-05-09)** — the **network tunnel** primitives currently described below
 > (outbound WebSocket from local SDK to relay, session-based routing,
 > `TunnelConnection`/`DeployTransport` types) are **not** the long-term home of this code. They will
-> be relocated to `@casys/mcp-bridge/src/adapters/network/` in a future implementation session.
-> After migration, this module will only own the dashboard-specific deployment logic (Deno Deploy
-> API integration, per-dashboard relay project lifecycle) and **import** the tunnel primitives from
-> `@casys/mcp-bridge`.
+> be relocated to `@mcpview/bridge/src/adapters/network/` in a future implementation session. After
+> migration, this module will only own the dashboard-specific deployment logic (Deno Deploy API
+> integration, per-dashboard relay project lifecycle) and **import** the tunnel primitives from
+> `@mcpview/bridge`.
 >
 > Reasoning: the tunnel is a generic bridging primitive (used by erp-platform for SaaS↔on-prem ERPs,
 > by future on-prem cases, etc.), not specific to dashboard publishing. See

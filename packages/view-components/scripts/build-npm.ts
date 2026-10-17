@@ -1,4 +1,4 @@
-/** Build @casys/mcp-view-components for npm. */
+/** Build @mcpview/components for npm. */
 
 import { build, emptyDir } from "@deno/dnt";
 
@@ -31,11 +31,17 @@ await build({
   outDir: "./dist-node",
   shims: { deno: false },
   package: {
-    name: "@casys/mcp-view-components",
+    name: "@mcpview/components",
     version: denoJson.version,
     description: "Optional light-first component runtime for small composable MCP App viewers",
     license: "MIT",
-    repository: { type: "git", url: "https://github.com/Casys-AI/mcp-platform" },
+    repository: {
+      type: "git",
+      url: "git+https://github.com/mcpview/mcpview.git",
+      directory: "packages/view-components",
+    },
+    homepage: "https://mcpview.dev",
+    bugs: { url: "https://github.com/mcpview/mcpview/issues" },
     keywords: ["mcp", "model-context-protocol", "mcp-apps", "components", "preact"],
   },
   compilerOptions: { lib: ["ES2022", "DOM", "DOM.Iterable"], target: "ES2022" },
@@ -80,8 +86,8 @@ packageJson.exports = {
   },
 };
 packageJson.dependencies ??= {};
-packageJson.dependencies["@casys/mcp-view"] = `^${coreDenoJson.version}`;
-packageJson.dependencies["@casys/mcp-view-contracts"] = `^${contractsDenoJson.version}`;
+packageJson.dependencies["@mcpview/view"] = `^${coreDenoJson.version}`;
+packageJson.dependencies["@mcpview/contracts"] = `^${contractsDenoJson.version}`;
 
 const preactVersion = packageJson.dependencies?.preact;
 if (!preactVersion) throw new Error("[build-npm] expected dnt dependency preact");
@@ -96,4 +102,4 @@ for (const asset of ["README.md", "LICENSE"] as const) {
   await Deno.copyFile(asset, `dist-node/${asset}`);
 }
 
-console.log("[build-npm] @casys/mcp-view-components ready in ./dist-node/");
+console.log("[build-npm] @mcpview/components ready in ./dist-node/");

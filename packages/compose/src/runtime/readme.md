@@ -23,7 +23,7 @@ its MCP server. `renderComposite()` and the HTML on a plain `ComposeResult` rema
 static layout, but do not create an MCP resource bridge.
 
 ```ts
-import { composeAndServeDashboard, loadManifests, loadTemplate } from "@casys/mcp-compose/runtime";
+import { composeAndServeDashboard, loadManifests, loadTemplate } from "@mcpview/compose/runtime";
 
 const manifests = await loadManifests("./manifests");
 const template = await loadTemplate("./dashboards/operations.yaml");

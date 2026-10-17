@@ -1,5 +1,5 @@
 /**
- * Build script for @casys/mcp-view npm package.
+ * Build script for @mcpview/view npm package.
  *
  * Uses dnt (Deno to Node Transform) to produce browser-compatible ESM/CJS
  * bundles plus type declarations from the Deno source.
@@ -41,14 +41,17 @@ await build({
     deno: false,
   },
   package: {
-    name: "@casys/mcp-view",
+    name: "@mcpview/view",
     version: VERSION,
     description: "View-side SDK for MCP Apps with in-iframe routing and host tool calls",
     license: "MIT",
     repository: {
       type: "git",
-      url: "https://github.com/Casys-AI/mcp-platform",
+      url: "git+https://github.com/mcpview/mcpview.git",
+      directory: "packages/view",
     },
+    homepage: "https://mcpview.dev",
+    bugs: { url: "https://github.com/mcpview/mcpview/issues" },
     keywords: [
       "mcp",
       "model-context-protocol",
@@ -88,12 +91,12 @@ pkg.exports = {
   },
 };
 pkg.dependencies ??= {};
-pkg.dependencies["@casys/mcp-view-contracts"] = `^${contractsDenoJson.version}`;
+pkg.dependencies["@mcpview/contracts"] = `^${contractsDenoJson.version}`;
 
 // dnt sees the optional React entry point and initially records its imports as
 // hard dependencies. Keep the base package renderer-neutral: npm consumers
-// that only import `@casys/mcp-view` must not install a UI framework. Projects
-// opting into `@casys/mcp-view/react` already own these renderer dependencies.
+// that only import `@mcpview/view` must not install a UI framework. Projects
+// opting into `@mcpview/view/react` already own these renderer dependencies.
 const optionalReactPeers = [
   "react",
   "react-dom",
@@ -135,16 +138,16 @@ async function smokeTestPackageImport(): Promise<void> {
     prefix: "mcp-view-npm-smoke-",
   });
   try {
-    const packageScope = `${tempConsumer}/node_modules/@casys`;
+    const packageScope = `${tempConsumer}/node_modules/@mcpview`;
     await Deno.mkdir(packageScope, { recursive: true });
     await Deno.symlink(
       new URL("../dist-node", import.meta.url).pathname,
-      `${packageScope}/mcp-view`,
+      `${packageScope}/view`,
       { type: "dir" },
     );
     await Deno.symlink(
       new URL("../../view-contracts/dist-node", import.meta.url).pathname,
-      `${packageScope}/mcp-view-contracts`,
+      `${packageScope}/contracts`,
       { type: "dir" },
     );
     const command = new Deno.Command("node", {
@@ -154,7 +157,7 @@ async function smokeTestPackageImport(): Promise<void> {
         "--input-type=module",
         "--eval",
         [
-          "const mod = await import('@casys/mcp-view');",
+          "const mod = await import('@mcpview/view');",
           "if (typeof mod.createMcpApp !== 'function') {",
           "  throw new Error('createMcpApp export missing');",
           "}",
@@ -164,12 +167,12 @@ async function smokeTestPackageImport(): Promise<void> {
           "if ('installMcpViewTheme' in mod || 'defineComponentRegistry' in mod) {",
           "  throw new Error('core root leaks component or theme exports');",
           "}",
-          "const contracts = await import('@casys/mcp-view/contracts');",
+          "const contracts = await import('@mcpview/view/contracts');",
           "if (contracts.SEMANTIC_SELECTION_SCHEMA !== 'io.casys.semantic-selection/1.0' ||",
           "    typeof contracts.defineViewAppManifest !== 'function') {",
           "  throw new Error('composition contracts export missing');",
           "}",
-          "const react = await import('@casys/mcp-view/react');",
+          "const react = await import('@mcpview/view/react');",
           "if (typeof react.defineReactView !== 'function') {",
           "  throw new Error('defineReactView export missing');",
           "}",

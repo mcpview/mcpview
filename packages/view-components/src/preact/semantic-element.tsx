@@ -1,7 +1,7 @@
 /** @jsxImportSource preact */
 /** Generic, domain-neutral presentation shell for one semantic object. */
 
-import type { ComposedSemanticRef } from "@casys/mcp-view-contracts";
+import type { ComposedSemanticRef } from "@mcpview/contracts";
 import type { ComponentChildren, JSX, VNode } from "preact";
 import { Card, type CardProps, type PresentationTone } from "./components.tsx";
 

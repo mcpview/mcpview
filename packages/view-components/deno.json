@@ -1,6 +1,6 @@
 {
-  "name": "@casys/mcp-view-components",
-  "version": "0.9.2",
+  "name": "@mcpview/components",
+  "version": "0.10.0",
   "license": "MIT",
   "exports": {
     ".": "./mod.ts",
@@ -36,7 +36,7 @@
     "lint": "deno lint",
     "fmt": "deno fmt",
     "publish:check": "deno publish --dry-run --allow-dirty",
-    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern 'view-components-v.*' --include-path 'packages/view-components/**' --unreleased",
+    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern '^view-components-v.*' --include-path 'packages/view-components/**' --unreleased",
     "release:tag": "deno run -A ../../scripts/release-tag.ts view-components",
     "release:check": "deno task check && deno task lint && deno task test && deno task publish:check"
   },

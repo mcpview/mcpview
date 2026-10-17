@@ -2,7 +2,7 @@
 /**
  * esbuild bundler for the view-basic demo.
  *
- * Bundles src/main.ts (+ its imports of `@casys/mcp-view`) into a single
+ * Bundles src/main.ts (+ its imports of `@mcpview/view`) into a single
  * ESM string, inlines it and src/styles.css into index.html, and writes
  * dist/index.html.
  *
@@ -25,7 +25,7 @@ const outDir = join(here, "dist");
 const outHtml = join(outDir, "index.html");
 
 // Resolve the view package's deno.json as the import-map root so
-// bare specifiers like `@casys/mcp-view` and `@modelcontextprotocol/ext-apps`
+// bare specifiers like `@mcpview/view` and `@modelcontextprotocol/ext-apps`
 // resolve.
 const configPath = join(here, "..", "..", "deno.json");
 

@@ -1,3 +1,3 @@
-/** Backwards-compatible contracts subpath. Prefer `@casys/mcp-view-contracts`. */
+/** Backwards-compatible contracts subpath. Prefer `@mcpview/contracts`. */
 
-export * from "@casys/mcp-view-contracts";
+export * from "@mcpview/contracts";

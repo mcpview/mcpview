@@ -1,4 +1,4 @@
-/** Build the dependency-free @casys/mcp-view-contracts npm package. */
+/** Build the dependency-free @mcpview/contracts npm package. */
 
 import { build, emptyDir } from "@deno/dnt";
 
@@ -15,11 +15,17 @@ await build({
   outDir: "./dist-node",
   shims: { deno: false },
   package: {
-    name: "@casys/mcp-view-contracts",
+    name: "@mcpview/contracts",
     version: denoJson.version,
     description: "Dependency-free MCP App resource, composition, and session contracts",
     license: "MIT",
-    repository: { type: "git", url: "https://github.com/Casys-AI/mcp-platform" },
+    repository: {
+      type: "git",
+      url: "git+https://github.com/mcpview/mcpview.git",
+      directory: "packages/view-contracts",
+    },
+    homepage: "https://mcpview.dev",
+    bugs: { url: "https://github.com/mcpview/mcpview/issues" },
     keywords: ["mcp", "model-context-protocol", "mcp-apps", "contracts", "manifest"],
   },
   compilerOptions: { lib: ["ES2022"], target: "ES2022" },
@@ -50,11 +56,11 @@ for (const asset of ["README.md", "LICENSE"] as const) {
 
 const consumer = await Deno.makeTempDir({ prefix: "mcp-view-contracts-smoke-" });
 try {
-  const scope = `${consumer}/node_modules/@casys`;
+  const scope = `${consumer}/node_modules/@mcpview`;
   await Deno.mkdir(scope, { recursive: true });
   await Deno.symlink(
     new URL("../dist-node", import.meta.url).pathname,
-    `${scope}/mcp-view-contracts`,
+    `${scope}/contracts`,
     {
       type: "dir",
     },
@@ -65,7 +71,7 @@ try {
       "--input-type=module",
       "--eval",
       [
-        "const contracts = await import('@casys/mcp-view-contracts');",
+        "const contracts = await import('@mcpview/contracts');",
         "if (contracts.VIEWER_SESSION_APPLY_ACTION !== 'viewer.session.apply') throw new Error('session action missing');",
         "if (typeof contracts.defineViewAppManifest !== 'function') throw new Error('manifest validator missing');",
       ].join("\n"),
@@ -78,4 +84,4 @@ try {
   await Deno.remove(consumer, { recursive: true });
 }
 
-console.log("[build-npm] @casys/mcp-view-contracts ready in ./dist-node/");
+console.log("[build-npm] @mcpview/contracts ready in ./dist-node/");

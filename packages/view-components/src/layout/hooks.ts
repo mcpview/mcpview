@@ -1,7 +1,7 @@
 /**
  * Preact hooks over the layout decision. They measure the DOM and query the
  * browser, but they take the host context as a parameter: nothing here
- * imports `@casys/mcp-view` or the MCP Apps runtime.
+ * imports `@mcpview/view` or the MCP Apps runtime.
  */
 
 import type { RefObject } from "preact";

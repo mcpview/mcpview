@@ -12,7 +12,7 @@ import {
   MCP_APP_MIME_TYPE,
   MCP_APPS_PROTOCOL_VERSION as EXT_APPS_PROTOCOL_VERSION,
   McpApp,
-} from "@casys/mcp-platform";
+} from "@mcpview/server";
 
 /** Name exposed by the fixture MCP server and its compose manifest. */
 export const STRICT_RESOURCE_SERVER_NAME = "strict-resource";

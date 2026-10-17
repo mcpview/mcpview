@@ -1,8 +1,25 @@
 # Changelog
 
-All notable changes to `@casys/mcp-compose` will be documented in this file.
+All notable changes to `@mcpview/compose` (published as `@casys/mcp-compose` up to 0.9.1) will be
+documented in this file.
 
 ## [Unreleased]
+
+## [0.10.0] - 2026-10-17
+
+### Changed
+
+- Renamed from `@casys/mcp-compose` to `@mcpview/compose`. The whole family moves to the `@mcpview`
+  scope on JSR and npm (repository `mcpview/mcpview`, site https://mcpview.dev, maintained by
+  Casys). Same code and same API: only the dependency and import name change. Version numbers
+  continue from 0.9.1, and `@casys/mcp-compose@0.10.0` stays published as a deprecated alias with
+  the same `.`, `./core`, `./sdk`, `./host`, `./runtime`, and `./deploy` entry points.
+- The example servers import `@mcpview/server`, and the MCP client identity Compose announces when
+  it connects to a panel server (`clientInfo.name`, and the stateless client info) is now
+  `@mcpview/compose`.
+- Wire identifiers (`ui://mcp-compose/...`, `io.casys.mcp.*`) are unchanged.
+- See the
+  [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md).
 
 ## [0.9.1] - 2026-09-19
 

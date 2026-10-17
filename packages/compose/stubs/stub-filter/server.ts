@@ -5,7 +5,7 @@
  * @module stubs/stub-filter
  */
 
-import { McpApp } from "@casys/mcp-platform";
+import { McpApp } from "@mcpview/server";
 import { buildStubHtml, MCP_APP_MIME_TYPE, startStubServer } from "../shared.ts";
 
 const CATEGORIES = ["all", "widgets", "gadgets", "tools"];

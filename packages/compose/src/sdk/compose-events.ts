@@ -107,7 +107,7 @@ export interface ComposeSource {
  *
  * @example Browser usage
  * ```typescript
- * import { composeEvents } from "@casys/mcp-compose/sdk";
+ * import { composeEvents } from "@mcpview/compose/sdk";
  *
  * const events = composeEvents();
  *
@@ -126,7 +126,7 @@ export interface ComposeSource {
  * @example With MCP Apps App (no conflict)
  * ```typescript
  * import { App } from "@modelcontextprotocol/ext-apps";
- * import { composeEvents } from "@casys/mcp-compose/sdk";
+ * import { composeEvents } from "@mcpview/compose/sdk";
  *
  * // MCP Apps — standard protocol
  * const app = new App({ name: "Invoice Viewer", version: "1.0.0" });

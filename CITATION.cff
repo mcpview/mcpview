@@ -1,10 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: mcp-platform
+title: mcpview
+abstract: MCP server framework and MCP Apps view toolkit for Deno and Node.
 authors:
   - family-names: Pesle
     given-names: Erwan Lee
 year: 2026
 license: MIT
-repository-code: https://github.com/Casys-AI/mcp-platform
+repository-code: https://github.com/mcpview/mcpview
+url: https://mcpview.dev
 type: software

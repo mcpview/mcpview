@@ -1,5 +1,5 @@
 /**
- * Public type surface for `@casys/mcp-view`.
+ * Public type surface for `@mcpview/view`.
  *
  * View-side SDK for MCP Apps: bootstraps the ext-apps `App`, performs the
  * `ui/initialize` handshake, and runs a memory-based view router inside the
@@ -328,7 +328,7 @@ export interface AppContext<S> {
   /**
    * Optional cross-viewer event channel. It is always safe to subscribe;
    * events are delivered only when the host routes `ui/compose/event`.
-   * This API is standalone and does not depend on `@casys/mcp-compose`.
+   * This API is standalone and does not depend on `@mcpview/compose`.
    */
   readonly events?: ComposeEventClient;
 

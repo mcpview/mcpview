@@ -45,8 +45,8 @@ export interface ServeDashboardHandle {
  *
  * @example
  * ```typescript
- * import { composeDashboard } from "@casys/mcp-compose/runtime";
- * import { serveDashboard } from "@casys/mcp-compose/host";
+ * import { composeDashboard } from "@mcpview/compose/runtime";
+ * import { serveDashboard } from "@mcpview/compose/host";
  *
  * const result = await composeDashboard({ template, manifests, args });
  * const handle = await serveDashboard(result.html);

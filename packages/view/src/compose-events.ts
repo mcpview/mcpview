@@ -2,7 +2,7 @@
  * Standalone viewer-side client for the optional mcp-compose event channel.
  *
  * The channel is deliberately independent from the MCP Apps protocol and
- * from `@casys/mcp-compose`: direct ext-apps viewers remain valid, while
+ * from `@mcpview/compose`: direct ext-apps viewers remain valid, while
  * mcp-view authors get a small typed API when their host supports composition.
  *
  * @module

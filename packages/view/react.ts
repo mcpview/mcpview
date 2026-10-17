@@ -1,7 +1,7 @@
 /**
- * React adapter subpath for `@casys/mcp-view`.
+ * React adapter subpath for `@mcpview/view`.
  *
- * Import as `@casys/mcp-view/react` once the package export is enabled.
+ * Import as `@mcpview/view/react` once the package export is enabled.
  *
  * @module
  */

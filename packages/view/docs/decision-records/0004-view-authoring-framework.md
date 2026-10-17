@@ -18,13 +18,13 @@ an optional standalone default surface. A Compose host may embed a whole resourc
 surface made only from advertised components. Product-only palettes may omit the default instead of
 inventing a standalone page.
 
-| Layer                        | Owns                                                                                           | Must not own                                                |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `@casys/mcp-view-contracts`  | App/resource manifests, serializable composition and session compatibility                     | DOM, renderer, MCP Apps runtime, provider authority         |
-| `@casys/mcp-view`            | Apps lifecycle, routing, structured results, whole-resource sessions, event client             | component/theme exports, dashboard shell, domain schema     |
-| `@casys/mcp-view-components` | optional registry/mounting, safe primitives, theme, Preact adapter, cleanup; Deno/JSR scaffold | domain renderers, provider authority, host layout policy    |
-| Domain viewer                | validation, whole-view or component implementation, local state/actions                        | copied handshake plumbing, host layout policy               |
-| `@casys/mcp-compose`         | multi-App shell, explicit surface requests, stable instance IDs, event routes                  | child DOM inspection, domain rendering, implicit size modes |
+| Layer                 | Owns                                                                                           | Must not own                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `@mcpview/contracts`  | App/resource manifests, serializable composition and session compatibility                     | DOM, renderer, MCP Apps runtime, provider authority         |
+| `@mcpview/view`       | Apps lifecycle, routing, structured results, whole-resource sessions, event client             | component/theme exports, dashboard shell, domain schema     |
+| `@mcpview/components` | optional registry/mounting, safe primitives, theme, Preact adapter, cleanup; Deno/JSR scaffold | domain renderers, provider authority, host layout policy    |
+| Domain viewer         | validation, whole-view or component implementation, local state/actions                        | copied handshake plumbing, host layout policy               |
+| `@mcpview/compose`    | multi-App shell, explicit surface requests, stable instance IDs, event routes                  | child DOM inspection, domain rendering, implicit size modes |
 
 The wire value is JSON-only: component key, instance ID, `stack|row|grid` layout, bounded columns,
 gap token, optional safe grid area, and component-owned props. It contains no HTML, JavaScript,
@@ -46,10 +46,10 @@ The scaffold remains a Deno/JSR command because its contract includes Deno files
 does not ship a nominal Node scaffold that fails when invoked.
 
 Preact Apps consume those foundations as actual components from
-`@casys/mcp-view-components/preact/components`, not as independently maintained CSS imitations. The
-shared kit covers cards, badges, metrics, key-value facts, data tables, actions, toolbars, empty
-states, and system states. Source-owned CSS is reserved for visuals that the kit cannot express,
-such as a Three.js viewport or a SysON SVG canvas.
+`@mcpview/components/preact/components`, not as independently maintained CSS imitations. The shared
+kit covers cards, badges, metrics, key-value facts, data tables, actions, toolbars, empty states,
+and system states. Source-owned CSS is reserved for visuals that the kit cannot express, such as a
+Three.js viewport or a SysON SVG canvas.
 
 ## Events and state
 

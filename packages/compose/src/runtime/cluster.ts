@@ -556,7 +556,7 @@ async function createStreamableConnection(
 ): Promise<McpConnection> {
   const transport = new StreamableHTTPClientTransport(mcpEndpointUrl(baseUrl));
   const client = new Client(
-    { name: "@casys/mcp-compose", version: COMPOSE_VERSION },
+    { name: "@mcpview/compose", version: COMPOSE_VERSION },
     { capabilities: {} },
   );
 
@@ -866,7 +866,7 @@ function withStatelessMetadata(params: Record<string, unknown>): Record<string, 
       [STATELESS_PROTOCOL_META_KEY]: STATELESS_PROTOCOL_VERSION,
       [STATELESS_CLIENT_CAPABILITIES_META_KEY]: {},
       [STATELESS_CLIENT_INFO_META_KEY]: {
-        name: "@casys/mcp-compose",
+        name: "@mcpview/compose",
         version: COMPOSE_VERSION,
       },
     },

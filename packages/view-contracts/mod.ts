@@ -1,5 +1,5 @@
 /**
- * `@casys/mcp-view-contracts` — dependency-free MCP App resource contracts.
+ * `@mcpview/contracts` — dependency-free MCP App resource contracts.
  *
  * This entry point is safe in servers, hosts, agents, and App bundles. It has
  * no DOM, MCP Apps runtime, SDK, React, or Preact dependency.

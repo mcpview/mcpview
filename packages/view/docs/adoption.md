@@ -1,4 +1,4 @@
-# Adopting `@casys/mcp-view`
+# Adopting `@mcpview/view`
 
 This guide maps the Casys MCP Apps onto one componentized authoring framework. Generated `dist/`
 HTML is never the editable source; a migration is complete only after rebuilding and exercising the
@@ -6,14 +6,14 @@ served artifact.
 
 ## Framework boundary
 
-- `@casys/mcp-view-contracts` owns dependency-free resource manifests, serializable component
-  catalogs and surfaces, semantic selection, and resource-level session compatibility.
-- `@casys/mcp-view` owns the child-App lifecycle, routing, structured results, resource-level
-  session delivery, and optional Compose event client.
-- `@casys/mcp-view-components` owns the optional renderer-neutral component registry, surface
-  mounting, shared primitives/theme, Preact adapter, and Deno/JSR-only scaffold. The npm package
-  intentionally excludes that Deno-only subpath.
-- `@casys/mcp-compose` owns the dashboard shell, selection/order of advertised components, physical
+- `@mcpview/contracts` owns dependency-free resource manifests, serializable component catalogs and
+  surfaces, semantic selection, and resource-level session compatibility.
+- `@mcpview/view` owns the child-App lifecycle, routing, structured results, resource-level session
+  delivery, and optional Compose event client.
+- `@mcpview/components` owns the optional renderer-neutral component registry, surface mounting,
+  shared primitives/theme, Preact adapter, and Deno/JSR-only scaffold. The npm package intentionally
+  excludes that Deno-only subpath.
+- `@mcpview/compose` owns the dashboard shell, selection/order of advertised components, physical
   panel layout, and declared viewer-to-viewer routes.
 - Each MCP repository owns its data validation, domain components, specialized renderers, actions,
   and optional standalone default surface.
@@ -61,9 +61,9 @@ event routes.
    `component-catalog` only when the MCP intentionally exposes independently composable blocks. Do
    not wrap a whole viewer in one artificial component merely to satisfy a catalog.
 3. In Preact Apps, import `Card`, `Badge`, `MetricGrid`, `KeyValueList`, `DataTable`, `Button`,
-   `Toolbar`, `EmptyState`, and `StateMessage` from `@casys/mcp-view-components/preact/components`.
-   Keep CAD, diagrams, charts, and domain actions in the owning MCP; do not copy the shared
-   presentation CSS into every MCP.
+   `Toolbar`, `EmptyState`, and `StateMessage` from `@mcpview/components/preact/components`. Keep
+   CAD, diagrams, charts, and domain actions in the owning MCP; do not copy the shared presentation
+   CSS into every MCP.
 4. For a component catalog, define `defaultSurface` only when the same catalog is also meaningful
    standalone. Otherwise omit it deliberately. A `whole-view` resource needs no catalog or default
    surface.
@@ -82,7 +82,7 @@ publishing a temporary version.
 
 ## ERPNext compatibility rule
 
-ERPNext already uses `@casys/mcp-platform`, registers proper MCP App resources, embeds the official
+ERPNext already uses `@casys/mcp-server`, registers proper MCP App resources, embeds the official
 `ext-apps` client, and installs handlers before `connect()`. This migration does not edit its
 source, dependencies, bundles, or visible behavior. The product-specific component palette is a
 separate MCP service with one read-only BOM tool; it reuses the published provider client and owns

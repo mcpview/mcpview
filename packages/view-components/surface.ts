@@ -1,8 +1,8 @@
 /**
  * Result-driven MCP App lifecycle over one component registry.
  *
- * Import as `@casys/mcp-view-components/surface`. This entry carries the
- * `@casys/mcp-view` App runtime (ext-apps); the package root stays free of it.
+ * Import as `@mcpview/components/surface`. This entry carries the
+ * `@mcpview/view` App runtime (ext-apps); the package root stays free of it.
  *
  * @module
  */

@@ -1,5 +1,5 @@
 /**
- * Build script for @casys/mcp-compose npm package.
+ * Build script for @mcpview/compose npm package.
  *
  * Uses dnt (Deno to Node Transform) to produce ESM + CJS + type declarations
  * from the Deno source.
@@ -41,14 +41,17 @@ await build({
     deno: false,
   },
   package: {
-    name: "@casys/mcp-compose",
+    name: "@mcpview/compose",
     version: VERSION,
     description: "Compose and synchronize multiple MCP Apps UIs into composite dashboards",
     license: "MIT",
     repository: {
       type: "git",
-      url: "https://github.com/Casys-AI/mcp-platform",
+      url: "git+https://github.com/mcpview/mcpview.git",
+      directory: "packages/compose",
     },
+    homepage: "https://mcpview.dev",
+    bugs: { url: "https://github.com/mcpview/mcpview/issues" },
     keywords: [
       "mcp",
       "model-context-protocol",

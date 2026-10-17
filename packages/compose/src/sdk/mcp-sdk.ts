@@ -83,7 +83,7 @@ export interface McpSdkCollector {
  *
  * @example
  * ```typescript
- * import { createMcpSdkCollector } from "@casys/mcp-compose/sdk";
+ * import { createMcpSdkCollector } from "@mcpview/compose/sdk";
  *
  * const collector = createMcpSdkCollector();
  *

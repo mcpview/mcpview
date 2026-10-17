@@ -1,12 +1,29 @@
 # Changelog
 
-All notable changes to `@casys/mcp-bridge` will be documented in this file.
+All notable changes to `@mcpview/bridge` (published as `@casys/mcp-bridge` up to
+0.3.1) will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.0] - 2026-10-17
+
+### Changed
+
+- Renamed from `@casys/mcp-bridge` to `@mcpview/bridge`. The whole family moves
+  to the `@mcpview` scope on JSR and npm (repository `mcpview/mcpview`, site
+  https://mcpview.dev, maintained by Casys). Same code and same API: only the
+  dependency and import name change. Version numbers continue from 0.3.1, and
+  `@casys/mcp-bridge@0.4.0` stays published as a deprecated alias with the same
+  `.` and `./adapters/network` entry points.
+- The default bridge identity announced during `ui/initialize` is now
+  `@mcpview/bridge`.
+- Wire identifiers (`mcp-bridge-ready`, `mcp-bridge-auth-error`) are unchanged.
+- See the
+  [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md).
 
 ## [0.3.1] - 2026-09-19
 

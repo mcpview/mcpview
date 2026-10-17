@@ -1,6 +1,6 @@
 {
-  "name": "@casys/mcp-bridge",
-  "version": "0.3.1",
+  "name": "@mcpview/bridge",
+  "version": "0.4.0",
   "license": "MIT",
   "exports": {
     ".": "./src/mod.ts",
@@ -25,7 +25,7 @@
     "lint": "deno lint",
     "build:npm": "deno run -A scripts/build-npm.ts",
     "demo": "deno run --allow-net --allow-read --allow-env examples/demo-time/start.ts",
-    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern 'bridge-v.*' --include-path 'packages/bridge/**' --unreleased",
+    "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern '^bridge-v.*' --include-path 'packages/bridge/**' --unreleased",
     "release:check": "deno task check && deno task lint && deno task test",
     "release:tag": "deno run -A ../../scripts/release-tag.ts bridge"
   },

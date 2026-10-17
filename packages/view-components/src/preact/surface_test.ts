@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertStrictEquals } from "@std/assert";
 
-import type { AppContext } from "@casys/mcp-view";
+import type { AppContext } from "@mcpview/view";
 import {
   type Data,
   fakeApp,
