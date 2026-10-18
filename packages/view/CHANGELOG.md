@@ -8,6 +8,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-18
+
+### Added
+
+- ADR 0006, the active-context contract: a view shares references with the model, never payloads,
+  and a large selection becomes a query element with graduated selection tiers. Documentation only;
+  the package code is unchanged from 0.10.0.
+
 ## [0.10.0] - 2026-10-17
 
 ### Changed
