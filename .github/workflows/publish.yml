@@ -28,7 +28,14 @@ on:
     branches: [main]
 
 jobs:
+  # L'appel local exécute les tests sur le même commit que la publication.
+  tests:
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
   publish-npm-server:
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -107,6 +114,7 @@ jobs:
           npm publish ./dist-node --access public
 
   publish-npm-compose:
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -163,6 +171,7 @@ jobs:
           npm publish --access public
 
   publish-npm-bridge:
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -214,6 +223,7 @@ jobs:
     # Each alias installs its target from the npm registry during its smoke
     # test, so the four jobs that publish the six @mcpview/* packages go first.
     needs:
+      - tests
       - publish-npm-view-family
       - publish-npm-server
       - publish-npm-compose
@@ -288,6 +298,7 @@ jobs:
           npm publish ./dist-node --access public
 
   publish-npm-view-family:
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -529,6 +540,7 @@ jobs:
     # the immutable-version content guard; keeping JSR behind it means a stale
     # core version cannot publish only some of the packages on either registry.
     needs:
+      - tests
       - publish-npm-view-family
       - publish-npm-server
       - publish-npm-compose
@@ -566,6 +578,7 @@ jobs:
     # The aliases depend on the six packages above (published to JSR in the
     # previous job) and on their own npm publication.
     needs:
+      - tests
       - publish-jsr
       - publish-npm-aliases
     runs-on: ubuntu-latest
