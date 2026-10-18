@@ -1,0 +1,67 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Vérifier le formatage
+        run: deno fmt --check
+      - name: Vérifier le lint
+        run: deno lint
+      - name: Vérifier la couverture et le verrou de publication
+        run: deno test --allow-read .github/workflows/test_test.ts
+
+  packages:
+    name: Tests (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Un échec ne doit pas masquer le résultat des autres paquets.
+      fail-fast: false
+      matrix:
+        package:
+          - packages/view-contracts
+          - packages/server
+          - packages/view
+          - packages/view-components
+          - packages/compose
+          - packages/bridge
+          - packages/legacy/mcp-server
+          - packages/legacy/mcp-platform
+          - packages/legacy/mcp-view
+          - packages/legacy/mcp-view-components
+          - packages/legacy/mcp-view-contracts
+          - packages/legacy/mcp-compose
+          - packages/legacy/mcp-bridge
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Vérifier les types
+        run: deno task check
+      # Les tests de components couvrent aussi npm:linkedom et le scaffold.
+      - name: Exécuter les tests du paquet
+        run: deno task test
+      # Le build existant de bridge inclut son smoke test sous Node.
+      - name: Vérifier le paquet npm de bridge
+        if: matrix.package == 'packages/bridge'
+        run: deno task build:npm
