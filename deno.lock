@@ -1069,7 +1069,7 @@
       },
       "packages/legacy/mcp-view-components": {
         "dependencies": [
-          "jsr:@mcpview/components@0.10",
+          "jsr:@mcpview/components@0.11",
           "jsr:@std/assert@1"
         ]
       },

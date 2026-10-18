@@ -586,7 +586,7 @@ local checkout); the `/surface` entry is derived from the latter unless
 `MCP_VIEW_COMPONENTS_SURFACE_MODULE` names it. Run the generator from JSR:
 
 ```sh
-deno run -A jsr:@mcpview/components@0.10.0/scaffold result-viewer ./result-viewer
+deno run -A jsr:@mcpview/components@0.11.0/scaffold result-viewer ./result-viewer
 ```
 
 The npm package contains only the runtime and presentation entry points. It does not export or ship

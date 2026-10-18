@@ -143,5 +143,5 @@ fallback is explicitly requested. Neither helper prefers model-facing text over 
 
 For an executable two-view core bundle, see [`examples/basic`](./examples/basic/README.md). Run the
 componentized result-viewer generator from JSR with
-`deno run -A jsr:@mcpview/components@0.10.0/scaffold result-viewer <target>`. The Deno-only scaffold
+`deno run -A jsr:@mcpview/components@0.11.0/scaffold result-viewer <target>`. The Deno-only scaffold
 is deliberately absent from the npm package.

@@ -8,7 +8,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-18
+
 ### Changed
+
+- The result-viewer scaffold pins `@mcpview/view@0.10.1` and `@mcpview/components@0.11.0`.
 
 - **`IntervalPlot` shared columns** — labels, interval tracks, and readings align across rows,
   including at narrow widths, so each row uses the same plotting area.
