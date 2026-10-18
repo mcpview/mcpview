@@ -8,6 +8,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **`IntervalPlot` shared columns** — labels, interval tracks, and readings align across rows,
+  including at narrow widths, so each row uses the same plotting area.
+- **`SeriesChart` evidence** — optional `legend` (default `true`) shows caller-supplied series
+  labels with line or square swatches when there are at least two series. Optional `yTicks` accepts
+  finite positions within the inclusive y bounds and caller-formatted labels. Default visuals now
+  include that multi-series legend, `8px` bars and a `10rem` plot; override the dimensions with
+  `--mcp-view-series-chart-bar-width` and `--mcp-view-series-chart-height`. Series tones also accept
+  `"accent"` and `"brand"` without extending other components' `PresentationTone`.
+- **`Sparkline` block variant** — `variant="block"` displays the caller-supplied label and summary
+  with a full-width, `2.5rem`-high plot. The default remains `variant="inline"`; both variants also
+  accept the plot-specific `"accent"` and `"brand"` tones.
+- Document whole-view composition with a `PathBar`, one card-density `SemanticElement`, and numeric
+  evidence inside `ElementBody` or `ElementSection` to provide space at the surface frame.
+
 ## [0.10.0] - 2026-10-17
 
 ### Changed

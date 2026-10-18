@@ -104,7 +104,9 @@ Reusable structures:
 Numeric evidence:
 
 - `Sparkline` for the compact shape of one recorded series, readable at chip and row density.
-  Requires at least two finite samples already ordered by the caller.
+  Requires at least two finite samples already ordered by the caller. `variant="inline"` (default)
+  keeps the compact mark; `variant="block"` shows the caller-supplied label and summary above a
+  full-width, `2.5rem`-high plot.
 - `SeriesChart` for a multi-series plot on a shared finite scale. Each series requires a `mark`
   field (`"line"` or `"bar"`): `"line"` connects samples with a polyline — an assertion that the
   quantity existed between them; `"bar"` draws each recorded sample as an isolated mark and claims
@@ -112,9 +114,21 @@ Numeric evidence:
   shared x scale (`undefined` when the pointer leaves); a series with no recorded point at that
   position is absent from the readout rather than filled. The kit never interpolates, aligns to a
   nearest neighbour, draws a continuity it has not measured, or invents a value — the provider
-  declares both the mark shape and which sample a position corresponds to.
+  declares both the mark shape and which sample a position corresponds to. `legend?: boolean`
+  defaults to `true` and shows a legend for two or more series, using each caller-supplied series
+  label with a line or square swatch matching its mark. Set `legend={false}` to hide it. Optional
+  `yTicks?: readonly { value: number; label: string }[]` places caller-formatted labels on the y
+  scale with subtle horizontal grid lines; omitting `yTicks` keeps the plot free of grid lines.
+  Every tick value must be finite and within the inclusive `yMin`–`yMax` bounds. The CSS properties
+  `--mcp-view-series-chart-bar-width` (default `8px`) and `--mcp-view-series-chart-height` (default
+  `10rem`) control bar width and plot height.
 - `IntervalPlot` for caller-declared deviation intervals laid out against a shared zero line. The
-  scale must contain zero; every bound and label is caller-supplied.
+  scale must contain zero; every bound and label is caller-supplied. Labels, interval tracks, and
+  readings share aligned columns across rows, including at narrow widths.
+
+`Sparkline` and `SeriesChart` series also accept `"accent"` and `"brand"` tones. These plot-specific
+choices use `--mcp-view-accent` and `--mcp-view-brand`, respectively, and do not extend
+`PresentationTone` for other components.
 
 Semantic composition:
 
@@ -426,6 +440,10 @@ gone in 0.7.0; `viewerSession: { validate, toState, onInvalid }` is the one form
 
 The kit stays small and non-prescriptive, leaving assembly to the caller. When multiple viewers
 build the same assembly from the same primitives, this section is what they should have found first.
+
+For a whole-view App, place a `PathBar` before one `SemanticElement density="card"`. Put numeric
+evidence inside its `ElementBody` or an `ElementSection`: a bare plot directly in
+`.mcp-view-surface-stack` touches the frame edge. The card body supplies the surrounding space.
 
 ### Named quantity section
 

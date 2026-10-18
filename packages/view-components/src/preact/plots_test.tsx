@@ -2,6 +2,9 @@
 
 import { assert, assertEquals, assertThrows } from "@std/assert";
 import { render } from "preact";
+import type { JSX } from "preact";
+import type { PresentationTone } from "./components.tsx";
+import { MCP_VIEW_THEME_CSS } from "../theme.ts";
 import { IntervalPlot, SeriesChart, Sparkline } from "./plots.tsx";
 
 // ---------------------------------------------------------------------------
@@ -466,9 +469,13 @@ Deno.test("SeriesChart reports pointer geometry and resolves no sample itself", 
 // deno-lint-ignore no-explicit-any
 function svgOf(vnode: any): any {
   const children = vnode.props.children;
-  return (Array.isArray(children) ? children : [children]).find((child: {
-    type?: string;
-  }) => child?.type === "svg");
+  for (const child of (Array.isArray(children) ? children : [children]).flat()) {
+    if (child?.type === "svg") return child;
+    if (child?.props?.children) {
+      const svg = svgOf(child);
+      if (svg) return svg;
+    }
+  }
 }
 
 function pointerAt(clientX: number, width: number) {
@@ -519,4 +526,208 @@ Deno.test("SeriesChart draws a bar series as one mark per sample and connects no
   assert(
     connectedMarks.some((child) => child?.props?.class === "mcp-view-series-chart-line"),
   );
+});
+
+async function withPlotDom(check: (root: HTMLElement) => void) {
+  const { parseHTML } = await import("npm:linkedom@0.18.12");
+  const { document } = parseHTML("<html><body><div id=root></div></body></html>");
+  const previous = globalThis.document;
+  Object.defineProperty(globalThis, "document", { configurable: true, value: document });
+  const root = document.getElementById("root") as unknown as HTMLElement;
+  try {
+    check(root);
+  } finally {
+    render(null, root);
+    Object.defineProperty(globalThis, "document", { configurable: true, value: previous });
+  }
+}
+
+const CHART_PROPS = {
+  label: "Pressure history",
+  series: BASE_SERIES,
+  xMin: 0,
+  xMax: 2,
+  yMin: 5,
+  yMax: 30,
+};
+
+Deno.test("SeriesChart legend names multiple series and can be suppressed", async () => {
+  await withPlotDom((root) => {
+    const series = [...BASE_SERIES, {
+      ...BASE_SERIES[0],
+      id: "other",
+      label: "Other pressure",
+      mark: "bar" as const,
+    }];
+    render(<SeriesChart {...CHART_PROPS} series={series} />, root);
+    const legend = root.querySelector(".mcp-view-series-chart-legend");
+    // The plot's aria-label names the series; the legend must not repeat them.
+    assertEquals(legend?.getAttribute("aria-hidden"), "true");
+    assertEquals(Array.from(legend?.querySelectorAll("li") ?? [], (item) => item.textContent), [
+      "Pressure",
+      "Other pressure",
+    ]);
+    assertEquals(
+      Array.from(
+        legend?.querySelectorAll("[data-mark]") ?? [],
+        (mark) => mark.getAttribute("data-mark"),
+      ),
+      ["line", "bar"],
+    );
+    render(<SeriesChart {...CHART_PROPS} series={series} legend={false} />, root);
+    assertEquals(root.querySelector(".mcp-view-series-chart-legend"), null);
+    render(<SeriesChart {...CHART_PROPS} />, root);
+    assertEquals(root.querySelector(".mcp-view-series-chart-legend"), null);
+    render(<SeriesChart {...CHART_PROPS} legend />, root);
+    assertEquals(root.querySelector(".mcp-view-series-chart-legend"), null);
+  });
+});
+
+Deno.test("SeriesChart supplied y ticks retain caller labels and share the plot scale", async () => {
+  await withPlotDom((root) => {
+    render(
+      <SeriesChart
+        {...CHART_PROPS}
+        yTicks={[
+          { value: 5, label: "5 bar floor" },
+          { value: 17.5, label: "midpoint" },
+          { value: 30, label: "30 bar ceiling" },
+        ]}
+      />,
+      root,
+    );
+    const ticks = Array.from(root.querySelectorAll(".mcp-view-series-chart-y-axis span"));
+    assertEquals(ticks.map((tick) => tick.textContent), [
+      "5 bar floor",
+      "midpoint",
+      "30 bar ceiling",
+    ]);
+    assertEquals(ticks.map((tick) => (tick as HTMLElement).style.top), ["100%", "50%", "0%"]);
+    const grid = Array.from(root.querySelectorAll(".mcp-view-series-chart-grid"));
+    assertEquals(grid.map((line) => line.getAttribute("y1")), ["40", "20", "0"]);
+    for (const line of grid) {
+      assertEquals(line.getAttribute("y2"), line.getAttribute("y1"));
+      assertEquals([line.getAttribute("x1"), line.getAttribute("x2")], ["0", "100"]);
+    }
+    render(<SeriesChart {...CHART_PROPS} />, root);
+    assertEquals(root.querySelector(".mcp-view-series-chart-grid"), null);
+    assertEquals(root.querySelector(".mcp-view-series-chart-y-axis"), null);
+  });
+});
+
+Deno.test("SeriesChart rejects all nonfinite and outside y ticks with its exact contract", () => {
+  for (const value of [NaN, Infinity, -Infinity, 4.99, 30.01]) {
+    const error = assertThrows(
+      () => SeriesChart({ ...CHART_PROPS, yTicks: [{ value, label: "bad" }] }),
+      RangeError,
+    );
+    assertEquals(error.message, "SeriesChart yTicks value must be within yMin and yMax");
+  }
+});
+
+Deno.test("Sparkline defaults to inline and block exposes its wording once", async () => {
+  await withPlotDom((root) => {
+    const props = { label: "Temperature", summaryLabel: "25 °C peak", values: [10, 25] };
+    const draw = (node: JSX.Element) => {
+      render(node, root);
+      return root.innerHTML;
+    };
+    const implicit = draw(<Sparkline {...props} />);
+    assertEquals(draw(<Sparkline {...props} variant="inline" />), implicit);
+    assertEquals(root.firstElementChild?.tagName.toLowerCase(), "svg");
+    render(<Sparkline {...props} variant="block" />, root);
+    assertEquals(root.querySelectorAll('[role="img"]').length, 1);
+    assertEquals(root.firstElementChild?.getAttribute("aria-label"), "Temperature: 25 °C peak");
+    const heading = root.querySelector(".mcp-view-sparkline-heading");
+    assertEquals(heading?.getAttribute("aria-hidden"), "true");
+    assertEquals(Array.from(heading?.children ?? [], (child) => child.textContent), [
+      "Temperature",
+      "25 °C peak",
+    ]);
+    assertEquals(root.querySelector("svg")?.getAttribute("aria-hidden"), "true");
+    assertEquals(root.querySelector("svg")?.getAttribute("aria-label"), null);
+  });
+});
+
+Deno.test("Plot categorical tones survive rendering and resolve to distinct theme colors", async () => {
+  await withPlotDom((root) => {
+    for (const tone of ["accent", "brand"] as const) {
+      render(<Sparkline label="Trend" values={[1, 2]} summaryLabel="up" tone={tone} />, root);
+      assertEquals(root.querySelector("svg")?.getAttribute("data-tone"), tone);
+      render(
+        <SeriesChart
+          {...CHART_PROPS}
+          series={[{ ...BASE_SERIES[0], tone }, {
+            ...BASE_SERIES[0],
+            id: "bars",
+            mark: "bar",
+            tone,
+          }]}
+        />,
+        root,
+      );
+      assertEquals(root.querySelector("polyline")?.getAttribute("data-tone"), tone);
+      assertEquals(
+        Array.from(
+          root.querySelectorAll(".mcp-view-series-chart-legend li"),
+          (item) => item.getAttribute("data-tone"),
+        ),
+        [tone, tone],
+      );
+      assertEquals(
+        root.querySelector(".mcp-view-series-chart-bars")?.getAttribute("data-tone"),
+        tone,
+      );
+      for (
+        const selector of [
+          `.mcp-view-sparkline[data-tone="${tone}"]`,
+          `.mcp-view-series-chart-line[data-tone="${tone}"]`,
+          `.mcp-view-series-chart-bars[data-tone="${tone}"] line`,
+        ]
+      ) {
+        assert(cssRule(selector).includes(`var(--mcp-view-${tone})`));
+      }
+    }
+  });
+});
+
+function cssRule(selector: string): string {
+  const start = MCP_VIEW_THEME_CSS.indexOf(`\n${selector} {`);
+  assert(start >= 0, `Missing CSS rule: ${selector}`);
+  return MCP_VIEW_THEME_CSS.slice(start, MCP_VIEW_THEME_CSS.indexOf("}", start));
+}
+
+Deno.test("Plot CSS keeps shared interval columns and overridable chart dimensions", () => {
+  assert(
+    cssRule(".mcp-view-interval-plot").includes(
+      "grid-template-columns: minmax(2.5rem, auto) minmax(0, 1fr) minmax(5rem, auto)",
+    ),
+  );
+  const row = cssRule(".mcp-view-interval-plot-row");
+  assert(row.includes("grid-template-columns: subgrid"));
+  assert(row.includes("grid-column: 1 / -1"));
+  assert(cssRule(".mcp-view-interval-plot-scale").includes("grid-column: 2"));
+  const narrow = MCP_VIEW_THEME_CSS.slice(
+    MCP_VIEW_THEME_CSS.indexOf("@container (max-width: 440px)"),
+  );
+  assert(narrow.includes("grid-template-columns: minmax(0, 1fr) minmax(5rem, auto)"));
+  assert(narrow.includes(".mcp-view-interval-plot-scale { grid-column: 1 / -1; }"));
+  assert(narrow.includes(".mcp-view-interval-plot-track { grid-column: 1 / -1; grid-row: 2; }"));
+  assert(
+    cssRule(".mcp-view-series-chart-plot").includes(
+      "height: var(--mcp-view-series-chart-height, 10rem)",
+    ),
+  );
+  assert(
+    cssRule(".mcp-view-series-chart-bars line").includes(
+      "stroke-width: var(--mcp-view-series-chart-bar-width, 8px)",
+    ),
+  );
+});
+
+Deno.test("Categorical plot colors do not widen PresentationTone", () => {
+  const categoricalIsPresentation: Extract<PresentationTone, "accent" | "brand"> extends never
+    ? false
+    : true = false;
+  assertEquals(categoricalIsPresentation, false);
 });

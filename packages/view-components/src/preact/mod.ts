@@ -122,6 +122,7 @@ export type {
   SeriesChartReadout,
   SeriesChartSeries,
   SeriesChartSummaryItem,
+  SeriesChartTone,
   SeriesPoint,
   SkeletonProps,
   Slot3DProps,
