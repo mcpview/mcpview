@@ -94,6 +94,54 @@ async function flushPromises(): Promise<void> {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 }
 
+Deno.test("generated event bus rejects unsupported ui/message requests without false success", () => {
+  const descriptor = buildCompositeUi(
+    [{ source: "console_snapshot", resourceUri: "ui://console/snapshot", slot: 0 }],
+    { layout: "stack" },
+  );
+  const expectedOrigin = "http://127.0.0.1:45678";
+  const slots = resolveRendererSlots(descriptor, {
+    slots: { 0: { iframeSrc: `${expectedOrigin}/ui`, expectedOrigin } },
+  });
+  const child = new FakeChildWindow();
+  const harness = createHarness(
+    generateEventBusScript(descriptor, slots),
+    [{ dataset: { slot: "0" }, contentWindow: child }],
+    () => Promise.reject(new Error("not used")),
+  );
+  const params = { role: "user", content: [{ type: "text", text: "Explain this result" }] };
+
+  harness.emit(
+    child,
+    { jsonrpc: "2.0", id: "initialize", method: "ui/initialize", params: {} },
+    expectedOrigin,
+  );
+  harness.emit(
+    child,
+    { jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} },
+    expectedOrigin,
+  );
+  child.posts.length = 0;
+
+  // Même un viewer qui ignore les capacités doit recevoir un refus explicite.
+  for (const id of ["message-request", 0]) {
+    harness.emit(child, { jsonrpc: "2.0", id, method: "ui/message", params }, expectedOrigin);
+    assertEquals(child.posts.at(-1), {
+      message: {
+        jsonrpc: "2.0",
+        id,
+        error: { code: -32601, message: "[mcp-compose] ui/message is not supported" },
+      },
+      targetOrigin: expectedOrigin,
+    });
+  }
+  assertEquals(child.posts.length, 2);
+
+  // Une notification sans identifiant ne reçoit aucune réponse JSON-RPC.
+  harness.emit(child, { jsonrpc: "2.0", method: "ui/message", params }, expectedOrigin);
+  assertEquals(child.posts.length, 2);
+});
+
 Deno.test("generated event bus hosts slot-local MCP Apps lifecycle and proxy", async () => {
   const descriptor = buildCompositeUi(
     [
@@ -164,6 +212,9 @@ Deno.test("generated event bus hosts slot-local MCP Apps lifecycle and proxy", a
     .hostCapabilities as Record<string, unknown>;
   const secondCapabilities = (secondHandshake.result as Record<string, unknown>)
     .hostCapabilities as Record<string, unknown>;
+  // Aucune livraison au modèle : ni le slot interactif ni le slot statique n'annonce message.
+  assertEquals("message" in firstCapabilities, false);
+  assertEquals("message" in secondCapabilities, false);
   assert("serverTools" in firstCapabilities);
   assert("serverResources" in firstCapabilities);
   assertEquals("serverTools" in secondCapabilities, false);

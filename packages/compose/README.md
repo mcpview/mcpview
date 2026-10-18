@@ -428,9 +428,14 @@ The rendered HTML includes a JavaScript event bus implementing:
 - **`ui/notifications/tool-result`** -- Full initiating result delivered after initialization
 - **`tools/call` / `tools/list`** -- Only when the slot has a local route and manifest grant
 - **`resources/read` / `resources/list`** -- Only for the resource bound to that slot
-- **`ui/message`** -- Logging/debugging channel
 
 All messages use JSON-RPC 2.0 via `postMessage`.
+
+Compose does not deliver messages to a conversation or model, so it does not advertise the `message`
+host capability (including `message.text`). Viewers should treat this channel as unsupported. Direct
+`ui/message` requests receive JSON-RPC error `-32601` (method not found), never a delivery
+acknowledgement; notifications without an `id` receive no response. This follows the
+[three-channel ADR's "No false success" rule](../view/docs/decision-records/0005-three-view-channels.md).
 
 ## Error Codes
 

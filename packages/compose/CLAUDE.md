@@ -84,16 +84,18 @@ The rendered HTML includes a JavaScript event bus that implements:
 
 - JSON-RPC 2.0 messages via postMessage
 - `ui/initialize` handshake (MCP Apps spec — compose acts as host)
-- `ui/message` logging channel (MCP Apps spec — logs to console)
 - `ui/compose/event` — dedicated cross-UI event routing (compose extension, fills the View↔View gap
   the MCP Apps spec does not cover)
 - Broadcast support via `to: "*"` on sync rules
 
-Compose advertises `hostCapabilities: { logging, message }` on initialize. In an interactive local
-slot it additionally advertises `serverTools` and/or `serverResources` only if the runtime supplied
-a concrete local route. `serverTools` is restricted to manifest tools marked `appCallable` and
-`serverResources` to the collected resource URI. The parent verifies a child window and its unique
-loopback origin before relaying either capability.
+Compose advertises `logging` and the experimental component catalog capability on initialize. It
+does not advertise `message` or `message.text`: there is no conversation/model delivery path. Direct
+`ui/message` requests return JSON-RPC error `-32601` (method not found); notifications without an
+`id` receive no response. Never acknowledge delivery that did not happen (view ADR 0005, rule 4). In
+an interactive local slot it additionally advertises `serverTools` and/or `serverResources` only if
+the runtime supplied a concrete local route. `serverTools` is restricted to manifest tools marked
+`appCallable` and `serverResources` to the collected resource URI. The parent verifies a child
+window and its unique loopback origin before relaying either capability.
 
 The legacy `ui/update-model-context` sync routing path was removed in v0.4.0. Cross-UI sync must go
 through `ui/compose/event` exclusively. Initial tool results must be delivered only after
