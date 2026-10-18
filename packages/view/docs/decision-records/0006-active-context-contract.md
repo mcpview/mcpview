@@ -27,18 +27,24 @@ reconciliation on data refresh and navigation scoping; the gap is narrower than 
 
 ## Decision
 
-### Core rule: references, never payloads (2026-10-18)
+### Core rule: graduated selection, compact by default (2026-10-18)
 
-The active context tells the model **what** the user points at, not **what it contains**. The model
-fetches content itself, with the server's tools, only when it needs it.
+The active context tells the model what the user points at, with just enough content for the likely
+intent. Anything more, the model fetches itself with the server's tools.
 
-1. An item is a reference: a tool-resolvable `id` (for example `record:<doctype>:<name>`), a
-   `label`, and at most one short `value`. It never carries a document, a row set or a detail view.
-2. Several selected items form a list of references, never the details of each one.
-3. A selection larger than the basket (a range, a lasso, more than 8 items) becomes a single **query
-   item**: a short summary (count, bounds) plus the list tool and filters that reproduce it. The
-   model calls that tool if it needs the rows.
-4. Details are retrieved by the model through tools (`*_get`, list tools), never pushed by the view.
+| Selection                                     | What the context carries                                                                                                               | Likely intent      |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| 1 item                                        | its **compact record**: title, status and the fields the backend marks as preview (for ERPNext, `in_preview` / `bold`), about 8 fields | "look at this one" |
+| 2 or 3 items                                  | their compact records **side by side**                                                                                                 | comparison         |
+| 4 to 8 items                                  | a **list of references**: tool-resolvable `id`, `label`, at most one short `value`                                                     | "these ones"       |
+| beyond the basket (range, lasso, more than 8) | **one query item**: a short summary (count, bounds) plus the list tool and filters that reproduce the selection                        | "this set"         |
+
+Rules that hold at every tier:
+
+1. Never a full document, a row set or a detail view: compact records stay bounded, and the model
+   calls `*_get` or the list tool when it needs more. The model chooses how deep to go.
+2. Every item keeps its tool-resolvable `id`, even when a compact record is attached.
+3. The thresholds (1, 3, 8) are parameters with these defaults, to tune with real use.
 
 Two deliberate exceptions:
 
@@ -47,6 +53,11 @@ Two deliberate exceptions:
 - A file the user explicitly attaches is sent as a resource when the host accepts resources, because
   the download tool is app-only and the model could not fetch it otherwise. The view discloses it
   (name, size, "sent to the model") before sending.
+
+Why compact and not full records: the context is sent again on every turn. A Sales Invoice has more
+than 140 fields; its compact record has about 8. View-provided tools (draft MCP Apps spec) would let
+the model ask the view for more on demand; until hosts support them, tools on the server are the
+pull path.
 
 ### Snapshot (wire contract, in `@mcpview/contracts`)
 
