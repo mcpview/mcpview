@@ -27,6 +27,27 @@ reconciliation on data refresh and navigation scoping; the gap is narrower than 
 
 ## Decision
 
+### Core rule: references, never payloads (2026-10-18)
+
+The active context tells the model **what** the user points at, not **what it contains**. The model
+fetches content itself, with the server's tools, only when it needs it.
+
+1. An item is a reference: a tool-resolvable `id` (for example `record:<doctype>:<name>`), a
+   `label`, and at most one short `value`. It never carries a document, a row set or a detail view.
+2. Several selected items form a list of references, never the details of each one.
+3. A selection larger than the basket (a range, a lasso, more than 8 items) becomes a single **query
+   item**: a short summary (count, bounds) plus the list tool and filters that reproduce it. The
+   model calls that tool if it needs the rows.
+4. Details are retrieved by the model through tools (`*_get`, list tools), never pushed by the view.
+
+Two deliberate exceptions:
+
+- The short `value` stays when the value is the information itself and no tool returns it from the
+  `id` (a chart point, a KPI figure).
+- A file the user explicitly attaches is sent as a resource when the host accepts resources, because
+  the download tool is app-only and the model could not fetch it otherwise. The view discloses it
+  (name, size, "sent to the model") before sending.
+
 ### Snapshot (wire contract, in `@mcpview/contracts`)
 
 - Schema `io.casys.active-context/1.0`; readers also accept the pilot's
