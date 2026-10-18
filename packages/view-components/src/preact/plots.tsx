@@ -15,6 +15,9 @@ const SPARKLINE_VIEWBOX_HEIGHT = 24;
 const SERIES_CHART_VIEWBOX_HEIGHT = 40;
 const VIEWBOX_WIDTH = 100;
 
+/** Plot colors, including the two categorical theme colors. */
+export type SeriesChartTone = PresentationTone | "accent" | "brand";
+
 export interface SparklineProps {
   /** Accessible name of the sampled quantity. */
   readonly label: string;
@@ -22,7 +25,9 @@ export interface SparklineProps {
   readonly values: readonly number[];
   /** Caller-formatted summary, including units. */
   readonly summaryLabel: string;
-  readonly tone?: PresentationTone;
+  /** Inline mark by default; block also displays the supplied label and summary. */
+  readonly variant?: "inline" | "block";
+  readonly tone?: SeriesChartTone;
   readonly className?: string;
 }
 
@@ -31,6 +36,7 @@ export function Sparkline({
   label,
   values,
   summaryLabel,
+  variant = "inline",
   tone = "info",
   className,
 }: SparklineProps): JSX.Element {
@@ -46,13 +52,17 @@ export function Sparkline({
     })
     .join(" ");
 
-  return (
+  const plot = (
     <svg
-      aria-label={`${label}: ${summaryLabel}`}
-      class={classes("mcp-view-sparkline", className)}
+      aria-label={variant === "inline" ? `${label}: ${summaryLabel}` : undefined}
+      aria-hidden={variant === "block" ? true : undefined}
+      class={classes(
+        "mcp-view-sparkline",
+        variant === "inline" ? className : undefined,
+      )}
       data-tone={tone}
       preserveAspectRatio="none"
-      role="img"
+      role={variant === "inline" ? "img" : undefined}
       viewBox={`0 0 ${VIEWBOX_WIDTH} ${SPARKLINE_VIEWBOX_HEIGHT}`}
     >
       <polyline
@@ -61,6 +71,22 @@ export function Sparkline({
         vector-effect="non-scaling-stroke"
       />
     </svg>
+  );
+
+  if (variant === "inline") return plot;
+
+  return (
+    <div
+      aria-label={`${label}: ${summaryLabel}`}
+      class={classes("mcp-view-sparkline-block", className)}
+      role="img"
+    >
+      <div aria-hidden="true" class="mcp-view-sparkline-heading">
+        <span>{label}</span>
+        <span class="mcp-view-sparkline-summary">{summaryLabel}</span>
+      </div>
+      {plot}
+    </div>
   );
 }
 
@@ -87,7 +113,7 @@ export interface SeriesChartSeries {
   readonly mark: SeriesMark;
   /** At least two finite points, already ordered by the caller. */
   readonly points: readonly SeriesPoint[];
-  readonly tone?: PresentationTone;
+  readonly tone?: SeriesChartTone;
 }
 
 export interface SeriesChartReadout {
@@ -126,6 +152,10 @@ export interface SeriesChartProps {
   readonly xMax: number;
   readonly yMin: number;
   readonly yMax: number;
+  /** Show caller-labelled series keys when at least two series are present. */
+  readonly legend?: boolean;
+  /** Caller-formatted y ticks on the declared shared scale. */
+  readonly yTicks?: readonly { readonly value: number; readonly label: string }[];
   /** Caller-formatted ticks, left to right. */
   readonly axisLabels?: readonly string[];
   /** Caller-computed extrema. The chart never scans the samples for them. */
@@ -150,12 +180,19 @@ export function SeriesChart({
   yMin,
   yMax,
   axisLabels,
+  legend = true,
+  yTicks,
   summary,
   cursor,
   onScrub,
   className,
 }: SeriesChartProps): JSX.Element {
   validateSeriesChart(series, xMin, xMax, yMin, yMax, cursor);
+  for (const tick of yTicks ?? []) {
+    if (!Number.isFinite(tick.value) || tick.value < yMin || tick.value > yMax) {
+      throw new RangeError("SeriesChart yTicks value must be within yMin and yMax");
+    }
+  }
   const baselineY = yMin <= 0 && 0 <= yMax
     ? SERIES_CHART_VIEWBOX_HEIGHT - normalize(0, yMin, yMax) * SERIES_CHART_VIEWBOX_HEIGHT
     : undefined;
@@ -166,82 +203,131 @@ export function SeriesChart({
 
   return (
     <figure class={classes("mcp-view-series-chart", className)}>
-      <svg
-        aria-label={`${label}: ${seriesLabels}`}
-        class="mcp-view-series-chart-plot"
-        preserveAspectRatio="none"
-        role="img"
-        viewBox={`0 0 ${VIEWBOX_WIDTH} ${SERIES_CHART_VIEWBOX_HEIGHT}`}
-        onPointerLeave={onScrub === undefined ? undefined : () => onScrub(undefined)}
-        onPointerMove={onScrub === undefined ? undefined : (event) => {
-          const box = event.currentTarget.getBoundingClientRect();
-          if (box.width === 0) return;
-          const ratio = (event.clientX - box.left) / box.width;
-          if (ratio < 0 || ratio > 1) return;
-          onScrub(xMin + ratio * (xMax - xMin));
-        }}
+      {legend && series.length >= 2 && (
+        // The SVG's aria-label already names every series: the visual legend
+        // stays out of the accessibility tree so nothing is read twice.
+        <ul aria-hidden="true" class="mcp-view-series-chart-legend">
+          {series.map((one) => (
+            <li data-tone={one.tone ?? "info"} key={one.id}>
+              <span
+                aria-hidden="true"
+                class="mcp-view-series-chart-legend-mark"
+                data-mark={one.mark}
+              />
+              <span>{one.label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div
+        class={classes(
+          "mcp-view-series-chart-frame",
+          yTicks?.length ? "mcp-view-series-chart-frame-ticks" : undefined,
+        )}
       >
-        {baselineY !== undefined && (
-          <line
-            class="mcp-view-series-chart-baseline"
-            vector-effect="non-scaling-stroke"
-            x1={0}
-            x2={VIEWBOX_WIDTH}
-            y1={round(baselineY)}
-            y2={round(baselineY)}
-          />
+        {yTicks && yTicks.length > 0 && (
+          <div aria-hidden="true" class="mcp-view-series-chart-y-axis">
+            {yTicks.map((tick, index) => (
+              <span
+                key={index}
+                style={{ top: `${round((1 - normalize(tick.value, yMin, yMax)) * 100)}%` }}
+              >
+                {tick.label}
+              </span>
+            ))}
+          </div>
         )}
-        {cursorX !== undefined && (
-          <line
-            class="mcp-view-series-chart-cursor"
-            vector-effect="non-scaling-stroke"
-            x1={round(cursorX)}
-            x2={round(cursorX)}
-            y1={0}
-            y2={SERIES_CHART_VIEWBOX_HEIGHT}
-          />
-        )}
-        {series.map((one) => {
-          const placed = one.points.map((point) => ({
-            x: normalize(point.x, xMin, xMax) * VIEWBOX_WIDTH,
-            y: SERIES_CHART_VIEWBOX_HEIGHT -
-              normalize(point.y, yMin, yMax) * SERIES_CHART_VIEWBOX_HEIGHT,
-          }));
-          if (one.mark === "line") {
+        <svg
+          aria-label={`${label}: ${seriesLabels}`}
+          class="mcp-view-series-chart-plot"
+          preserveAspectRatio="none"
+          role="img"
+          viewBox={`0 0 ${VIEWBOX_WIDTH} ${SERIES_CHART_VIEWBOX_HEIGHT}`}
+          onPointerLeave={onScrub === undefined ? undefined : () => onScrub(undefined)}
+          onPointerMove={onScrub === undefined ? undefined : (event) => {
+            const box = event.currentTarget.getBoundingClientRect();
+            if (box.width === 0) return;
+            const ratio = (event.clientX - box.left) / box.width;
+            if (ratio < 0 || ratio > 1) return;
+            onScrub(xMin + ratio * (xMax - xMin));
+          }}
+        >
+          {yTicks?.map((tick, index) => {
+            const y = round((1 - normalize(tick.value, yMin, yMax)) * SERIES_CHART_VIEWBOX_HEIGHT);
             return (
-              <polyline
-                class="mcp-view-series-chart-line"
-                data-tone={one.tone ?? "info"}
-                key={one.id}
-                points={placed.map((at) => `${round(at.x)},${round(at.y)}`).join(" ")}
+              <line
+                class="mcp-view-series-chart-grid"
+                key={index}
                 vector-effect="non-scaling-stroke"
+                x1={0}
+                x2={VIEWBOX_WIDTH}
+                y1={y}
+                y2={y}
               />
             );
-          }
-          // Each recorded sample stands alone, anchored on the drawn baseline
-          // when the scale carries zero, otherwise on the floor of the scale.
-          const foot = baselineY ?? SERIES_CHART_VIEWBOX_HEIGHT;
-          return (
-            <g class="mcp-view-series-chart-bars" data-tone={one.tone ?? "info"} key={one.id}>
-              {placed.map((at, index) => (
-                <line
-                  key={one.points[index].x}
+          })}
+          {baselineY !== undefined && (
+            <line
+              class="mcp-view-series-chart-baseline"
+              vector-effect="non-scaling-stroke"
+              x1={0}
+              x2={VIEWBOX_WIDTH}
+              y1={round(baselineY)}
+              y2={round(baselineY)}
+            />
+          )}
+          {cursorX !== undefined && (
+            <line
+              class="mcp-view-series-chart-cursor"
+              vector-effect="non-scaling-stroke"
+              x1={round(cursorX)}
+              x2={round(cursorX)}
+              y1={0}
+              y2={SERIES_CHART_VIEWBOX_HEIGHT}
+            />
+          )}
+          {series.map((one) => {
+            const placed = one.points.map((point) => ({
+              x: normalize(point.x, xMin, xMax) * VIEWBOX_WIDTH,
+              y: SERIES_CHART_VIEWBOX_HEIGHT -
+                normalize(point.y, yMin, yMax) * SERIES_CHART_VIEWBOX_HEIGHT,
+            }));
+            if (one.mark === "line") {
+              return (
+                <polyline
+                  class="mcp-view-series-chart-line"
+                  data-tone={one.tone ?? "info"}
+                  key={one.id}
+                  points={placed.map((at) => `${round(at.x)},${round(at.y)}`).join(" ")}
                   vector-effect="non-scaling-stroke"
-                  x1={round(at.x)}
-                  x2={round(at.x)}
-                  y1={round(foot)}
-                  y2={round(at.y)}
                 />
-              ))}
-            </g>
-          );
-        })}
-      </svg>
-      {axisLabels && axisLabels.length > 0 && (
-        <div aria-hidden="true" class="mcp-view-series-chart-axis">
-          {axisLabels.map((tick) => <span key={tick}>{tick}</span>)}
-        </div>
-      )}
+              );
+            }
+            // Each recorded sample stands alone, anchored on the drawn baseline
+            // when the scale carries zero, otherwise on the floor of the scale.
+            const foot = baselineY ?? SERIES_CHART_VIEWBOX_HEIGHT;
+            return (
+              <g class="mcp-view-series-chart-bars" data-tone={one.tone ?? "info"} key={one.id}>
+                {placed.map((at, index) => (
+                  <line
+                    key={one.points[index].x}
+                    vector-effect="non-scaling-stroke"
+                    x1={round(at.x)}
+                    x2={round(at.x)}
+                    y1={round(foot)}
+                    y2={round(at.y)}
+                  />
+                ))}
+              </g>
+            );
+          })}
+        </svg>
+        {axisLabels && axisLabels.length > 0 && (
+          <div aria-hidden="true" class="mcp-view-series-chart-axis">
+            {axisLabels.map((tick) => <span key={tick}>{tick}</span>)}
+          </div>
+        )}
+      </div>
       {cursor && (
         <div class="mcp-view-series-chart-readout">
           <span class="mcp-view-series-chart-readout-position">{cursor.label}</span>

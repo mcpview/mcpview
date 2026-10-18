@@ -100,6 +100,7 @@ export type {
   SeriesChartReadout,
   SeriesChartSeries,
   SeriesChartSummaryItem,
+  SeriesChartTone,
   SeriesPoint,
   SparklineProps,
 } from "./src/preact/plots.tsx";

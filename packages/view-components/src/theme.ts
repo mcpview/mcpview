@@ -1608,6 +1608,8 @@ button.mcp-view-tree-list-label:focus-visible {
   color: var(--mcp-view-accent);
 }
 .mcp-view-sparkline[data-tone="neutral"] { color: var(--mcp-view-muted); }
+.mcp-view-sparkline[data-tone="accent"] { color: var(--mcp-view-accent); }
+.mcp-view-sparkline[data-tone="brand"] { color: var(--mcp-view-brand); }
 .mcp-view-sparkline[data-tone="success"] { color: var(--mcp-view-success); }
 .mcp-view-sparkline[data-tone="warning"] { color: var(--mcp-view-warning); }
 .mcp-view-sparkline[data-tone="danger"] { color: var(--mcp-view-danger); }
@@ -1618,11 +1620,82 @@ button.mcp-view-tree-list-label:focus-visible {
   stroke-linejoin: round;
   stroke-width: 1.3;
 }
+.mcp-view-sparkline-block {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  width: 100%;
+}
+.mcp-view-sparkline-block > .mcp-view-sparkline {
+  width: 100%;
+  height: 2.5rem;
+}
+.mcp-view-sparkline-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  color: var(--mcp-view-muted);
+  font-size: var(--mcp-view-size-micro);
+  overflow-wrap: anywhere;
+}
+.mcp-view-sparkline-summary {
+  color: var(--mcp-view-text);
+  font-variant-numeric: tabular-nums;
+}
 
 .mcp-view-series-chart { display: grid; gap: 0.35rem; margin: 0; min-width: 0; }
+.mcp-view-series-chart-frame { display: grid; gap: 0.35rem; min-width: 0; }
+.mcp-view-series-chart-frame-ticks {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 0.6rem;
+  row-gap: 0.35rem;
+}
+.mcp-view-series-chart-frame-ticks .mcp-view-series-chart-plot { grid-column: 2; grid-row: 1; }
+.mcp-view-series-chart-frame-ticks .mcp-view-series-chart-axis { grid-column: 2; }
+.mcp-view-series-chart-y-axis {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--mcp-view-quiet);
+  font-size: var(--mcp-view-size-micro);
+}
+.mcp-view-series-chart-y-axis span {
+  position: relative;
+  display: block;
+  height: 0;
+  text-align: right;
+  white-space: nowrap;
+  transform: translateY(-0.5em);
+}
+.mcp-view-series-chart-grid { stroke: var(--mcp-view-border); stroke-width: 0.5; }
+.mcp-view-series-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--mcp-view-size-micro);
+}
+.mcp-view-series-chart-legend li { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--mcp-view-accent); }
+.mcp-view-series-chart-legend li > span:last-child { color: var(--mcp-view-muted); }
+.mcp-view-series-chart-legend-mark { display: inline-block; width: 1rem; height: 2px; background: currentColor; }
+.mcp-view-series-chart-legend-mark[data-mark="bar"] { width: 0.55rem; height: 0.55rem; }
+.mcp-view-series-chart-legend li[data-tone="neutral"] { color: var(--mcp-view-muted); }
+.mcp-view-series-chart-legend li[data-tone="success"] { color: var(--mcp-view-success); }
+.mcp-view-series-chart-legend li[data-tone="warning"] { color: var(--mcp-view-warning); }
+.mcp-view-series-chart-legend li[data-tone="danger"] { color: var(--mcp-view-danger); }
+.mcp-view-series-chart-legend li[data-tone="accent"] { color: var(--mcp-view-accent); }
+.mcp-view-series-chart-legend li[data-tone="brand"] { color: var(--mcp-view-brand); }
+.mcp-view-series-chart-bars[data-tone="accent"] line { stroke: var(--mcp-view-accent); }
+.mcp-view-series-chart-bars[data-tone="brand"] line { stroke: var(--mcp-view-brand); }
+
 .mcp-view-series-chart-plot {
   width: 100%;
-  height: 6.5rem;
+  height: var(--mcp-view-series-chart-height, 10rem);
   overflow: visible;
   border: 1px solid var(--mcp-view-border);
   border-radius: var(--mcp-view-radius);
@@ -1648,10 +1721,12 @@ button.mcp-view-tree-list-label:focus-visible {
 .mcp-view-series-chart-line[data-tone="success"] { stroke: var(--mcp-view-success); }
 .mcp-view-series-chart-line[data-tone="warning"] { stroke: var(--mcp-view-warning); }
 .mcp-view-series-chart-line[data-tone="danger"] { stroke: var(--mcp-view-danger); }
+.mcp-view-series-chart-line[data-tone="accent"] { stroke: var(--mcp-view-accent); }
+.mcp-view-series-chart-line[data-tone="brand"] { stroke: var(--mcp-view-brand); }
 .mcp-view-series-chart-bars line {
   stroke: var(--mcp-view-accent);
   stroke-linecap: butt;
-  stroke-width: 3;
+  stroke-width: var(--mcp-view-series-chart-bar-width, 8px);
 }
 .mcp-view-series-chart-bars[data-tone="neutral"] line { stroke: var(--mcp-view-muted); }
 .mcp-view-series-chart-bars[data-tone="success"] line { stroke: var(--mcp-view-success); }
@@ -1689,6 +1764,8 @@ button.mcp-view-tree-list-label:focus-visible {
 .mcp-view-series-chart-readout-value dt[data-tone="success"] { color: var(--mcp-view-success); }
 .mcp-view-series-chart-readout-value dt[data-tone="warning"] { color: var(--mcp-view-warning); }
 .mcp-view-series-chart-readout-value dt[data-tone="danger"] { color: var(--mcp-view-danger); }
+.mcp-view-series-chart-readout-value dt[data-tone="accent"] { color: var(--mcp-view-accent); }
+.mcp-view-series-chart-readout-value dt[data-tone="brand"] { color: var(--mcp-view-brand); }
 .mcp-view-series-chart-readout-value dd {
   margin: 0;
   font-size: var(--mcp-view-size-meta);
@@ -1708,8 +1785,14 @@ button.mcp-view-tree-list-label:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.mcp-view-interval-plot { display: grid; gap: 0.3rem; min-width: 0; }
+.mcp-view-interval-plot {
+  display: grid;
+  grid-template-columns: minmax(2.5rem, auto) minmax(0, 1fr) minmax(5rem, auto);
+  gap: 0.3rem 0.5rem;
+  min-width: 0;
+}
 .mcp-view-interval-plot-scale {
+  grid-column: 2;
   position: relative;
   display: flex;
   justify-content: center;
@@ -1731,7 +1814,8 @@ button.mcp-view-tree-list-label:focus-visible {
 }
 .mcp-view-interval-plot-row {
   display: grid;
-  grid-template-columns: minmax(2.5rem, auto) minmax(0, 1fr) minmax(5rem, auto);
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   gap: 0.5rem;
 }
@@ -1899,9 +1983,12 @@ button.mcp-view-tree-list-label:focus-visible {
     flex-basis: 100%;
   }
   .mcp-view-series-chart-readout { align-items: flex-start; flex-direction: column; }
-  .mcp-view-interval-plot-row {
+  .mcp-view-interval-plot {
     grid-template-columns: minmax(0, 1fr) minmax(5rem, auto);
   }
+  .mcp-view-interval-plot-scale { grid-column: 1 / -1; }
+  .mcp-view-interval-plot-label { grid-column: 1; grid-row: 1; }
+  .mcp-view-interval-plot-bounds { grid-column: 2; grid-row: 1; }
   .mcp-view-interval-plot-track { grid-column: 1 / -1; grid-row: 2; }
 }
 
