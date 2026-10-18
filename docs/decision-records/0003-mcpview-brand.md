@@ -48,7 +48,8 @@ month, and it left the underlying problems in place:
    | `packages/compose`         | `@casys/mcp-compose`         | `@mcpview/compose`    | 0.10.0  |
    | `packages/bridge`          | `@casys/mcp-bridge`          | `@mcpview/bridge`     | 0.4.0   |
 
-3. **Seven deprecated aliases, published one last time**, live in
+3. **Seven deprecated aliases**, republished only when their target's minor
+   version moves (see Consequences), live in
    `packages/legacy/<old-name-without-scope>/`. Each re-exports its target with
    `export * from "@mcpview/<x>"`, declares the same export sub-paths as the
    target, ships an npm build marked `deprecated: "Moved to @mcpview/<x>"`, and
