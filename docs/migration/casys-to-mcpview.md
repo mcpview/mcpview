@@ -114,6 +114,20 @@ perl -pi -e '
 ' $(git ls-files '*.ts' '*.tsx' '*.js' '*.mjs' '*.json' '*.md' ':!package-lock.json' ':!deno.lock')
 ```
 
+The pass above renames packages but keeps your version ranges, and the new
+packages start at the versions in the table: `jsr:@casys/mcp-view@^0.9.5` would
+become `jsr:@mcpview/view@^0.9.5`, which does not resolve. Raise the ranges in
+`deno.json` and `package.json` with a second pass:
+
+```bash
+perl -pi -e '
+  my %v = (server => "0.29.0", view => "0.10.0", components => "0.10.0",
+           contracts => "0.2.0", compose => "0.10.0", bridge => "0.4.0");
+  s{(\@mcpview/(\w+))\@[\^~]?\d[\w.\-]*}{exists $v{$2} ? "$1\@^$v{$2}" : $&}ge;
+  s{("\@mcpview/(\w+)"\s*:\s*")(?:npm:|jsr:)?[\^~]?\d[\w.\-]*"}{exists $v{$2} ? "$1^$v{$2}\"" : $&}ge;
+' deno.json package.json $(git ls-files '*/deno.json' '*/package.json')
+```
+
 Then regenerate the lockfile (`npm install` or `deno install`), run the normal
 type-check and tests, and look for leftovers:
 
