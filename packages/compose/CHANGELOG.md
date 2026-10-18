@@ -5,6 +5,14 @@ documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Stop advertising `message.text` in the Compose host's initialization response: Compose has no
+  conversation/model delivery path. Direct `ui/message` requests now return JSON-RPC error `-32601`
+  instead of logging the payload and acknowledging `{}`, so a viewer cannot mistake a console log
+  for a delivered message. Viewers should treat the missing `message` capability as unsupported,
+  following view ADR 0005's "No false success" rule.
+
 ## [0.10.0] - 2026-10-17
 
 ### Changed

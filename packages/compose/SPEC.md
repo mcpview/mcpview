@@ -163,9 +163,13 @@ The event bus implements:
 - `ui/notifications/tool-result` — complete initiating result after initialization
 - `tools/call` / `tools/list` — slot-local manifest-granted App tools only
 - `resources/read` / `resources/list` — the slot's original App resource only
-- `ui/message` — logging/debugging channel
 
 All messages follow JSON-RPC 2.0.
+
+`ui/message` is unsupported: Compose has no conversation/model delivery path and must not advertise
+`message` or `message.text`. Direct requests return JSON-RPC error `-32601` (method not found),
+never a delivery acknowledgement; notifications without an `id` receive no response. See the
+[three-channel ADR's "No false success" rule](../view/docs/decision-records/0005-three-view-channels.md).
 
 Component catalogs may advertise `events.emits` and `events.accepts`. An orchestration `portSync`
 policy connects matching declarations across distinct active surfaces at runtime. This is a

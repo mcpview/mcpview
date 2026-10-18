@@ -139,7 +139,6 @@ export function generateEventBusScript(
       const config = getSlotConfig(slot);
       const capabilities = {
         logging: {},
-        message: { text: {} },
         experimental: {
           [COMPONENT_CAPABILITY]: {
             version: '1',
@@ -525,8 +524,10 @@ export function generateEventBusScript(
       }
 
       if (message.method === 'ui/message') {
-        console.log('[mcp-compose] UI message from slot', sourceSlot, ':', message.params);
-        ackIfRequested(event.source, message, targetOrigin);
+        // Compose ne livre aucun message au modèle : ne jamais acquitter un faux succès.
+        if (hasRequestId(message)) {
+          respondError(event.source, message.id, -32601, '[mcp-compose] ui/message is not supported', targetOrigin);
+        }
         return;
       }
 
