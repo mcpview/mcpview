@@ -21,7 +21,7 @@ import type {
   McpUiToolInputPartialNotification,
   McpUiToolResultNotification,
 } from "@modelcontextprotocol/ext-apps";
-import type { CallToolResult, Implementation } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult, Implementation } from "@modelcontextprotocol/client";
 
 import type { SampleArgs, SampleResult } from "./sample.ts";
 import type { ComposeEventClient, ComposeEventPayload } from "./compose-events.ts";

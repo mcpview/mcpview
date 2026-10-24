@@ -11,8 +11,8 @@ Composable middleware, OAuth2 auth, dual transport, observability, and
 everything you need to ship reliable MCP servers. Built on the official
 [`@modelcontextprotocol/server`](https://www.npmjs.com/package/@modelcontextprotocol/server)
 and
-[`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk)
-packages.
+[`@modelcontextprotocol/client`](https://www.npmjs.com/package/@modelcontextprotocol/client)
+SDK v2 packages.
 
 ```
 rate-limit → auth → custom middleware → scope-check → validation → backpressure → handler
@@ -55,6 +55,23 @@ npm install @mcpview/server
 > names continue as deprecated aliases that re-export this package unchanged, so
 > existing imports keep working. Coming from either? See the
 > [migration guide](https://github.com/mcpview/mcpview/blob/main/docs/migration/casys-to-mcpview.md).
+
+## SDK v2 compatibility
+
+Requires Node 20+ for npm consumers and Zod 4.2+ when supplying the MCP Apps
+peer dependency. The framework uses `@modelcontextprotocol/server`, `client`,
+and `core` (`^2.3.1`) and MCP Apps `^2.0.3`. Direct SDK type imports must use
+these split packages instead of `@modelcontextprotocol/sdk`. In particular, pair
+`OAuthClientProviderImpl` with transports from `@modelcontextprotocol/client`;
+SDK v1 and v2 instances are not interchangeable. Stored OAuth tokens now carry
+the SDK's issuer binding, and the provider retains discovery for the PKCE code
+callback within its active authorization flow.
+
+Tool handlers keep `handler(args, ctx)` and JSON Schema validation. HTTP remains
+stateless: `POST /mcp` accepts protocol `2026-07-28`, while `GET /mcp`
+returns 405. STDIO retains modern discovery and the legacy initialization
+fallback. Tasks, subscriptions, and signed MRTR retries keep their existing
+framework contracts.
 
 ## Which companion package should I use?
 
@@ -535,8 +552,8 @@ app.unregisterResource(resource.uri); // true, then false if called again
 
 Not every MCP client renders UI resources. Clients that do advertise the
 [MCP Apps extension](https://github.com/modelcontextprotocol/ext-apps) in their
-capabilities (per the SDK 1.29 `extensions` field). Read it from a tool handler
-to decide between rich UI and a text-only fallback:
+capabilities (per the SDK v2 `extensions` field). Read it from a tool handler to
+decide between rich UI and a text-only fallback:
 
 ```typescript
 import { MCP_APP_MIME_TYPE, McpApp } from "@mcpview/server";

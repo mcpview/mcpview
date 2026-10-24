@@ -10,7 +10,7 @@
 import type {
   ClientCapabilities,
   Implementation,
-} from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/server";
 
 /**
  * MCP logging severities (RFC 5424 syslog levels), ordered least to most severe.

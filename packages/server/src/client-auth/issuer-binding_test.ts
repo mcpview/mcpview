@@ -10,7 +10,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import type { OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
+import type { OAuthTokens } from "@modelcontextprotocol/client";
 import { OAuthClientProviderImpl } from "./provider.ts";
 import type { StoredCredentials, TokenStore } from "./types.ts";
 
@@ -68,6 +68,8 @@ async function discover(
     authorizationServerUrl: issuer,
     authorizationServerMetadata: {
       issuer,
+      authorization_endpoint: `${issuer}/authorize`,
+      token_endpoint: `${issuer}/token`,
       response_types_supported: ["code"],
     },
   });
@@ -230,6 +232,8 @@ Deno.test("issuer binding - a forged `issuer` claim does not unlock credentials"
     authorizationServerUrl: AS_TWO,
     authorizationServerMetadata: {
       issuer: AS_ONE, // the lie
+      authorization_endpoint: `${AS_TWO}/authorize`,
+      token_endpoint: `${AS_TWO}/token`,
       response_types_supported: ["code"],
     },
   });

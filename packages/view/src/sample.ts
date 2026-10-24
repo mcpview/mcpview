@@ -20,10 +20,11 @@
 
 import type { App, McpUiHostCapabilities } from "@modelcontextprotocol/ext-apps";
 import type {
+  CreateMessageRequest,
   CreateMessageResult,
   ModelPreferences,
   SamplingMessage,
-} from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/client";
 
 import { MCPViewError } from "./errors.ts";
 
@@ -61,7 +62,7 @@ export interface SampleCommon {
   temperature?: number;
   modelPreferences?: ModelPreferences;
   stopSequences?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: CreateMessageRequest["params"]["metadata"];
 }
 
 /**

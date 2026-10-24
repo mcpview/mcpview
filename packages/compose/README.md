@@ -67,6 +67,30 @@ npm i @mcpview/compose
 import { buildCompositeUi, createCollector, renderComposite } from "@mcpview/compose";
 ```
 
+## MCP SDK compatibility
+
+Compose uses MCP Apps 2.x and the split MCP SDK 2.x packages. Integrations importing SDK types or
+classes should use `@modelcontextprotocol/client` instead of the former monolithic SDK package. MCP
+Apps 2.x requires `@modelcontextprotocol/client@^2.0.0` and `zod@^4.2.0`; this workspace uses
+client/core `^2.3.1` and ext-apps `^2.0.3`. Node consumers require Node.js 20 or later. The
+structural `createMcpSdkCollector()` adapter also accepts results from existing SDK clients without
+importing those clients into the composition core.
+
+The runtime retains its stateless-first transport selection and its initialized Streamable HTTP
+fallback. Each connection owns its SDK client and session; closing it terminates the remote session
+before closing the client. `listTools()` and `listResources()` return one page plus `nextCursor`,
+and `readResource()` always reads from its source. Listed tool definitions retain SDK output-schema
+validation across explicitly fetched pages; refreshing the first page, a tool-list change, or
+closing the connection invalidates them. Tool results with `isError: true` remain results; remote
+protocol failures and local request timeouts become the existing Compose `RuntimeError` codes, with
+the original SDK error available as `cause`.
+
+The Apps iframe protocol is unchanged by the dependency migration. Compose's conversation and
+model-context host callbacks remain deferred; this migration adds no runtime agent or callbacks. See
+the
+[official MCP Apps migration guide](https://apps.extensions.modelcontextprotocol.io/api/documents/migrate-to-v2.html)
+for SDK import, peer dependency, and error-class changes.
+
 ## Quick Start
 
 A complete, runnable example — from MCP tool results to rendered HTML:
@@ -258,7 +282,8 @@ collector.clear(); // Reset
 
 ## MCP SDK Adapter
 
-For projects using `@modelcontextprotocol/sdk`:
+For projects using `CallToolResult` from `@modelcontextprotocol/client` (or an existing client with
+the same result shape):
 
 ```typescript
 import { createMcpSdkCollector } from "@mcpview/compose";

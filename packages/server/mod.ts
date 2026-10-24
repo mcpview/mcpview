@@ -4,7 +4,7 @@
  * Production-ready MCP server framework with built-in middleware pipeline,
  * auth, concurrency control, backpressure, and observability.
  *
- * Built on top of the official @modelcontextprotocol/sdk.
+ * Built on top of the official MCP TypeScript SDK v2.
  *
  * @example
  * ```typescript
@@ -204,6 +204,7 @@ export {
   FileTokenStore,
   isCimdConfig,
   MemoryTokenStore,
+  OAuthCallbackError,
   OAuthClientProviderImpl,
   prepareOAuthProvider,
 } from "./src/client-auth/mod.ts";
@@ -212,6 +213,7 @@ export type {
   CimdClientConfig,
   CimdConfigErrorCode,
   ClientIdMetadataDocument,
+  OAuthCallbackResult,
   OAuthClientConfig,
   OAuthClientConfigBase,
   PrepareOAuthResult,

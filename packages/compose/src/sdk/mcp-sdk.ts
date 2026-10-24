@@ -1,5 +1,5 @@
 /**
- * MCP SDK adapter — wraps the collector for use with `@modelcontextprotocol/sdk` tool call results.
+ * MCP SDK adapter — wraps the collector for use with `@modelcontextprotocol/client` tool call results.
  *
  * This adapter provides a convenience wrapper around the collector that accepts
  * the shape of tool call results from the official MCP SDK. It uses generic interfaces
@@ -15,12 +15,12 @@ import type { UiCollector } from "../core/collector/collector.ts";
 /**
  * Minimal shape of an MCP SDK `CallToolResult`.
  *
- * This is a structural subset of `@modelcontextprotocol/sdk`'s `CallToolResult`.
+ * This is a structural subset of `@modelcontextprotocol/client`'s `CallToolResult`.
  * Any object matching this shape will be accepted — no need to import the SDK.
  *
  * @example
  * ```typescript
- * // This matches the shape of @modelcontextprotocol/sdk CallToolResult
+ * // This matches the shape of @modelcontextprotocol/client CallToolResult
  * const result: McpSdkCallToolResult = {
  *   content: [{ type: "text", text: "OK" }],
  *   _meta: { ui: { resourceUri: "ui://pg/table/1" } },
@@ -76,7 +76,7 @@ export interface McpSdkCollector {
  * Create an MCP SDK-aware collector.
  *
  * Wraps the core `UiCollector` with an interface that accepts
- * `@modelcontextprotocol/sdk` `CallToolResult` objects directly.
+ * `@modelcontextprotocol/client` `CallToolResult` objects directly.
  * Error results (`isError: true`) are automatically skipped.
  *
  * @returns A new `McpSdkCollector` instance

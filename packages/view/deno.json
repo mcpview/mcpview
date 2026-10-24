@@ -50,7 +50,9 @@
   "imports": {
     "@deno/dnt": "jsr:@deno/dnt@^0.41",
     "@std/assert": "jsr:@std/assert@^1.0.0",
-    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.29.0",
-    "@modelcontextprotocol/ext-apps": "npm:@modelcontextprotocol/ext-apps@^1.7.4"
+    "@modelcontextprotocol/ext-apps": "npm:@modelcontextprotocol/ext-apps@^2.0.3",
+    "@modelcontextprotocol/core": "npm:@modelcontextprotocol/core@^2.3.1",
+    "@modelcontextprotocol/client": "npm:@modelcontextprotocol/client@^2.3.1",
+    "zod": "npm:zod@^4.2.0"
   }
 }

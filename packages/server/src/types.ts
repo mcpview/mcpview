@@ -10,7 +10,7 @@
 import type {
   ClientCapabilities,
   Implementation,
-} from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/server";
 
 /**
  * Rate limit configuration

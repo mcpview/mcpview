@@ -68,9 +68,10 @@ try {
       "@mcpview/view": mcpViewModule,
       "@mcpview/components": mcpViewComponentsModule,
       "@mcpview/components/surface": mcpViewSurfaceModule,
-      "@modelcontextprotocol/ext-apps": "npm:@modelcontextprotocol/ext-apps@^1.7.4",
-      "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.29.0",
-      "@modelcontextprotocol/sdk/types.js": "npm:@modelcontextprotocol/sdk@^1.29.0/types.js"
+      "@modelcontextprotocol/ext-apps": "npm:@modelcontextprotocol/ext-apps@^2.0.3",
+      "@modelcontextprotocol/core": "npm:@modelcontextprotocol/core@^2.3.1",
+      "@modelcontextprotocol/client": "npm:@modelcontextprotocol/client@^2.3.1",
+      "zod": "npm:zod@^4.2.0"
     }
   }));
   const command = new Deno.Command(Deno.execPath(), {

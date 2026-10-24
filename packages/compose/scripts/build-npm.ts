@@ -45,6 +45,7 @@ await build({
     version: VERSION,
     description: "Compose and synchronize multiple MCP Apps UIs into composite dashboards",
     license: "MIT",
+    engines: { node: ">=20" },
     repository: {
       type: "git",
       url: "git+https://github.com/mcpview/mcpview.git",

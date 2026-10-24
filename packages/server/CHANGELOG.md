@@ -5,6 +5,35 @@ All notable changes to `@mcpview/server` (published as `@casys/mcp-server` up to
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING: complete the migration to MCP TypeScript SDK v2 and MCP Apps v2.**
+  npm consumers require Node 20+; the MCP Apps peer contract requires Zod 4.2+.
+  Consumers importing official SDK types or transports must replace
+  `@modelcontextprotocol/sdk` imports with the split
+  `@modelcontextprotocol/server`, `client`, and `core` packages. Pair
+  `OAuthClientProviderImpl` with SDK v2 client transports: v1 and v2 instances
+  cannot be mixed. Stored token and client-information types now preserve the
+  SDK issuer stamp; the provider retains discovery alongside its active PKCE
+  verifier so the v2 authorization-code callback and refresh can complete.
+  Existing discovered-server credential binding and refresh-token carry-over
+  checks remain enforced.
+- OAuth localhost callbacks now preserve `code`, optional `iss`, and `state` in
+  `CallbackServer.start().callbackPromise`; the existing `codePromise` remains
+  available. `prepareOAuthProvider()` exposes this callback promise and adds
+  `finishAuth(transport)` to forward the complete response to the SDK v2
+  transport. This lets the SDK enforce advertised RFC 9207 issuer checks before
+  exchanging the code. OAuth denial callbacks reject with `OAuthCallbackError`
+  carrying `error` and `errorDescription`; the completion helper forwards those
+  responses for SDK issuer validation before surfacing their error details.
+  Callers remain responsible for comparing callback `state` with their expected
+  value before completion. See the SDK v2 migration guide.
+- Closing the callback server before the redirect now rejects `callbackPromise`,
+  `codePromise` and `finishAuth()` instead of leaving them pending forever.
+- Preserve `handler(args, ctx)`, stateless HTTP `POST /mcp` (and 405 for GET),
+  STDIO legacy fallback, JSON Schema validation, Tasks, subscriptions, and
+  signed MRTR retry bindings while using the v2 protocol types and error codes.
+
 ## [0.29.0] — 2026-10-17
 
 ### Changed

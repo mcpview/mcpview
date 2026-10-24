@@ -8,6 +8,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING:** Migrate to MCP SDK v2 and ext-apps 2.x. Node consumers require Node 20+. Import MCP
+  types from `@modelcontextprotocol/client` and schemas from `@modelcontextprotocol/core` instead of
+  SDK v1 subpaths. Custom handlers on the underlying `app` use the v2 method-name and
+  request-context APIs; the iframe wire protocol remains compatible.
+- **BREAKING:** View tool schemas require Standard JSON Schema support (`~standard.jsonSchema`),
+  supplied by Zod 4.2+. Preserve loose argument records for tools without an explicit input schema.
+- Accept any JSON value in tool-result `structuredContent`, while keeping `readStructuredContent()`
+  and `readResultData()` record-only and preventing text fallback for present non-record data.
+
 ## [0.10.1] - 2026-10-18
 
 ### Added

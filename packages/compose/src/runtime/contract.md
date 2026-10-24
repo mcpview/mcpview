@@ -26,6 +26,15 @@
   needed to host a collected slot.
 - `auto` HTTP transport is stateless-first (`2026-07-28`) and falls back to legacy initialized
   Streamable HTTP only for compatible fallback responses.
+- The SDK-backed connection owns a fresh client and session, with no shared response cache. Closing
+  it terminates the session before closing the client; repeated closes are harmless.
+- List operations return one server page and preserve `nextCursor`; resource reads always reach
+  their source even when the server supplies cache hints.
+- Tool definitions from explicitly fetched pages retain SDK output-schema validation. They are
+  isolated from caller mutation, replaced by a fresh first-page listing, and invalidated by
+  tool-list change notifications or connection closure, including replies already in flight.
+- Local SDK timeouts keep Compose's operation-specific timeout codes. Remote protocol errors keep
+  operation-failure codes and their original cause; `isError` tool results remain results.
 - An interactive resource is obtained through MCP `resources/read`; no path derives or assumes a
   source-server `/ui` endpoint.
 - A panel is permanently bound to its source server, original `ui://` URI, initial complete tool

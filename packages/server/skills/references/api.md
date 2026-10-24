@@ -180,8 +180,9 @@ so the server can start in dev without running the UI build.
 start(): Promise<void>
 ```
 
-Start with STDIO transport. Connects `StdioServerTransport` from the MCP SDK.
-Builds the middleware pipeline before connecting.
+Start with STDIO transport. Uses `serveStdio` from
+`@modelcontextprotocol/server/stdio` (SDK v2), including the legacy
+initialization fallback. Builds the middleware pipeline before connecting.
 
 #### startHttp
 
@@ -189,7 +190,8 @@ Builds the middleware pipeline before connecting.
 startHttp(options: HttpServerOptions): Promise<HttpServerInstance>
 ```
 
-Start with HTTP transport (Streamable HTTP, compatible with MCP SDK 1.29+).
+Start with stateless HTTP transport (MCP protocol `2026-07-28`). Clients use SDK
+v2 transports from `@modelcontextprotocol/client`; GET `/mcp` returns 405.
 Builds the middleware pipeline and auto-configures auth from YAML + env if
 `options.auth` is not provided programmatically.
 

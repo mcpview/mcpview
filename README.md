@@ -220,7 +220,8 @@ contain no implementation of their own. Each re-exports its `@mcpview/*` target
 with the same export sub-paths, so consumers can migrate the package name
 without combining that change with an application rewrite.
 
-[Migration guide](docs/migration/casys-to-mcpview.md)
+[Migration guide](docs/migration/casys-to-mcpview.md) ·
+[SDK v2 migration](docs/migration/sdk-v2.md)
 
 ### MCP Apps Packages
 

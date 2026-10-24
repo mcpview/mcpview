@@ -10,7 +10,7 @@
  */
 
 import type { App, McpUiHostCapabilities } from "@modelcontextprotocol/ext-apps";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 import { MCPViewError } from "./errors.ts";
 
 export function missingServerToolsError(toolName: string): MCPViewError {

@@ -5,6 +5,22 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING:** MCP Apps 2.x now requires Zod 4.2+ and Node.js 20+. Direct SDK imports move from
+  `@modelcontextprotocol/sdk` to the split client/core packages. SDK `callTool(params, options)`
+  takes two arguments; Compose’s public `McpConnection.callTool(name, args)` signature remains
+  unchanged.
+- Migrate the runtime client to the split MCP SDK 2.x packages and MCP Apps 2.x, with Zod 4.2+
+  peers. Update the two-argument tool-call API and recognize local `SdkError` request timeouts while
+  retaining Compose's public runtime error codes and original error causes.
+- Preserve explicit stateless-first protocol selection, initialized Streamable HTTP sessions,
+  one-page list results and cursors, tool output-schema validation, and fresh resource reads despite
+  SDK 2.x list aggregation and response caching defaults. Listed definitions are isolated per
+  connection and invalidated on catalog changes and closure. The structural collector remains
+  compatible with existing client result objects. Conversation and model-context host callbacks
+  remain deferred.
+
 ### Fixed
 
 - Stop advertising `message.text` in the Compose host's initialization response: Compose has no

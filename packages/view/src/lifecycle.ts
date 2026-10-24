@@ -219,31 +219,24 @@ export class LifecycleDispatcher<S> {
 
   private enqueue(event: LifecycleEvent): void {
     this.queue = this.queue.then(async () => {
-      const callback = this.callbackFor(event);
-      if (!callback || !this.handle) return;
+      if (!this.handle) return;
       try {
-        await callback(event.params, this.handle);
+        switch (event.kind) {
+          case "toolInput":
+            await this.callbacks.onToolInput?.(event.params, this.handle);
+            break;
+          case "toolInputPartial":
+            await this.callbacks.onToolInputPartial?.(event.params, this.handle);
+            break;
+          case "toolResult":
+            await this.callbacks.onToolResult?.(event.params, this.handle);
+            break;
+        }
       } catch (error) {
         // Host notification handlers cannot report a response. Surface the
         // application error without poisoning the FIFO and losing later events.
         console.error(`[mcp-view] ${event.kind} lifecycle callback failed:`, error);
       }
     });
-  }
-
-  private callbackFor(event: LifecycleEvent):
-    | ((
-      params: ToolInputParams | ToolInputPartialParams | ToolResultParams,
-      handle: AppHandle<S>,
-    ) => void | Promise<void>)
-    | undefined {
-    switch (event.kind) {
-      case "toolInput":
-        return this.callbacks.onToolInput;
-      case "toolInputPartial":
-        return this.callbacks.onToolInputPartial;
-      case "toolResult":
-        return this.callbacks.onToolResult;
-    }
   }
 }

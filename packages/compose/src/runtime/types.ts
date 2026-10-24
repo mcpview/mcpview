@@ -10,7 +10,7 @@
 import type { UiLayout } from "../core/types/layout.ts";
 import type { UiPortSyncRule, UiSyncRule } from "../core/types/sync-rules.ts";
 import type { CompositeUiDescriptor } from "../core/types/descriptor.ts";
-import type { ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
+import type { ReadResourceResult } from "@modelcontextprotocol/client";
 import type { ComposedDashboardPanel } from "./host-dashboard-types.ts";
 import type { ComponentSurface } from "../core/types/components.ts";
 
@@ -214,9 +214,9 @@ export interface McpConnection {
   ): Promise<unknown>;
   /** Read a resource through the server's active MCP transport. */
   readResource(uri: string): Promise<McpReadResourceResult>;
-  /** List tools through this server's active MCP transport. */
+  /** List one page of tools; pass the returned nextCursor to continue. */
   listTools(cursor?: string): Promise<McpListToolsResult>;
-  /** List resources through this server's active MCP transport. */
+  /** List one page of resources; pass the returned nextCursor to continue. */
   listResources(cursor?: string): Promise<McpListResourcesResult>;
 }
 

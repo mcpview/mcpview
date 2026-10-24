@@ -45,6 +45,7 @@ await build({
     version: VERSION,
     description: "View-side SDK for MCP Apps with in-iframe routing and host tool calls",
     license: "MIT",
+    engines: { node: ">=20" },
     repository: {
       type: "git",
       url: "git+https://github.com/mcpview/mcpview.git",

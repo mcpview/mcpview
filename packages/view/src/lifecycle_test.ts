@@ -80,7 +80,7 @@ Deno.test("wireLifecycleCallbacks is accepted by ext-apps strict mode before con
     { strict: true },
   );
 
-  // ext-apps 1.7.4 throws in strict mode when a one-shot handler is first
+  // ext-apps throws in strict mode when a one-shot handler is first
   // registered after its initialize handshake. This pre-connect registration
   // must therefore complete silently.
   wireLifecycleCallbacks(app, {});

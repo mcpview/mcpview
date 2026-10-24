@@ -49,6 +49,22 @@ const detail = defineReactView<State, { id: string }, Invoice>({
 
 React and ReactDOM are optional npm peers and are never loaded by the main export.
 
+## MCP SDK v2
+
+Node consumers require Node 20+. This runtime uses `@modelcontextprotocol/ext-apps@^2.0.3`,
+`@modelcontextprotocol/client@^2.3.1` and `zod@^4.2.0`. Import MCP types from
+`@modelcontextprotocol/client` and schemas from `@modelcontextprotocol/core`. View tool schemas need
+`~standard.jsonSchema`; Zod 4.2+ supplies it.
+
+The iframe protocol remains compatible with ext-apps 1.x hosts. The underlying `app` escape hatch
+follows v2: custom handlers use method names and `ctx.mcpReq.signal` / `ctx.mcpReq.id`; remote
+failures use `ProtocolError`, and local failures use `SdkError` with string codes. See the
+[upstream migration guide](https://apps.extensions.modelcontextprotocol.io/api/documents/migrate-to-v2.html).
+
+Tool results can carry any JSON value in `structuredContent`. The convenience helpers
+`readStructuredContent()` and `readResultData()` continue to return only records. Read the raw
+result for arrays, primitives or null; their presence never enables legacy text fallback.
+
 ## Package boundaries
 
 - `@mcpview/contracts` owns the dependency-free App/resource manifest, composition, semantic

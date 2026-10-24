@@ -59,7 +59,15 @@ Set a protocol explicitly when it is known:
 ```
 
 The stateless adapter carries the required version, client metadata, and request-mirroring headers
-for every request. The legacy path remains an MCP client session, not a guessed HTTP shortcut.
+for every request. The legacy path uses `Client` and `StreamableHTTPClientTransport` from
+`@modelcontextprotocol/client` 2.x in legacy negotiation mode. Each connection owns its client and
+session, and closes both after best-effort session termination. `listTools()` and `listResources()`
+retain one-page results with `nextCursor`; fetched tool definitions retain SDK output-schema
+validation without aggregating pages. A new first-page listing, a tool-list change notification, or
+connection closure invalidates those definitions. `readResource()` bypasses the SDK response cache
+so each read reaches the source. Local `SdkError` timeouts map to the existing `RuntimeErrorCode`
+timeout variants; remote `ProtocolError` failures remain ordinary operation failures with their
+original error retained in `cause`. Tool-level `isError` results remain complete result objects.
 
 ## Interactive host contract
 

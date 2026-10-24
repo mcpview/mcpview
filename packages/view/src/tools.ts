@@ -1,7 +1,7 @@
 /**
  * View-side tool registration: lets a View expose tools that the host
  * (and its agent) can call. Wraps `App.registerTool` from
- * `@modelcontextprotocol/ext-apps` 1.7.0. We do *not* call
+ * `@modelcontextprotocol/ext-apps` 2.x. We do *not* call
  * `sendToolListChanged` ourselves — ext-apps emits it from each
  * `registerTool` / `RegisteredAppTool.{enable,disable,update,remove}`
  * call internally, gated on the advertised `tools.listChanged` capability.
@@ -17,18 +17,21 @@
  *    availability that depends on runtime state ("save" only when a form
  *    is dirty) without recreating the view.
  *
- * Schemas: `inputSchema` / `outputSchema` use `StandardSchemaV1` (Zod v4,
- * Valibot, ArkType, …) — the same surface ext-apps requires. We do not
+ * Schemas: `inputSchema` / `outputSchema` use `StandardSchemaV1` with Standard JSON Schema support
+ * (`~standard.jsonSchema`, available in Zod 4.2+) — the same surface ext-apps requires. We do not
  * wrap or transform; the caller passes the schema directly.
  *
  * @module
  */
 
 import type { App, RegisteredAppTool, StandardSchemaV1 } from "@modelcontextprotocol/ext-apps";
-import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/client";
+import { z } from "zod";
 
 import { MCPViewError } from "./errors.ts";
 import type { AppContext } from "./types.ts";
+
+const looseArgsSchema = z.looseObject({});
 
 /**
  * Infer the JS type a `StandardSchemaV1` validates. Falls back to
@@ -54,7 +57,7 @@ export interface ViewToolDef<
   description: string;
   /** Human-readable title (optional, for display in UIs that show one). */
   title?: string;
-  /** Args schema — Standard Schema V1 (Zod v4, Valibot, …). */
+  /** Args schema — Standard Schema V1 with `~standard.jsonSchema` (Zod 4.2+, …). */
   inputSchema?: I;
   /** Result schema. Same Standard Schema V1 contract. */
   outputSchema?: StandardSchemaV1;
@@ -146,22 +149,19 @@ export class ToolRegistry<S> implements ToolsHandle {
     }
     const ctx = this.context;
     for (const [name, def] of Object.entries(tools)) {
-      const handle = this.app.registerTool(
+      const config = {
+        title: def.title,
+        description: def.description,
+        outputSchema: def.outputSchema,
+        annotations: def.annotations,
+        _meta: def._meta,
+      };
+      // Without a schema ext-apps calls the callback with only its request
+      // context. A permissive schema preserves ViewToolDef's loose args API.
+      const handle = this.app.registerTool<StandardSchemaV1 | undefined, StandardSchemaV1>(
         name,
-        {
-          title: def.title,
-          description: def.description,
-          inputSchema: def.inputSchema,
-          outputSchema: def.outputSchema,
-          annotations: def.annotations,
-          _meta: def._meta,
-          // deno-lint-ignore no-explicit-any
-        } as any,
-        // ext-apps passes the validated args as the first positional arg
-        // and a `RequestHandlerExtra` object as the second. We only forward
-        // the args.
-        // deno-lint-ignore no-explicit-any
-        ((args: any) => def.handler(ctx, args)) as any,
+        { ...config, inputSchema: def.inputSchema ?? looseArgsSchema },
+        (args) => def.handler(ctx, args),
       );
       this.handles.set(name, handle);
     }

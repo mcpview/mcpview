@@ -1,6 +1,6 @@
 /** Narrow helpers for reading MCP tool-result application data. @module */
 
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 
 export type ResultData = Record<string, unknown>;
 
@@ -13,7 +13,8 @@ export interface ReadResultDataOptions<T extends ResultData> {
 }
 
 /**
- * Read only `structuredContent`. Text blocks are never inspected.
+ * Read record-shaped `structuredContent`. Text blocks are never inspected.
+ * The SDK also permits arrays, primitives and null; read those from the raw result.
  *
  * Supply a domain type parameter for ergonomics and validate untrusted domain
  * shapes with `readResultData(..., { validate })` when runtime proof matters.
