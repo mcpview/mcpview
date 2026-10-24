@@ -5,6 +5,8 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-24
+
 ### Changed
 
 - **BREAKING:** MCP Apps 2.x now requires Zod 4.2+ and Node.js 20+. Direct SDK imports move from

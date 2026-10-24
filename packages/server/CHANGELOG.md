@@ -5,6 +5,8 @@ All notable changes to `@mcpview/server` (published as `@casys/mcp-server` up to
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-10-24
+
 ### Changed
 
 - **BREAKING: complete the migration to MCP TypeScript SDK v2 and MCP Apps v2.**

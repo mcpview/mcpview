@@ -7,6 +7,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-24
+
+### Changed
+
+- Follows `@mcpview/view` 0.11.0: both the JSR and npm publications now depend on
+  `@mcpview/view@^0.11.0`. Still a deprecated alias that re-exports the new package unchanged; see
+  `packages/view/CHANGELOG.md` for what 0.11.0 brings.
+- Re-exports `./context`; the new lower bound includes that entry point and the MCP SDK v2
+  migration.
+
 ## [0.10.0] - 2026-10-17
 
 ### Changed

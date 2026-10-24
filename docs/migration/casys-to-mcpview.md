@@ -5,21 +5,25 @@ scope to the **mcpview** brand: scope `@mcpview` on JSR and npm, repository
 [`mcpview/mcpview`](https://github.com/mcpview/mcpview), site
 [mcpview.dev](https://mcpview.dev). The packages are maintained by Casys.
 
-This is a package-name migration, not an application rewrite. APIs, behavior,
-and operational identifiers are unchanged. Version numbers continue instead of
-restarting, and every old name stays published as a deprecated alias that
-re-exports the new package, so nothing stops working the day you read this.
+The package-name migration preserved APIs, behavior, and operational identifiers.
+Version numbers continue instead of restarting, and every old name stays published
+as a deprecated alias that re-exports the new package.
+
+The current versions used in the commands below also include the MCP SDK v2
+migration: server 0.30.0, view 0.11.0, components 0.12.0, and compose 0.11.0 require
+Node 20+ and Zod 4.2+, with split MCP SDK imports. Review their CHANGELOG entries
+when upgrading from the first releases under the new names.
 
 ## Name mapping
 
 | Old name (`@casys/…`)        | New name (`@mcpview/…`) | First version under the new name | Last alias on the old name |
 | ---------------------------- | ----------------------- | -------------------------------- | -------------------------- |
-| `@casys/mcp-server`          | `@mcpview/server`       | 0.29.0                           | 0.28.0                     |
-| `@casys/mcp-platform`        | `@mcpview/server`       | 0.29.0                           | 0.29.0                     |
-| `@casys/mcp-view`            | `@mcpview/view`         | 0.10.0                           | 0.10.0                     |
-| `@casys/mcp-view-components` | `@mcpview/components`   | 0.10.0                           | 0.10.0                     |
+| `@casys/mcp-server`          | `@mcpview/server`       | 0.29.0                           | 0.30.0                     |
+| `@casys/mcp-platform`        | `@mcpview/server`       | 0.29.0                           | 0.30.0                     |
+| `@casys/mcp-view`            | `@mcpview/view`         | 0.10.0                           | 0.11.0                     |
+| `@casys/mcp-view-components` | `@mcpview/components`   | 0.10.0                           | 0.12.0                     |
 | `@casys/mcp-view-contracts`  | `@mcpview/contracts`    | 0.2.0                            | 0.2.0                      |
-| `@casys/mcp-compose`         | `@mcpview/compose`      | 0.10.0                           | 0.10.0                     |
+| `@casys/mcp-compose`         | `@mcpview/compose`      | 0.10.0                           | 0.11.0                     |
 | `@casys/mcp-bridge`          | `@mcpview/bridge`       | 0.4.0                            | 0.4.0                      |
 
 `@casys/mcp-platform` was an alias of the framework; it now maps to
@@ -36,9 +40,10 @@ Other Casys products keep their names and scope (for example
 
 ## The aliases
 
-Each old name has a final release that re-exports its target unchanged. The
+Each old name re-exports its target unchanged. Compatible target patches need no
+alias release; a new target minor gets an alias release at the same version. The
 aliases declare the same export sub-paths as the target, depend on the target's
-current minor (for example `@mcpview/view@^0.10.0`), and are guarded by a parity
+current minor (for example `@mcpview/view@^0.11.0`), and are guarded by a parity
 test that fails when the target gains, drops, or renames an export. On npm they
 carry a deprecation notice ("Moved to @mcpview/…").
 
@@ -46,8 +51,8 @@ carry a deprecation notice ("Moved to @mcpview/…").
 | ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
 | `@casys/mcp-server`          | `@mcpview/server`     | `.`                                                                                        |
 | `@casys/mcp-platform`        | `@mcpview/server`     | `.`                                                                                        |
-| `@casys/mcp-view`            | `@mcpview/view`       | `.`, `./contracts`, `./react`                                                              |
-| `@casys/mcp-view-components` | `@mcpview/components` | `.`, `./preact`, `./preact/components`, `./scaffold`\*, `./surface`, `./layout`, `./fonts` |
+| `@casys/mcp-view`            | `@mcpview/view`       | `.`, `./contracts`, `./react`, `./context`                                                              |
+| `@casys/mcp-view-components` | `@mcpview/components` | `.`, `./preact`, `./preact/components`, `./preact/context`, `./scaffold`\*, `./surface`, `./layout`, `./fonts` |
 | `@casys/mcp-view-contracts`  | `@mcpview/contracts`  | `.`                                                                                        |
 | `@casys/mcp-compose`         | `@mcpview/compose`    | `.`, `./core`, `./sdk`, `./host`, `./runtime`, `./deploy`                                  |
 | `@casys/mcp-bridge`          | `@mcpview/bridge`     | `.`, `./adapters/network`                                                                  |
@@ -73,7 +78,7 @@ npm uninstall @casys/mcp-server @casys/mcp-platform
 Do the same for each package you use (`@mcpview/view`, `@mcpview/components`,
 `@mcpview/contracts`, `@mcpview/compose`, `@mcpview/bridge`). Keep related
 packages on the same line: `@mcpview/components` depends on `@mcpview/view`
-`^0.10.0` and `@mcpview/contracts` `^0.2.0`.
+`^0.11.0` and `@mcpview/contracts` `^0.2.0`.
 
 ## Deno and JSR
 
@@ -94,7 +99,7 @@ the same way, including scaffold commands:
 
 ```diff
 -deno run -A jsr:@casys/mcp-view-components@0.9.2/scaffold result-viewer ./my-view
-+deno run -A jsr:@mcpview/components@0.10.0/scaffold result-viewer ./my-view
++deno run -A jsr:@mcpview/components@0.12.0/scaffold result-viewer ./my-view
 ```
 
 ## Replace the imports
@@ -121,8 +126,8 @@ become `jsr:@mcpview/view@^0.9.5`, which does not resolve. Raise the ranges in
 
 ```bash
 perl -pi -e '
-  my %v = (server => "0.29.0", view => "0.10.0", components => "0.10.0",
-           contracts => "0.2.0", compose => "0.10.0", bridge => "0.4.0");
+  my %v = (server => "0.30.0", view => "0.11.0", components => "0.12.0",
+           contracts => "0.2.0", compose => "0.11.0", bridge => "0.4.0");
   s{(\@mcpview/(\w+))\@[\^~]?\d[\w.\-]*}{exists $v{$2} ? "$1\@^$v{$2}" : $&}ge;
   s{("\@mcpview/(\w+)"\s*:\s*")(?:npm:|jsr:)?[\^~]?\d[\w.\-]*"}{exists $v{$2} ? "$1^$v{$2}\"" : $&}ge;
 ' deno.json package.json $(git ls-files '*/deno.json' '*/package.json')

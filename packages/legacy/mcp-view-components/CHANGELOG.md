@@ -7,6 +7,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-24
+
+### Changed
+
+- Follows `@mcpview/components` 0.12.0: both the JSR and npm publications now depend on
+  `@mcpview/components@^0.12.0`. Still a deprecated alias that re-exports the new package unchanged;
+  see `packages/view-components/CHANGELOG.md` for what 0.12.0 brings.
+- Re-exports `./preact/context`; the new lower bound includes those controls and the MCP SDK v2
+  migration.
+
 ## [0.11.0] - 2026-10-18
 
 ### Changed

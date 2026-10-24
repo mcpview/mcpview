@@ -1,6 +1,6 @@
 {
   "name": "@casys/mcp-view-components",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "license": "MIT",
   "exports": {
     ".": "./mod.ts",
@@ -65,7 +65,7 @@
     ]
   },
   "imports": {
-    "@mcpview/components": "jsr:@mcpview/components@^0.11.0",
+    "@mcpview/components": "jsr:@mcpview/components@^0.12.0",
     "@std/assert": "jsr:@std/assert@^1.0.0"
   }
 }
