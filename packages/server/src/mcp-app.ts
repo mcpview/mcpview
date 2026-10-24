@@ -29,7 +29,6 @@ import {
   serveStdio,
   type StdioServerHandle,
 } from "@modelcontextprotocol/server/stdio";
-import { ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { RequestQueue } from "./concurrency/request-queue.ts";
@@ -221,7 +220,7 @@ const TASKS_EXTENSION_ID = "io.modelcontextprotocol/tasks";
 /** Version echoed in MCP-Protocol-Version header on error responses (server's only accepted version) */
 const STATELESS_FALLBACK_VERSION = "2026-07-28";
 
-const JSONRPC_INVALID_PARAMS = ErrorCode.InvalidParams;
+const JSONRPC_INVALID_PARAMS = ProtocolErrorCode.InvalidParams;
 
 // ── Error codes (spec 2026-07-28, allocation policy) ────────────────────────
 //
@@ -424,7 +423,7 @@ function canonicaliseWireResult(
  * McpApp provides a high-performance MCP server
  *
  * Features:
- * - Wraps official @modelcontextprotocol/sdk
+ * - Wraps official MCP TypeScript SDK v2
  * - Concurrency limiting (default: 10 max concurrent)
  * - Multiple backpressure strategies (sleep/queue/reject)
  * - Metrics for monitoring
@@ -2696,7 +2695,7 @@ export class McpApp {
                 jsonrpc: "2.0",
                 id,
                 error: {
-                  code: ErrorCode.InternalError,
+                  code: ProtocolErrorCode.InternalError,
                   message: "MRTR replay protection is unavailable",
                   data: {
                     problem: "mrtr_replay_store_unavailable",
@@ -2782,7 +2781,7 @@ export class McpApp {
                   // Flattening both to 400 told a client to fix a request that a
                   // misconfigured signing key had broken — and the sibling ingress
                   // path already answered 500 for exactly that.
-                  built.code === ErrorCode.InternalError ? 500 : 400,
+                  built.code === ProtocolErrorCode.InternalError ? 500 : 400,
                   {
                     "MCP-Protocol-Version": statelessVersion,
                   },
@@ -2809,7 +2808,7 @@ export class McpApp {
                     jsonrpc: "2.0",
                     id,
                     error: {
-                      code: ErrorCode.InternalError,
+                      code: ProtocolErrorCode.InternalError,
                       message:
                         "Server is shutting down; no new tasks are accepted.",
                       data: {
@@ -2869,7 +2868,7 @@ export class McpApp {
                       jsonrpc: "2.0",
                       id,
                       error: {
-                        code: ErrorCode.InternalError,
+                        code: ProtocolErrorCode.InternalError,
                         message:
                           "Server is shutting down; no new tasks are accepted.",
                         data: {
@@ -4055,7 +4054,7 @@ export class McpApp {
             jsonrpc: "2.0",
             id,
             error: {
-              code: ErrorCode.InternalError,
+              code: ProtocolErrorCode.InternalError,
               message: "MRTR signing key is unavailable",
               data: {
                 problem: "mrtr_key_unavailable",
@@ -4140,7 +4139,7 @@ export class McpApp {
     if (requests !== undefined && !isRecord(requests)) {
       return {
         ok: false,
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message: "Malformed inputRequest: inputRequests must be an object",
       };
     }
@@ -4151,7 +4150,7 @@ export class McpApp {
     if (!hasRequests && signal.requestState === undefined) {
       return {
         ok: false,
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message:
           "An InputRequiredResult must carry at least one of inputRequests or requestState (spec 2026-07-28, MRTR server rule 6)",
       };
@@ -4170,7 +4169,7 @@ export class McpApp {
         if (check.kind === "malformed") {
           return {
             ok: false,
-            code: ErrorCode.InternalError,
+            code: ProtocolErrorCode.InternalError,
             message: `Malformed inputRequest: ${
               check.missingCapabilities.join(", ")
             }`,
@@ -4218,7 +4217,7 @@ export class McpApp {
     } catch (error) {
       return {
         ok: false,
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message: "MRTR signing key is unavailable",
         data: {
           problem: "mrtr_key_unavailable",
@@ -4246,7 +4245,7 @@ export class McpApp {
     if (hasRequests && canonicalRequests === undefined) {
       return {
         ok: false,
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message:
           "Internal invariant violated: inputRequests were not canonicalised before emission",
       };
@@ -4263,7 +4262,7 @@ export class McpApp {
     if (hasRequests && canonicalCount === 0) {
       return {
         ok: false,
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message:
           "inputRequests contained no serialisable entries (keys with an undefined value are dropped by JSON)",
       };
@@ -4271,7 +4270,7 @@ export class McpApp {
     if (canonicalCount === 0 && requestState === undefined) {
       return {
         ok: false,
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message:
           "An InputRequiredResult must carry at least one of inputRequests or requestState (spec 2026-07-28, MRTR server rule 6)",
       };
@@ -4325,7 +4324,7 @@ export class McpApp {
           jsonrpc: "2.0",
           id,
           error: {
-            code: ErrorCode.MethodNotFound,
+            code: ProtocolErrorCode.MethodNotFound,
             message:
               `Tasks extension is not enabled on this server (declare "${TASKS_EXTENSION_ID}" in McpAppOptions.extensions)`,
           },

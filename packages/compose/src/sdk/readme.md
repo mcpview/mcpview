@@ -7,7 +7,7 @@ MCP SDK adapters — optional convenience wrappers for MCP client SDKs.
 Provides three capabilities:
 
 1. **SDK Collector** (`createMcpSdkCollector`) — Wraps the core `UiCollector` with an interface that
-   accepts `@modelcontextprotocol/sdk` `CallToolResult` objects directly. Error results are
+   accepts `@modelcontextprotocol/client` `CallToolResult` objects directly. Error results are
    automatically skipped.
 
 2. **`uiMeta()` builder** — Typed helper for declaring `_meta.ui` with PML extensions

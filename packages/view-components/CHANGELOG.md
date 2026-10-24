@@ -8,6 +8,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING:** Node consumers now require Node.js 20 or newer, following the SDK v2 and MCP Apps v2
+  runtime used by `@mcpview/view`. Result-viewer scaffolds now bundle
+  `@modelcontextprotocol/ext-apps@^2.0.3`, the split SDK packages
+  `@modelcontextprotocol/client@^2.3.1` and `@modelcontextprotocol/core@^2.3.1`, and Zod 4.2 or
+  newer. Custom scaffold import maps must replace the former `@modelcontextprotocol/sdk` entries
+  with those split package imports.
+
 ## [0.11.0] - 2026-10-18
 
 ### Changed

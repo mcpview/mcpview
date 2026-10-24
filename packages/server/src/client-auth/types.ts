@@ -8,14 +8,14 @@
  * @module lib/server/client-auth/types
  */
 
-import type { OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
+import type { StoredOAuthTokens } from "@modelcontextprotocol/client";
 
 /** Stored OAuth credentials for one MCP server */
 export interface StoredCredentials {
   /** The MCP server URL these credentials are for */
   serverUrl: string;
   /** OAuth tokens (access_token, refresh_token, etc.) */
-  tokens: OAuthTokens;
+  tokens: StoredOAuthTokens;
   /** When the tokens were obtained (Unix epoch ms) */
   obtainedAt: number;
   /**

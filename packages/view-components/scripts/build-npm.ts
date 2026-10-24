@@ -35,6 +35,7 @@ await build({
     version: denoJson.version,
     description: "Optional light-first component runtime for small composable MCP App viewers",
     license: "MIT",
+    engines: { node: ">=20" },
     repository: {
       type: "git",
       url: "git+https://github.com/mcpview/mcpview.git",

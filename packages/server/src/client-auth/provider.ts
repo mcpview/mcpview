@@ -9,14 +9,12 @@
  */
 
 import type {
-  OAuthClientInformationMixed,
   OAuthClientMetadata,
-  OAuthTokens,
-} from "@modelcontextprotocol/sdk/shared/auth.js";
-import type {
   OAuthClientProvider,
   OAuthDiscoveryState,
-} from "@modelcontextprotocol/sdk/client/auth.js";
+  StoredOAuthClientInformation,
+  StoredOAuthTokens,
+} from "@modelcontextprotocol/client";
 import type { OAuthClientConfig } from "./types.ts";
 import {
   CimdConfigError,
@@ -63,7 +61,7 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
   private serverUrl: string;
   private config: OAuthClientConfig;
   private _codeVerifier = "";
-  private _clientInfo: OAuthClientInformationMixed | undefined;
+  private _clientInfo: StoredOAuthClientInformation | undefined;
   private _redirectUrl: string | undefined;
   /**
    * Issuer the SDK resolved for the request currently being authorized
@@ -71,6 +69,8 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
    * discovery and before it asks for tokens.
    */
   private _currentIssuer: string | undefined;
+  // Like the PKCE verifier, discovery belongs to this provider's active flow.
+  private _discoveryState: OAuthDiscoveryState | undefined;
 
   constructor(serverUrl: string, config: OAuthClientConfig) {
     const mode = resolveClientMode(config);
@@ -118,7 +118,7 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
     };
   }
 
-  clientInformation(): Promise<OAuthClientInformationMixed | undefined> {
+  clientInformation(): Promise<StoredOAuthClientInformation | undefined> {
     if (isCimdConfig(this.config)) {
       return Promise.resolve({
         client_id: this.config.clientRegistration.clientIdMetadataUrl,
@@ -132,7 +132,7 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
   }
 
   saveClientInformation(
-    info: OAuthClientInformationMixed,
+    info: StoredOAuthClientInformation,
   ): Promise<void> {
     this._clientInfo = info;
     return Promise.resolve();
@@ -148,9 +148,9 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
    * distinction is the whole protection: `issuer` is a field the authorization
    * server publishes about itself, so an attacker's server reached at
    * `https://attacker.example.com` can claim
-   * `issuer: "https://as-one.example.com"` and, since SDK 1.29 validates the
-   * metadata's shape without checking it against the URL it was fetched from,
-   * would be handed the credentials minted by the real AS-one. The URL the
+   * `issuer: "https://as-one.example.com"`. SDK v2 validates the claim too,
+   * but this binding also protects callers that explicitly bypass that check.
+   * Otherwise it could receive credentials minted by the real AS-one. The URL the
    * client actually resolved is the one thing in this exchange the server
    * cannot forge.
    *
@@ -172,7 +172,17 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
     }
 
     this._currentIssuer = resolved;
+    this._discoveryState = structuredClone(state);
     return Promise.resolve();
+  }
+
+  /** Return the discovery state needed by SDK v2 to bind the code callback. */
+  discoveryState(): Promise<OAuthDiscoveryState | undefined> {
+    return Promise.resolve(
+      this._discoveryState === undefined
+        ? undefined
+        : structuredClone(this._discoveryState),
+    );
   }
 
   /**
@@ -192,7 +202,7 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
    * tokens go to the MCP server they were minted for, not to an authorization
    * server.
    */
-  async tokens(): Promise<OAuthTokens | undefined> {
+  async tokens(): Promise<StoredOAuthTokens | undefined> {
     const stored = await this.config.tokenStore.get(this.serverUrl);
     if (!stored) return undefined;
     if (this._currentIssuer === undefined) return stored.tokens;
@@ -227,7 +237,7 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
     return stored.tokens;
   }
 
-  async saveTokens(tokens: OAuthTokens): Promise<void> {
+  async saveTokens(tokens: StoredOAuthTokens): Promise<void> {
     // Sequential guard only: keep an existing refresh_token when a later save omits it.
     // This get/set is not atomic; concurrent saves for one serverUrl are unsupported
     // because refresh is serialized by the caller.
@@ -295,6 +305,7 @@ export class OAuthClientProviderImpl implements OAuthClientProvider {
       // an authorization server the SDK has already given up on, and discard
       // credentials that are in fact still valid.
       this._currentIssuer = undefined;
+      this._discoveryState = undefined;
     }
   }
 }

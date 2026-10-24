@@ -12,13 +12,17 @@ description: >
 
 # mcpview server framework (`@mcpview/server`)
 
-Hono-style framework for MCP servers. Wraps `@modelcontextprotocol/sdk` with a
-middleware pipeline, auth, concurrency control, and HTTP transport.
+Hono-style framework for MCP servers. Wraps `@modelcontextprotocol/server` (SDK
+v2) with a middleware pipeline, auth, concurrency control, and HTTP transport.
 
 - **Runtime**: Deno 2+ or Node 20+
 - **Registries**: JSR and npm
 - **License**: MIT
-- **Depends on**: `@modelcontextprotocol/sdk@^1.29.0`, `hono@^4`, `jose@^6`
+- **Depends on**: `@modelcontextprotocol/server@^2.3.1`,
+  `@modelcontextprotocol/client@^2.3.1`, `@modelcontextprotocol/core@^2.3.1`,
+  `@modelcontextprotocol/ext-apps@^2.0.3`, `zod@^4.2.0`, `hono@^4`, `jose@^6`
+- **OAuth compatibility**: pair `OAuthClientProviderImpl` with SDK v2 client
+  transports from `@modelcontextprotocol/client`; v1 instances cannot be mixed.
 
 ## Identity and compatibility
 

@@ -48,6 +48,18 @@ Deno.test("result-viewer scaffold creates a standalone component project", async
     );
     assertStringIncludes(generatedConfig, '"minimumDependencyAge"');
     assertStringIncludes(generatedConfig, '"jsr:@mcpview/components"');
+    const generatedBuild = (await Deno.readTextFile(join(target, "build.ts"))).replace(/\s+/g, " ");
+    for (
+      const [name, version] of [
+        ["@modelcontextprotocol/ext-apps", "^2.0.3"],
+        ["@modelcontextprotocol/client", "^2.3.1"],
+        ["@modelcontextprotocol/core", "^2.3.1"],
+        ["zod", "^4.2.0"],
+      ]
+    ) {
+      assertStringIncludes(generatedBuild, `"${name}": "npm:${name}@${version}"`);
+    }
+    assert(!generatedBuild.includes('"@modelcontextprotocol/sdk'));
     const coreModule = new URL("../view/mod.ts", import.meta.url).href;
     const componentsModule = new URL("./mod.ts", import.meta.url).href;
     const surfaceModule = new URL("./surface.ts", import.meta.url).href;

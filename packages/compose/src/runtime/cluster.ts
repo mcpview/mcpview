@@ -26,9 +26,13 @@
  * @module runtime/cluster
  */
 
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import {
+  Client,
+  SdkError,
+  SdkErrorCode,
+  StreamableHTTPClientTransport,
+  type Tool,
+} from "@modelcontextprotocol/client";
 import { COMPOSE_VERSION } from "../version.ts";
 import type {
   McpCluster,
@@ -557,8 +561,19 @@ async function createStreamableConnection(
   const transport = new StreamableHTTPClientTransport(mcpEndpointUrl(baseUrl));
   const client = new Client(
     { name: "@mcpview/compose", version: COMPOSE_VERSION },
-    { capabilities: {} },
+    { capabilities: {}, versionNegotiation: { mode: "legacy" } },
   );
+
+  // The SDK list helper aggregates pages. Keep the definitions from our single-page
+  // requests so callTool still applies the SDK's output-schema validation.
+  const toolDefinitions = new Map<string, Tool>();
+  let toolDefinitionGeneration = 0;
+  const invalidateToolDefinitions = () => {
+    toolDefinitionGeneration++;
+    toolDefinitions.clear();
+  };
+  client.onclose = invalidateToolDefinitions;
+  client.setNotificationHandler("notifications/tools/list_changed", invalidateToolDefinitions);
 
   try {
     await client.connect(transport, { timeout: DEFAULT_STARTUP_TIMEOUT_MS });
@@ -576,6 +591,7 @@ async function createStreamableConnection(
     async close(): Promise<void> {
       if (closed) return;
       closed = true;
+      invalidateToolDefinitions();
 
       try {
         // Streamable HTTP sessions are server-side state. Terminate them while
@@ -596,8 +612,10 @@ async function createStreamableConnection(
       try {
         return await client.callTool(
           { name: toolName, arguments: args ?? {} },
-          undefined,
-          { timeout: DEFAULT_REQUEST_TIMEOUT_MS },
+          {
+            timeout: DEFAULT_REQUEST_TIMEOUT_MS,
+            toolDefinition: toolDefinitions.get(toolName),
+          },
         );
       } catch (cause) {
         throw requestError({
@@ -611,7 +629,11 @@ async function createStreamableConnection(
     },
     async readResource(uri: string): Promise<McpReadResourceResult> {
       try {
-        return await client.readResource({ uri }, { timeout: DEFAULT_REQUEST_TIMEOUT_MS });
+        // Each Compose read must reach its source, even when it supplies cache hints.
+        return await client.readResource({ uri }, {
+          timeout: DEFAULT_REQUEST_TIMEOUT_MS,
+          cacheMode: "bypass",
+        });
       } catch (cause) {
         throw requestError({
           kind: "resource-read",
@@ -624,10 +646,21 @@ async function createStreamableConnection(
     },
     async listTools(cursor?: string): Promise<McpListToolsResult> {
       try {
-        return await client.listTools(
-          cursor === undefined ? undefined : { cursor },
+        // Start a fresh catalog on page one, then retain each explicitly fetched page.
+        if (cursor === undefined) invalidateToolDefinitions();
+        const generation = toolDefinitionGeneration;
+        const page = await client.request(
+          { method: "tools/list", params: cursor === undefined ? {} : { cursor } },
           { timeout: DEFAULT_REQUEST_TIMEOUT_MS },
         );
+        // A list_changed notification or disconnect may have invalidated this reply
+        // while it was in flight. Do not restore stale definitions after either.
+        if (!closed && generation === toolDefinitionGeneration) {
+          for (const tool of page.tools) {
+            toolDefinitions.set(tool.name, structuredClone(tool));
+          }
+        }
+        return page;
       } catch (cause) {
         throw requestError({
           kind: "tool-list",
@@ -639,8 +672,8 @@ async function createStreamableConnection(
     },
     async listResources(cursor?: string): Promise<McpListResourcesResult> {
       try {
-        return await client.listResources(
-          cursor === undefined ? undefined : { cursor },
+        return await client.request(
+          { method: "resources/list", params: cursor === undefined ? {} : { cursor } },
           { timeout: DEFAULT_REQUEST_TIMEOUT_MS },
         );
       } catch (cause) {
@@ -1022,8 +1055,8 @@ function formatCause(cause: unknown): string {
 }
 
 function isRequestTimeout(cause: unknown): boolean {
-  if (cause instanceof McpError) {
-    return (cause as McpError).code === ErrorCode.RequestTimeout;
+  if (cause instanceof SdkError) {
+    return cause.code === SdkErrorCode.RequestTimeout;
   }
   if (cause instanceof StatelessProtocolError) return isRequestTimeout(cause.cause);
   return cause instanceof DOMException && cause.name === "TimeoutError";

@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import type { App, McpUiHostCapabilities } from "@modelcontextprotocol/ext-apps";
-import type { CreateMessageRequest, CreateMessageResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CreateMessageRequest, CreateMessageResult } from "@modelcontextprotocol/client";
 
 import { sampleGated } from "./sample.ts";
 import { MCPViewError } from "./errors.ts";
@@ -63,8 +63,8 @@ Deno.test("sampleGated builds messages from prompt sugar form", async () => {
   let received: CreateMessageRequest["params"] | undefined;
   const result: CreateMessageResult = {
     role: "assistant",
-    content: { type: "text", text: "hi back" },
     model: "test-model",
+    content: { type: "text", text: "hi back" },
     stopReason: "endTurn",
   };
   const app = fakeApp((params) => {
@@ -96,6 +96,7 @@ Deno.test("sampleGated forwards explicit messages array unchanged", async () => 
   let received: CreateMessageRequest["params"] | undefined;
   const result: CreateMessageResult = {
     role: "assistant",
+    model: "test-model",
     content: { type: "text", text: "ok" },
   };
   const app = fakeApp((params) => {
@@ -120,6 +121,7 @@ Deno.test("sampleGated defaults maxTokens to 1024 when omitted", async () => {
     return Promise.resolve(
       {
         role: "assistant",
+        model: "test-model",
         content: { type: "text", text: "" },
       } satisfies CreateMessageResult,
     );
@@ -132,6 +134,7 @@ Deno.test("sampleGated defaults maxTokens to 1024 when omitted", async () => {
 Deno.test("sampleGated extracts text from a content block array", async () => {
   const result: CreateMessageResult = {
     role: "assistant",
+    model: "test-model",
     content: [
       { type: "text", text: "hello " },
       { type: "image", data: "base64==", mimeType: "image/png" },
@@ -149,6 +152,7 @@ Deno.test("sampleGated extracts text from a content block array", async () => {
 Deno.test("sampleGated yields empty text when response is non-text only", async () => {
   const result: CreateMessageResult = {
     role: "assistant",
+    model: "test-model",
     // deno-lint-ignore no-explicit-any
     content: { type: "image", data: "base64==", mimeType: "image/png" } as any,
   };

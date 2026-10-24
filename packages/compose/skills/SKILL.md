@@ -135,7 +135,8 @@ interface UiCollector {
 
 ## McpSdkCollector
 
-Use when working with `@modelcontextprotocol/sdk` `CallToolResult` objects.
+Use when working with `CallToolResult` from `@modelcontextprotocol/client` 2.x or structurally
+compatible results from existing clients. The collector does not import or instantiate a client.
 
 Import from `/sdk`:
 

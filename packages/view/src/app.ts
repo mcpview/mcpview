@@ -302,7 +302,7 @@ function getFrameWindow(): Window {
  * `undefined` when the user opted into nothing, so the caller can skip the
  * third constructor arg entirely and let the ext-apps default-parameter
  * assignment apply (`{ autoResize: true }`). Returning `{}` would silently
- * disable `autoResize` because ext-apps' 1.7.1 constructor uses a default
+ * disable `autoResize` because ext-apps' constructor uses a default
  * parameter, not a per-field merge.
  *
  * When at least one option is set, we mirror the ext-apps defaults for the
@@ -318,7 +318,7 @@ function buildAppOptions<S, TSession>(
     config.autoResize !== undefined;
   if (!anySet) return undefined;
 
-  // ext-apps 1.7.1 defaults (mirror these here so partial opt-ins don't
+  // ext-apps 2.0.3 defaults (mirror these here so partial opt-ins don't
   // accidentally drop the unset fields):
   //   autoResize: true
   //   strict: false              (ext-apps warns instead of throwing)

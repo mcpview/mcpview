@@ -1,6 +1,7 @@
-import { assertEquals, assertThrows } from "@std/assert";
-import type { App, RegisteredAppTool } from "@modelcontextprotocol/ext-apps";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { App, type RegisteredAppTool } from "@modelcontextprotocol/ext-apps";
+import type { BaseContext, CallToolResult } from "@modelcontextprotocol/client";
+import { z } from "zod";
 
 import { ToolRegistry, viewsDeclareTools, type ViewToolDef } from "./tools.ts";
 import { MCPViewError } from "./errors.ts";
@@ -26,7 +27,7 @@ function fakeApp(): {
   // deno-lint-ignore no-explicit-any
   const callbacks = new Map<string, (args: any) => Promise<CallToolResult>>();
 
-  // Mirrors ext-apps 1.7.1: registerTool / handle.{enable,disable,update,remove}
+  // Mirrors ext-apps 2.x: registerTool / handle.{enable,disable,update,remove}
   // each emit `tools/list_changed` automatically (via the internal `D()` lambda
   // gated on `app.options.tools?.listChanged`). The fake reproduces this so
   // the wrapper's tests can detect double-notifications.
@@ -315,4 +316,63 @@ Deno.test("ctx.tools.{enable,disable,update,remove} throw UNKNOWN_TOOL on unknow
 
   const removeErr = assertThrows(() => reg.remove("nope"), MCPViewError);
   assertEquals((removeErr as MCPViewError).code, "UNKNOWN_TOOL");
+});
+
+Deno.test("View tools use official v2 registration for loose args, schemas and JSON results", async () => {
+  const app = new App({ name: "tool-test", version: "1.0.0" }, {}, { strict: true });
+  const registry = new ToolRegistry(app);
+  const ctx = fakeContext({ count: 1 });
+  registry.setContext(ctx);
+  let looseArgs: unknown;
+  registry.registerForView({
+    loose: {
+      description: "Accept a loose record",
+      handler(innerCtx, args) {
+        assertEquals(innerCtx, ctx);
+        looseArgs = args;
+        return { content: [], structuredContent: null };
+      },
+    },
+    validated: {
+      description: "Validate input and return a JSON array",
+      inputSchema: z.object({ delta: z.number() }),
+      outputSchema: z.array(z.string()),
+      handler: () => ({ content: [], structuredContent: ["ok"] }),
+    },
+  });
+  const extra: BaseContext = {
+    mcpReq: {
+      id: 1,
+      method: "tools/call",
+      signal: new AbortController().signal,
+      requestState: () => undefined,
+      send: () => Promise.reject(new Error("unused")),
+      notify: () => Promise.resolve(),
+    },
+  };
+  assert(app.oncalltool);
+  assert(app.onlisttools);
+  const listing = await app.onlisttools({}, extra);
+  assertEquals(listing.tools.map((tool) => tool.name), ["loose", "validated"]);
+  assertEquals(listing.tools[0].inputSchema.type, "object");
+  assertEquals(listing.tools[1].inputSchema.properties?.delta, { type: "number" });
+  assertEquals(listing.tools[1].outputSchema?.type, "array");
+  assertEquals(
+    (await app.oncalltool({ name: "loose", arguments: { delta: 2 } }, extra)).structuredContent,
+    null,
+  );
+  assertEquals(looseArgs, { delta: 2 });
+  await app.oncalltool({ name: "loose" }, extra);
+  assertEquals(looseArgs, {});
+  assertEquals(
+    (await app.oncalltool({ name: "validated", arguments: { delta: 2 } }, extra)).structuredContent,
+    ["ok"],
+  );
+  await assertRejects(
+    () => app.oncalltool!({ name: "validated", arguments: { delta: "invalid" } }, extra),
+    Error,
+    "Invalid input",
+  );
+  registry.unregisterAll();
+  await app.close();
 });

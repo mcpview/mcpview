@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import type { App, McpUiHostCapabilities } from "@modelcontextprotocol/ext-apps";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 
 import { callServerToolGated } from "./capabilities.ts";
 import { MCPViewError } from "./errors.ts";

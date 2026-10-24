@@ -11,7 +11,7 @@
  * @module lib/server/http/request-guards
  */
 
-import { ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import { ProtocolErrorCode } from "@modelcontextprotocol/server";
 import type { AuthInfo } from "./../auth/types.ts";
 import type { McpAppOptions } from "./../types.ts";
 import { jsonRpcResponse, MRTR_NO_AUTH_PRINCIPAL } from "./wire.ts";
@@ -88,7 +88,7 @@ export function noOwnerKeyError(id: unknown, version: string): Response {
       jsonrpc: "2.0",
       id,
       error: {
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message:
           "taskOwnerKey returned an empty or non-string value, which would place every caller under one owner.",
         data: {
@@ -110,7 +110,7 @@ export function noPrincipalError(id: unknown, version: string): Response {
       jsonrpc: "2.0",
       id,
       error: {
-        code: ErrorCode.InternalError,
+        code: ProtocolErrorCode.InternalError,
         message:
           "Server cannot establish a caller identity: the auth provider returned no usable subject for an authenticated request.",
         data: {

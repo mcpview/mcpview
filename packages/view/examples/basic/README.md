@@ -9,21 +9,21 @@ pollute the chat thread and trigger Claude's "the app is trying to speak for you
 ## Build
 
 ```bash
-deno run --allow-all packages/view/examples/basic/build.ts
+deno run --frozen --allow-all packages/view/examples/basic/build.ts
 ```
 
 If your Deno cache was populated by a different user (hardlink EPERM during esbuild), override
 `DENO_DIR`:
 
 ```bash
-DENO_DIR=/tmp/deno-cache deno run --allow-all \
+DENO_DIR=/tmp/deno-cache deno run --frozen --allow-all \
   packages/view/examples/basic/build.ts
 ```
 
 Produces `dist/index.html`: a self-contained HTML file with CSS and the bundled JS inlined. No
 external fetches, ready to be served as a `ui://` MCP resource.
 
-Current output size: ~490 KB (JS 418 KB minified — dominated by transitive `zod` + full MCP SDK).
+Current output size: ~500 KB (JS ~496 KB minified, including the split MCP client/core and Zod).
 Above the initial 200 KB aspiration; see Blockers below.
 
 ## Open
@@ -51,10 +51,9 @@ When hosted inside an MCP Apps-compatible client (Claude, Cursor, etc.), the sam
 
 ## Blockers / Notes
 
-- **Bundle size**: `@modelcontextprotocol/ext-apps` pulls in the full `@modelcontextprotocol/sdk` +
-  `zod@4`. Tree-shaking can't drop much because App/PostMessageTransport reference SDK schemas.
-  Future: push ext-apps upstream for a browser-only sub-entry without server SDK, or rewrite the
-  transport without SDK schema validation.
+- **Bundle dependencies**: ext-apps 2.x uses the split MCP client/core packages and Zod 4.2+.
+  Rebuild this example after changing the runtime so the inlined bundle matches the source.
+
 - **No Node builtins** were pulled in at runtime — the SDK path to `PostMessageTransport` stays
   DOM-only, as the spec requires.
 - **No `import.meta.url` blockers** encountered: the SDK honours its own bundling rule (see

@@ -58,6 +58,7 @@ Deno.test("prepareOAuthProvider - invalid clientRegistration method fails before
     return Promise.resolve({
       port: 38987,
       codePromise: new Promise<string>(() => {}),
+      callbackPromise: new Promise<never>(() => {}),
     });
   };
 
@@ -86,6 +87,7 @@ Deno.test("prepareOAuthProvider - missing client mode fails before callback serv
     return Promise.resolve({
       port: 38987,
       codePromise: new Promise<string>(() => {}),
+      callbackPromise: new Promise<never>(() => {}),
     });
   };
 
@@ -131,6 +133,7 @@ Deno.test("prepareOAuthProvider - CIMD rejects when bound port differs from call
     return Promise.resolve({
       port: 38988,
       codePromise: new Promise<string>(() => {}),
+      callbackPromise: new Promise<never>(() => {}),
     });
   };
   CallbackServer.prototype.close = function () {
@@ -182,4 +185,26 @@ Deno.test("prepareOAuthProvider - CIMD uses fixed callback port and configured r
   } finally {
     await result.callbackServer.close();
   }
+});
+
+Deno.test("prepareOAuthProvider - finishAuth rejects when the callback server closes first", async () => {
+  const result = await prepareOAuthProvider("https://mcp.example.com", {
+    clientId: "static-client",
+    tokenStore: new MemoryTokenStore(),
+    openBrowser: async () => {},
+  });
+  let transportCalled = false;
+  await result.callbackServer.close();
+  await assertRejects(
+    () =>
+      result.finishAuth({
+        finishAuth: () => {
+          transportCalled = true;
+          return Promise.resolve();
+        },
+      }),
+    Error,
+    "closed before the authorization callback was received",
+  );
+  assertEquals(transportCalled, false);
 });

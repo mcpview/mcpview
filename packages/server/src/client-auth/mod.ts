@@ -15,8 +15,11 @@ export type { PrepareOAuthResult } from "./connect.ts";
 export { OAuthClientProviderImpl } from "./provider.ts";
 
 // Local callback server
-export { CallbackServer } from "./callback-server.ts";
-export type { CallbackServerOptions } from "./callback-server.ts";
+export { CallbackServer, OAuthCallbackError } from "./callback-server.ts";
+export type {
+  CallbackServerOptions,
+  OAuthCallbackResult,
+} from "./callback-server.ts";
 
 // Types
 export type {

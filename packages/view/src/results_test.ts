@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 
 import { readResultData, readStructuredContent } from "./results.ts";
 
@@ -37,11 +37,11 @@ Deno.test("readResultData never falls back when structuredContent is present", (
     invoiceId: "INV-3",
   });
 
-  const malformed = {
-    structuredContent: "invalid-host-payload",
+  const primitive = {
+    structuredContent: "valid-json-string",
     content: [{ type: "text", text: JSON.stringify({ invoiceId: "legacy" }) }],
-  } as unknown as CallToolResult;
-  assertEquals(readResultData<InvoiceData>(malformed, { fallback: "json-text" }), undefined);
+  } satisfies CallToolResult;
+  assertEquals(readResultData<InvoiceData>(primitive, { fallback: "json-text" }), undefined);
 });
 
 Deno.test("readResultData validates extracted data when a guard is supplied", () => {
@@ -67,4 +67,15 @@ Deno.test("explicit JSON fallback ignores non-JSON text and rejects JSON primiti
     TypeError,
     "fallback",
   );
+});
+
+Deno.test("record helpers leave v2 JSON arrays, primitives and null to the caller", () => {
+  for (const structuredContent of [[{ invoiceId: "INV-1" }], "value", 42, false, null]) {
+    const result: CallToolResult = {
+      structuredContent,
+      content: [{ type: "text", text: JSON.stringify({ invoiceId: "stale" }) }],
+    };
+    assertEquals(readStructuredContent(result), undefined);
+    assertEquals(readResultData(result, { fallback: "json-text" }), undefined);
+  }
 });

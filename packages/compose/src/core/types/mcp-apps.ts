@@ -41,7 +41,7 @@ export type McpUiPermissions = McpUiResourcePermissions;
  * Shape of an MCP tool call result that may contain UI metadata.
  *
  * Structural subset used by the compose collector to extract `_meta.ui`
- * without pulling the full `@modelcontextprotocol/sdk` `CallToolResult` type.
+ * without pulling the full `@modelcontextprotocol/client` `CallToolResult` type.
  * Kept compose-local on purpose: the collector is intentionally loose
  * (`content?: unknown[]`) to accept any SDK shape.
  *

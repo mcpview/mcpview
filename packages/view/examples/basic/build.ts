@@ -28,12 +28,13 @@ const outHtml = join(outDir, "index.html");
 // bare specifiers like `@mcpview/view` and `@modelcontextprotocol/ext-apps`
 // resolve.
 const configPath = join(here, "..", "..", "deno.json");
+const lockPath = join(here, "..", "..", "..", "..", "deno.lock");
 
 console.log("[build] entry:", entry);
 console.log("[build] config:", configPath);
 
 const result = await esbuild.build({
-  plugins: [...denoPlugins({ configPath })],
+  plugins: [...denoPlugins({ configPath, lockPath })],
   entryPoints: [entry],
   bundle: true,
   format: "esm",
@@ -41,6 +42,9 @@ const result = await esbuild.build({
   platform: "browser",
   write: false,
   minify: true,
+  // Escape multiline template literals without changing their value. This keeps
+  // whitespace inside dependency templates from becoming trailing HTML whitespace.
+  supported: { "template-literal": false },
   sourcemap: false,
   logLevel: "info",
   // Shim Node builtins that might be pulled in transitively.
