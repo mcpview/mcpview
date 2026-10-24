@@ -66,6 +66,7 @@ Deno.test({
         "./surface.ts",
         "./preact.ts",
         "./preact-components.ts",
+        "./preact-context.ts",
         "./layout.ts",
       ]
     ) {
@@ -115,4 +116,71 @@ Deno.test("the root and the /surface entry split the registry from the App lifec
   assertFalse("startSurfaceApp" in root, "the root must not export the App lifecycle");
   assertEquals(typeof surface.startSurfaceApp, "function");
   assertEquals(typeof surface.SurfaceAppError, "function");
+});
+
+Deno.test({
+  name: "the /preact/context entry shares the controller without loading the App lifecycle",
+  permissions: { read: true, run: true, env: true },
+  async fn() {
+    const reached = await runtimeModules(new URL("./preact-context.ts", import.meta.url));
+    assert(reached.some((specifier) => specifier.includes("preact")));
+    for (
+      const forbidden of [
+        "@modelcontextprotocol/ext-apps",
+        "/view/src/app.ts",
+        "/surface-app.ts",
+        "/src/components.ts",
+        "/src/fonts-data.ts",
+      ]
+    ) {
+      assertFalse(
+        reached.some((specifier) => specifier.includes(forbidden)),
+        `the /preact/context entry must not load ${forbidden}, got ${reached.join("\n")}`,
+      );
+    }
+  },
+});
+
+Deno.test({
+  name: "a browser bundle of /preact/context contains no surface or App lifecycle runtime",
+  permissions: { read: true, write: true, run: true, env: true },
+  async fn() {
+    // Use the same esbuild + Deno loader as the executable view examples.
+    const esbuild = await import("npm:esbuild@^0.24.0");
+    const { denoPlugins } = await import("jsr:@luca/esbuild-deno-loader@^0.11.0");
+    try {
+      const result = await esbuild.build({
+        plugins: [...denoPlugins({ configPath: new URL("./deno.json", import.meta.url).pathname })],
+        entryPoints: [new URL("./preact-context.ts", import.meta.url).pathname],
+        bundle: true,
+        jsx: "automatic",
+        jsxImportSource: "preact",
+        format: "esm",
+        platform: "browser",
+        target: "es2022",
+        write: false,
+        metafile: true,
+        logLevel: "silent",
+      });
+      const inputs = Object.keys(result.metafile!.inputs);
+      for (
+        const forbidden of [
+          "@modelcontextprotocol/ext-apps",
+          "/view/src/app.ts",
+          "/surface-app.ts",
+          "/src/lifecycle.ts",
+          "/src/compose-events.ts",
+          "/src/fonts-data.ts",
+        ]
+      ) {
+        assertFalse(
+          inputs.some((input) => input.includes(forbidden)),
+          `context bundle must not contain ${forbidden}, got ${inputs.join("\n")}`,
+        );
+      }
+      assert(result.outputFiles[0].text.length > 0, "the checked bundle must contain emitted code");
+    } finally {
+      await esbuild.stop();
+    }
+  },
 });

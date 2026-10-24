@@ -9,13 +9,15 @@
     "./scaffold": "./scaffold.ts",
     "./surface": "./surface.ts",
     "./layout": "./layout.ts",
-    "./fonts": "./fonts.ts"
+    "./fonts": "./fonts.ts",
+    "./preact/context": "./preact-context.ts"
   },
   "publish": {
     "include": [
       "mod.ts",
       "preact.ts",
       "preact-components.ts",
+      "preact-context.ts",
       "scaffold.ts",
       "surface.ts",
       "layout.ts",
@@ -30,7 +32,7 @@
   "tasks": {
     "build:npm": "deno run -A ../../../scripts/build-alias-npm.ts --target=@mcpview/components --cjs --jsr-only=./scaffold",
     "test": "deno test --allow-read --allow-env mod_test.ts",
-    "check": "deno check mod.ts preact.ts preact-components.ts scaffold.ts surface.ts layout.ts fonts.ts mod_test.ts",
+    "check": "deno check preact-context.ts mod.ts preact.ts preact-components.ts scaffold.ts surface.ts layout.ts fonts.ts mod_test.ts",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "publish:check": "deno publish --dry-run --allow-dirty",

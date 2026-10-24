@@ -5,13 +5,15 @@
   "exports": {
     ".": "./mod.ts",
     "./contracts": "./contracts.ts",
-    "./react": "./react.ts"
+    "./react": "./react.ts",
+    "./context": "./context.ts"
   },
   "publish": {
     "include": [
       "mod.ts",
       "contracts.ts",
       "react.ts",
+      "context.ts",
       "README.md",
       "LICENSE"
     ],
@@ -22,7 +24,7 @@
   "tasks": {
     "build:npm": "deno run -A ../../../scripts/build-alias-npm.ts --target=@mcpview/view --cjs",
     "test": "deno test --allow-read --allow-env mod_test.ts",
-    "check": "deno check mod.ts contracts.ts react.ts mod_test.ts",
+    "check": "deno check context.ts mod.ts contracts.ts react.ts mod_test.ts",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "publish:check": "deno publish --dry-run --allow-dirty",

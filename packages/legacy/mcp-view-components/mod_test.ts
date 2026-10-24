@@ -13,6 +13,8 @@ import * as aliasLayout from "./layout.ts";
 import * as targetLayout from "@mcpview/components/layout";
 import * as aliasFonts from "./fonts.ts";
 import * as targetFonts from "@mcpview/components/fonts";
+import * as aliasContext from "./preact-context.ts";
+import * as targetContext from "@mcpview/components/preact/context";
 
 Deno.test("@casys/mcp-view-components declares the sub-paths of @mcpview/components", async () => {
   await assertExportMapParity(
@@ -41,4 +43,8 @@ Deno.test("@casys/mcp-view-components/layout re-exports @mcpview/components/layo
 });
 Deno.test("@casys/mcp-view-components/fonts re-exports @mcpview/components/fonts", () => {
   assertModuleParity("./fonts", aliasFonts, targetFonts);
+});
+
+Deno.test("@casys/mcp-view-components/preact/context re-exports @mcpview/components/preact/context", () => {
+  assertModuleParity("./preact/context", aliasContext, targetContext);
 });

@@ -73,7 +73,7 @@ result for arrays, primitives or null; their presence never enables legacy text 
 - `@mcpview/components` owns component catalogs, surface mounting, generic presentation roles, the
   ERPNext-inspired theme, Preact bindings, and the Deno/JSR result-viewer scaffold.
 - `@mcpview/view` owns only the iframe lifecycle, routing, results, events, tools, sampling, and
-  optional React adapter.
+  optional React adapter, plus the renderer-neutral active-context engine.
 
 Domain rendering stays in the owning MCP App. The generic component package deliberately contains no
 CAD, Modelica, FEA, SysML, ERP, or other domain viewer.
@@ -161,3 +161,42 @@ For an executable two-view core bundle, see [`examples/basic`](./examples/basic/
 componentized result-viewer generator from JSR with
 `deno run -A jsr:@mcpview/components@0.11.0/scaffold result-viewer <target>`. The Deno-only scaffold
 is deliberately absent from the npm package.
+
+## Active context
+
+Import the optional engine from `@mcpview/view/context`. It uses the existing App's
+`updateModelContext` transport; it never creates an App or sends a conversation message. Keep one
+controller outside the render tree for each App instance, so a surface remount does not lose its
+basket. Pass that controller to optional controls from `@mcpview/components/preact/context`.
+
+The policy carries application-owned schema, field/resource limits and selection projections. The
+graduated defaults keep up to three compact records, four to eight references, and turn a larger
+selection into one caller-supplied query item. The query must identify a tool and filters that can
+reproduce the selection. Stable IDs remain available at every tier. Compact records and the final
+serialized snapshot are bounded; a policy rejects an invalid or oversized snapshot before transport.
+
+Display the controller's acknowledged `selections` in the basket and its separate `pending` and
+error state. For selectable rows, `selectionState(itemOrId)` returns `selected`, `adding`,
+`removing` or `none`; `isSelected(item)` continues to mean host-confirmed membership.
+`desiredSelections` represents local intent, including a pointer preview before transport. Writes
+are serialized. A new root scope invalidates captured actions and queues a clear; navigation within
+the same root keeps the basket. Reconcile refreshed data with explicit groups. Connect the click
+arbiter's `onPreview` to `actions.previewToggle(item)` for immediate desired selection and pending
+feedback. Its default 500 ms window delays only the host write; a double-click at 200 ms cancels the
+preview without a write. Supply `onSingle` for immediate Space/assistive activation. Configure the
+delay for the gestures the App supports. Each first click keeps its own deadline, including repeated
+independent sequences on the same target. Local detail cancels only that target's unresolved
+gestures; reserve `cancelScope` for replacing the root dataset.
+
+Resource attachment is an explicit action. Disclose the filename, size and destination before
+sending it; binary resources have no automatic text conversion. The capability ladder uses announced
+structured content or JSON text, with bounded resource/text fallbacks. An unsupported host keeps
+local detail navigation available and receives no `sendMessage` fallback.
+
+See [`examples/context`](./examples/context/README.md) for a current-App integration and the
+3/8/query policy. This is experimental: a host ACK proves host acceptance, not model consumption.
+Cross-iframe supersession and production host conformance remain open. There is no automatic
+host-removal event wiring; an App can route explicit removed IDs to
+`controller.reconcileHostRemoval(ids)`.
+[ADR 0006](./docs/decision-records/0006-active-context-contract.md) remains Proposed. Teardown
+cleanup is best-effort and cannot guarantee that a host discards context after the view closes.

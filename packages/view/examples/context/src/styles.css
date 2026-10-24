@@ -1,0 +1,28 @@
+body {
+  font: 1rem system-ui, sans-serif;
+  margin: 1.5rem;
+  color: var(--mcp-view-text);
+  background: var(--mcp-view-panel);
+}
+main {
+  max-width: 55rem;
+  margin: auto;
+}
+button {
+  font: inherit;
+  padding: .4rem .7rem;
+  margin: .2rem;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem;
+}
+li {
+  margin-block: .5rem;
+}
+pre {
+  overflow: auto;
+  font-size: .8rem;
+}

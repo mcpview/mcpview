@@ -8,6 +8,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Experimental `@mcpview/view/context` keeps one acknowledged, bounded context basket per App, with
+  serialized writes, root-generation fencing, explicit reconciliation groups and visible retry
+  state. Policies choose the wire schema, limits and compact/reference/query projections, keeping
+  domain data and tool ownership in the consuming App. Pointer previews expose desired selection
+  immediately while the click arbiter delays host writes by 500 ms; a double-click within the window
+  cancels the preview without a transport write. Per-item selection states distinguish confirmed,
+  adding and removing feedback.
+- The context example uses the existing App connection and illustrates the 3/8/query selection
+  tiers. This implements a local library contract, not the production-host conformance or
+  cross-iframe supersession acceptance gates of proposed ADR 0006.
+
 ### Changed
 
 - **BREAKING:** Migrate to MCP SDK v2 and ext-apps 2.x. Node consumers require Node 20+. Import MCP
