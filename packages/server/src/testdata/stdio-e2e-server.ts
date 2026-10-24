@@ -56,7 +56,11 @@ app.registerTool(
     inputSchema: { type: "object" },
     requiredScopes: ["admin"],
   },
-  () => "trusted-local",
+  async () => {
+    // Realistic async work makes premature stdin EOF a reproducible regression.
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    return "trusted-local";
+  },
 );
 
 app.registerResource(

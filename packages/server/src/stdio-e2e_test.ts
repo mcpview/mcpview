@@ -8,11 +8,11 @@
  * altogether. This one spawns `deno run` on a fixture server and talks JSON-RPC
  * down its stdin, so nothing between `McpApp.start()` and the wire is mocked.
  *
- * One process for the whole file — spawning is the expensive part, and the
- * transport is stateless, so the requests are independent anyway.
+ * Each exchange owns one fixture process and keeps it alive until its replies
+ * have arrived.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 
 const FIXTURE = new URL("./testdata/stdio-e2e-server.ts", import.meta.url)
   .pathname;
@@ -23,41 +23,251 @@ interface Response {
   readonly error?: { code: number; message: string };
 }
 
+function isTerminalResponse(message: object): boolean {
+  return !("method" in message) && ("result" in message || "error" in message);
+}
+
+// Process startup under external CPU contention can exceed one second. This
+// ceiling applies only before the first reply; it is separate from EOF handling.
+const STARTUP_TIMEOUT_MS = 30_000;
+const RESPONSE_TIMEOUT_MS = 1_000;
+const CLEANUP_TIMEOUT_MS = 1_000;
+
+interface ExchangeOptions {
+  spawn?: () => Deno.ChildProcess;
+  startupTimeoutMs?: number;
+  responseTimeoutMs?: number;
+  sequential?: boolean;
+  quietWindowMs?: number;
+}
+
+async function within<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message = "stdio fixture timed out",
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(message)),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
- * Send every request down one stdin, then read every response.
- *
- * Batching avoids interleaving reads with writes: the SDK answers out of order
- * (its `initialize` reply arrived after a later response in practice), so the
- * responses are matched by id rather than by position.
+ * Batch modern requests while reading replies concurrently, matching by id.
+ * Legacy initialize must complete before sending the remaining requests.
+ * Keep stdin open until every reply arrives: EOF aborts SDK in-flight work.
  */
 async function exchange(
   requests: ReadonlyArray<Record<string, unknown>>,
-): Promise<Map<number, Response>> {
-  const command = new Deno.Command(Deno.execPath(), {
-    args: ["run", "--allow-all", "--no-check", FIXTURE],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "null",
-  });
-
-  const child = command.spawn();
+  {
+    spawn = () =>
+      new Deno.Command(Deno.execPath(), {
+        args: ["run", "--allow-all", "--no-check", FIXTURE],
+        stdin: "piped",
+        stdout: "piped",
+        stderr: "piped",
+      }).spawn(),
+    startupTimeoutMs = STARTUP_TIMEOUT_MS,
+    responseTimeoutMs = RESPONSE_TIMEOUT_MS,
+    sequential = false,
+    quietWindowMs = 0,
+  }: ExchangeOptions = {},
+): Promise<{
+  responses: Map<number, Response>;
+  messages: Array<Record<string, unknown>>;
+  resourceNotificationsAfter: Map<number, number>;
+  stderr: string;
+}> {
+  const child = spawn();
   const writer = child.stdin.getWriter();
+  const stdoutReader = child.stdout.getReader();
+  const stderrReader = child.stderr.getReader();
   const encoder = new TextEncoder();
-
-  for (const request of requests) {
-    await writer.write(encoder.encode(`${JSON.stringify(request)}\n`));
-  }
-  await writer.close();
-
-  const { stdout } = await child.output();
-
   const byId = new Map<number, Response>();
-  for (const line of new TextDecoder().decode(stdout).split("\n")) {
-    if (line.trim().length === 0) continue;
-    const message = JSON.parse(line) as Response;
-    if (typeof message.id === "number") byId.set(message.id, message);
+  const messages: Array<Record<string, unknown>> = [];
+  const resourceNotificationsAfter = new Map<number, number>();
+  let stderr = "";
+  let readError: unknown;
+  let ended = false;
+
+  const pump = async (
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    consume: (chunk: string) => void,
+  ): Promise<void> => {
+    const decoder = new TextDecoder();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        consume(decoder.decode(value, { stream: true }));
+      }
+      consume(decoder.decode());
+    } catch (error) {
+      readError ??= error;
+      // Parsing can fail while the pipe is still open; releasing its lock alone
+      // would leave the resource behind and prevent cleanup from cancelling it.
+      await reader.cancel().catch(() => {});
+    } finally {
+      reader.releaseLock();
+    }
+  };
+  // Observe failures immediately, including while a stdin write is pending.
+  const stderrDone = pump(stderrReader, (chunk) => {
+    stderr += chunk;
+  });
+  let buffered = "";
+  const stdoutDone = pump(stdoutReader, (chunk) => {
+    buffered += chunk;
+    const lines = buffered.split("\n");
+    buffered = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const message = JSON.parse(line) as Record<string, unknown>;
+      messages.push(message);
+      if (
+        typeof message.id === "number" &&
+        isTerminalResponse(message)
+      ) {
+        if (byId.has(message.id)) {
+          throw new Error(
+            `stdio fixture sent duplicate response id ${message.id}: ${
+              JSON.stringify(message)
+            }`,
+          );
+        }
+        byId.set(message.id, message as Response);
+      }
+    }
+  }).finally(() => {
+    ended = true;
+  });
+  const waitFor = async (ids: number[]): Promise<void> => {
+    let received = byId.size;
+    let deadline = Date.now() +
+      (received ? responseTimeoutMs : startupTimeoutMs);
+    while (ids.some((id) => !byId.has(id))) {
+      if (readError) throw readError;
+      if (ended) {
+        throw new Error(
+          `stdio fixture exited before replying to ids ${
+            JSON.stringify(ids.filter((id) => !byId.has(id)))
+          }`,
+        );
+      }
+      if (byId.size !== received) {
+        received = byId.size;
+        deadline = Date.now() + responseTimeoutMs;
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `stdio fixture did not answer ids ${
+            JSON.stringify(ids.filter((id) => !byId.has(id)))
+          }`,
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  };
+
+  let failure: unknown;
+  try {
+    for (const request of requests) {
+      await within(
+        writer.write(encoder.encode(`${JSON.stringify(request)}\n`)),
+        byId.size ? responseTimeoutMs : startupTimeoutMs,
+      );
+      if (
+        (sequential || request.method === "initialize") &&
+        typeof request.id === "number"
+      ) {
+        await waitFor([request.id]);
+        if (quietWindowMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, quietWindowMs));
+          resourceNotificationsAfter.set(
+            request.id,
+            messages.filter((message) =>
+              message.method === "notifications/resources/list_changed"
+            ).length,
+          );
+        }
+      }
+    }
+    await waitFor(
+      requests.flatMap((request) =>
+        typeof request.id === "number" ? [request.id] : []
+      ),
+    );
+  } catch (error) {
+    failure = error;
+  } finally {
+    const kill = () => {
+      try {
+        child.kill("SIGKILL");
+      } catch { /* Already exited. */ }
+    };
+    // A failed write can leave close queued behind it: kill before awaiting it.
+    if (failure) kill();
+    const cleanup = Promise.allSettled([
+      writer.close(),
+      child.status,
+      stdoutDone,
+      stderrDone,
+    ]).then((results) => {
+      for (const result of results) {
+        if (result.status === "rejected") failure ??= result.reason;
+      }
+    });
+    try {
+      if (!failure) {
+        try {
+          await within(cleanup, CLEANUP_TIMEOUT_MS);
+        } catch (error) {
+          failure = error;
+        }
+      }
+      if (failure) {
+        kill();
+        // Explicitly cancel reads as well as killing the process; don't leave
+        // pending reads or a queued write alive after reporting the failure.
+        await within(
+          Promise.allSettled([
+            writer.abort(),
+            stdoutReader.cancel(),
+            stderrReader.cancel(),
+            cleanup,
+          ]),
+          CLEANUP_TIMEOUT_MS,
+        );
+      }
+    } catch (cleanupError) {
+      failure = new AggregateError(
+        [failure, cleanupError],
+        "stdio fixture cleanup failed",
+      );
+    } finally {
+      writer.releaseLock();
+    }
   }
-  return byId;
+  failure ??= readError;
+  if (failure) {
+    throw new Error(
+      `${failure}\nresponses: ${
+        JSON.stringify([...byId.values()])
+      }\nstderr:\n${stderr}`,
+      { cause: failure },
+    );
+  }
+  return { responses: byId, messages, resourceNotificationsAfter, stderr };
 }
 
 /**
@@ -68,69 +278,16 @@ async function exchange(
 async function exchangeSequentialMessages(
   requests: ReadonlyArray<Record<string, unknown>>,
   quietWindowMs = 100,
+  options: ExchangeOptions = {},
 ): Promise<{
   messages: Array<Record<string, unknown>>;
   resourceNotificationsAfter: Map<number, number>;
 }> {
-  const command = new Deno.Command(Deno.execPath(), {
-    args: ["run", "--allow-all", "--no-check", FIXTURE],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "null",
+  return await exchange(requests, {
+    ...options,
+    sequential: true,
+    quietWindowMs,
   });
-  const child = command.spawn();
-  const writer = child.stdin.getWriter();
-  const reader = child.stdout.pipeThrough(new TextDecoderStream()).getReader();
-  const messages: Array<Record<string, unknown>> = [];
-  const resourceNotificationsAfter = new Map<number, number>();
-  let buffered = "";
-  const pump = (async () => {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffered += value;
-      const lines = buffered.split("\n");
-      buffered = lines.pop() ?? "";
-      for (const line of lines) {
-        if (line.trim().length > 0) {
-          messages.push(JSON.parse(line) as Record<string, unknown>);
-        }
-      }
-    }
-  })();
-
-  const waitForResponse = async (id: number): Promise<void> => {
-    const deadline = Date.now() + 1_000;
-    while (!messages.some((message) => message.id === id)) {
-      if (Date.now() >= deadline) {
-        throw new Error(`stdio fixture did not answer request ${id}`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    }
-  };
-
-  try {
-    for (const item of requests) {
-      await writer.write(
-        new TextEncoder().encode(`${JSON.stringify(item)}\n`),
-      );
-      if (typeof item.id === "number") {
-        await waitForResponse(item.id);
-        await new Promise((resolve) => setTimeout(resolve, quietWindowMs));
-        resourceNotificationsAfter.set(
-          item.id,
-          messages.filter((message) =>
-            message.method === "notifications/resources/list_changed"
-          ).length,
-        );
-      }
-    }
-  } finally {
-    await writer.close();
-    await child.status;
-    await pump;
-  }
-  return { messages, resourceNotificationsAfter };
 }
 
 /**
@@ -142,56 +299,13 @@ async function exchangeSequentialMessages(
  */
 async function exchangeSequential(
   requests: ReadonlyArray<Record<string, unknown>>,
+  options: ExchangeOptions = {},
 ): Promise<Map<number, Response>> {
-  const command = new Deno.Command(Deno.execPath(), {
-    args: ["run", "--allow-all", "--no-check", FIXTURE],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "null",
+  const { responses } = await exchange(requests, {
+    ...options,
+    sequential: true,
   });
-  const child = command.spawn();
-  const writer = child.stdin.getWriter();
-  const reader = child.stdout
-    .pipeThrough(new TextDecoderStream())
-    .getReader();
-  const pending: Response[] = [];
-  const byId = new Map<number, Response>();
-  let buffered = "";
-
-  const readNext = async (): Promise<Response> => {
-    while (pending.length === 0) {
-      const { done, value } = await reader.read();
-      if (done) throw new Error("stdio fixture exited before replying");
-      buffered += value;
-      const lines = buffered.split("\n");
-      buffered = lines.pop() ?? "";
-      for (const line of lines) {
-        if (line.trim().length > 0) pending.push(JSON.parse(line) as Response);
-      }
-    }
-    return pending.shift()!;
-  };
-
-  try {
-    for (const message of requests) {
-      await writer.write(
-        new TextEncoder().encode(`${JSON.stringify(message)}\n`),
-      );
-      if (typeof message.id !== "number") continue;
-
-      let response = await readNext();
-      while (response.id !== message.id) {
-        if (typeof response.id === "number") byId.set(response.id, response);
-        response = await readNext();
-      }
-      byId.set(message.id, response);
-    }
-  } finally {
-    await writer.close();
-    await child.status;
-    await reader.cancel();
-  }
-  return byId;
+  return responses;
 }
 
 function request(
@@ -234,8 +348,90 @@ const HANDSHAKE = [
   { jsonrpc: "2.0", method: "notifications/initialized" },
 ];
 
+const harnesses = {
+  exchange,
+  exchangeSequential,
+  exchangeSequentialMessages: (
+    requests: ReadonlyArray<Record<string, unknown>>,
+    options: ExchangeOptions,
+  ) => exchangeSequentialMessages(requests, 100, options),
+};
+
+for (const [name, helper] of Object.entries(harnesses)) {
+  for (const blockedOperation of ["read", "write"] as const) {
+    Deno.test({
+      name:
+        `stdio harness - ${name} times out a blocked ${blockedOperation} and reaps the child`,
+      sanitizeResources: true,
+      sanitizeOps: true,
+      async fn() {
+        const timeoutMs = 300;
+        const watchdogMs = timeoutMs + 2 * CLEANUP_TIMEOUT_MS + 2_000;
+        let child: Deno.ChildProcess | undefined;
+        let status: Deno.CommandStatus | undefined;
+        const started = performance.now();
+        const attempt: Promise<unknown> = helper([
+          request(1, "never-answers", {
+            // More than the pipe buffer: this fixture never reads stdin.
+            value: blockedOperation === "write" ? "x".repeat(1_048_576) : "",
+          }),
+        ], {
+          startupTimeoutMs: timeoutMs,
+          responseTimeoutMs: timeoutMs,
+          spawn() {
+            child = new Deno.Command(Deno.execPath(), {
+              args: [
+                "run",
+                "--no-check",
+                new URL("./testdata/stdio-e2e-silent.ts", import.meta.url)
+                  .pathname,
+              ],
+              stdin: "piped",
+              stdout: "piped",
+              stderr: "piped",
+            }).spawn();
+            child.status.then((result) => {
+              status = result;
+            });
+            return child;
+          },
+        });
+        assertExists(child);
+        try {
+          await assertRejects(
+            () => within(attempt, watchdogMs, "stdio harness watchdog expired"),
+            Error,
+            blockedOperation === "read"
+              ? "stdio fixture did not answer ids [1]"
+              : "stdio fixture timed out",
+          );
+          assert(performance.now() - started < watchdogMs);
+          // Check immediately: waiting here could hide premature helper return.
+          assertExists(status, "helper returned before reaping its child");
+          assertEquals(status.signal, "SIGKILL");
+          assertEquals(status.success, false);
+          assertEquals(child.stdin.locked, false);
+          assertEquals(child.stdout.locked, false);
+          assertEquals(child.stderr.locked, false);
+        } finally {
+          // Keep a regression from stranding the fixture if the watchdog fires.
+          if (!status) {
+            try {
+              child.kill("SIGKILL");
+            } catch { /* Already exited. */ }
+          }
+          await within(
+            Promise.allSettled([attempt, child.status]),
+            CLEANUP_TIMEOUT_MS,
+          );
+        }
+      },
+    });
+  }
+}
+
 Deno.test("stdio e2e - modern discover and tools/list carry the 2026 result envelope", async () => {
-  const responses = await exchange([
+  const { responses } = await exchange([
     modernRequest(1, "server/discover"),
     modernRequest(2, "tools/list"),
   ]);
@@ -284,7 +480,7 @@ Deno.test("stdio e2e - modern discover and tools/list carry the 2026 result enve
 });
 
 Deno.test("stdio e2e - scoped tools remain available on the trusted local transport", async () => {
-  const responses = await exchange([
+  const { responses, stderr } = await exchange([
     modernRequest(1, "tools/call", {
       name: "scoped_local",
       arguments: {},
@@ -292,17 +488,21 @@ Deno.test("stdio e2e - scoped tools remain available on the trusted local transp
   ]);
 
   const call = responses.get(1);
-  assertExists(call?.result, "scoped stdio tool got no result");
-  assertEquals(call.error, undefined);
+  const diagnostic = `scoped stdio response for id 1: ${
+    JSON.stringify(call)
+  }\nstderr:\n${stderr}`;
+  assertExists(call?.result, diagnostic);
+  assertEquals(call.error, undefined, diagnostic);
   assertEquals(
-    (call.result.content as Array<{ text: string }>)[0].text,
+    (call.result.content as Array<{ text: string }> | undefined)?.[0]?.text,
     "trusted-local",
+    diagnostic,
   );
-  assertEquals(call.result.resultType, "complete");
+  assertEquals(call.result.resultType, "complete", diagnostic);
 });
 
 Deno.test("stdio e2e - legacy initialize keeps tools/list on the 2025 wire shape", async () => {
-  const responses = await exchange([
+  const { responses } = await exchange([
     ...HANDSHAKE,
     request(2, "tools/list"),
   ]);
@@ -408,7 +608,7 @@ Deno.test("stdio e2e - a real batch notifies exactly once and a rejected duplica
 });
 
 Deno.test("stdio e2e - an unknown method is MethodNotFound, not a crash", async () => {
-  const responses = await exchange([
+  const { responses } = await exchange([
     ...HANDSHAKE,
     request(2, "server/undiscover"),
     // Proves the process survived the thrown McpError and keeps serving.
