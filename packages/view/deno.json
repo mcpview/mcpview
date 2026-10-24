@@ -5,13 +5,15 @@
   "exports": {
     ".": "./mod.ts",
     "./contracts": "./contracts.ts",
-    "./react": "./react.ts"
+    "./react": "./react.ts",
+    "./context": "./context.ts"
   },
   "publish": {
     "include": [
       "mod.ts",
       "contracts.ts",
       "react.ts",
+      "context.ts",
       "src/**/*.ts",
       "src/**/*.tsx",
       "src/**/*.md",
@@ -25,7 +27,7 @@
   "tasks": {
     "build:npm": "deno run -A scripts/build-npm.ts",
     "test": "deno test --allow-read --allow-write --allow-run --allow-env src/",
-    "check": "deno check mod.ts contracts.ts react.ts",
+    "check": "deno check context.ts mod.ts contracts.ts react.ts",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "publish:check": "deno publish --dry-run --allow-dirty",

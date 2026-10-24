@@ -24,6 +24,7 @@ await build({
     "./mod.ts",
     { name: "./preact", path: "./preact.ts" },
     { name: "./preact/components", path: "./preact-components.ts" },
+    { name: "./preact/context", path: "./preact-context.ts" },
     { name: "./surface", path: "./surface.ts" },
     { name: "./layout", path: "./layout.ts" },
     { name: "./fonts", path: "./fonts.ts" },
@@ -59,6 +60,11 @@ packageJson.exports = {
     types: "./esm/mod.d.ts",
     import: "./esm/mod.js",
     require: "./script/mod.js",
+  },
+  "./preact/context": {
+    types: "./esm/preact-context.d.ts",
+    import: "./esm/preact-context.js",
+    require: "./script/preact-context.js",
   },
   "./preact": {
     types: "./esm/preact.d.ts",

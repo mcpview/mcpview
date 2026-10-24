@@ -8,6 +8,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Experimental `@mcpview/components/preact/context` adds the acknowledged context basket chip, a
+  hook for an App-owned controller, optional group/removal/retry controls, scoped basket and
+  per-item selection CSS using light/dark theme tokens, and English/French labels. The hook exposes
+  provisional adding/removing states while the chip keeps acknowledged truth. Accepted Retry
+  restores focus after controlled props update, including a cleared basket. The narrow entry avoids
+  importing the surface or MCP App lifecycle, so adding selection controls to an existing App does
+  not create another transport owner.
+
 ### Changed
 
 - **BREAKING:** Node consumers now require Node.js 20 or newer, following the SDK v2 and MCP Apps v2

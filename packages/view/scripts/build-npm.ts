@@ -35,6 +35,7 @@ await build({
     "./mod.ts",
     { name: "./contracts", path: "./contracts.ts" },
     { name: "./react", path: "./react.ts" },
+    { name: "./context", path: "./context.ts" },
   ],
   outDir: "./dist-node",
   shims: {
@@ -79,6 +80,11 @@ pkg.exports = {
     types: "./esm/mod.d.ts",
     import: "./esm/mod.js",
     require: "./script/mod.js",
+  },
+  "./context": {
+    types: "./esm/context.d.ts",
+    import: "./esm/context.js",
+    require: "./script/context.js",
   },
   "./contracts": {
     types: "./esm/contracts.d.ts",
@@ -172,6 +178,11 @@ async function smokeTestPackageImport(): Promise<void> {
           "if (contracts.SEMANTIC_SELECTION_SCHEMA !== 'io.casys.semantic-selection/1.0' ||",
           "    typeof contracts.defineViewAppManifest !== 'function') {",
           "  throw new Error('composition contracts export missing');",
+          "}",
+          "const context = await import('@mcpview/view/context');",
+          "if (typeof context.createActiveContextController !== 'function' ||",
+          "    typeof context.createClickIntentArbiter !== 'function') {",
+          "  throw new Error('active context entry exports missing');",
           "}",
           "const react = await import('@mcpview/view/react');",
           "if (typeof react.defineReactView !== 'function') {",

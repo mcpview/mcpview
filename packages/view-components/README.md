@@ -31,11 +31,11 @@ npm i @mcpview/components
   SysML renderer.
 
 The package root is renderer-neutral and carries no MCP Apps runtime: `@mcpview/view` and
-`@modelcontextprotocol/ext-apps` are reached only through the `/surface` entry, which owns the App
-lifecycle. The responsive layout decision and its hooks live in the `/layout` entry, which takes the
-host context as a value and loads no App runtime. The embedded webfonts are reached only through the
-`/fonts` entry. Preact is an optional peer and is loaded only through the Preact subpaths and
-`/layout`, whose hooks are Preact:
+`@modelcontextprotocol/ext-apps` are reached through the `/surface` entry (also re-exported by
+`/preact`), which owns the App lifecycle. The responsive layout decision and its hooks live in the
+`/layout` entry, which takes the host context as a value and loads no App runtime. The embedded
+webfonts are reached only through the `/fonts` entry. Preact is an optional peer and is loaded only
+through the Preact subpaths and `/layout`, whose hooks are Preact:
 
 ```ts
 import { defineComponentRegistry, installMcpViewTheme } from "@mcpview/components";
@@ -592,3 +592,49 @@ deno run -A jsr:@mcpview/components@0.11.0/scaffold result-viewer ./result-viewe
 The npm package contains only the runtime and presentation entry points. It does not export or ship
 `@mcpview/components/scaffold`; Node ESM imports and CommonJS requires of that subpath are expected
 to fail with `ERR_PACKAGE_PATH_NOT_EXPORTED` rather than loading a Deno-only module.
+
+## Active context
+
+`@mcpview/components/preact/context` exports `ActiveContextChip`, `useActiveContext`,
+`MCP_VIEW_CONTEXT_BASKET_CSS`, `MCP_VIEW_CONTEXT_SELECTION_CSS` and English/French labels through
+`contextBasketLabels(locale)`. This narrow entry uses an existing `@mcpview/view/context` controller
+and loads no App lifecycle, surface mounting or embedded fonts. Preact remains an optional peer.
+
+Create the controller once outside the component tree, then call
+`useActiveContext(controller, scopeKey)` in the view. The hook subscribes to acknowledged
+selections, pending updates, failures and root-scoped actions. `selectionState(itemOrId)` exposes
+`selected | adding | removing | none` for rows/cards immediately, including provisional pointer
+intent; `isSelected(item)` retains its ACK-confirmed meaning. `ActiveContextChip` displays the
+basket and calls the supplied removal, clear and optional retry callbacks. Labels, tool-resolvable
+IDs, grouping and resource disclosure belong to the App; groups affect presentation rather than the
+wire snapshot.
+
+```ts
+import { createActiveContextController, createActiveContextPolicy } from "@mcpview/view/context";
+import {
+  ActiveContextChip,
+  contextBasketLabels,
+  MCP_VIEW_CONTEXT_BASKET_CSS,
+  MCP_VIEW_CONTEXT_SELECTION_CSS,
+  useActiveContext,
+} from "@mcpview/components/preact/context";
+```
+
+Install the exported CSS once for the view; importing the entry does not inject styles. The chip
+keeps confirmed selections visible while an update is pending or fails, exposes failures to
+assistive technology and lets the App provide retry. Accepted Retry restores focus to a retained
+basket control, or an external control if the basket disappears; rejected results preserve focus.
+Use explicit buttons for selection/removal alongside optional gestures. Before sending a resource,
+show its name, byte size and that it will be sent to the model.
+
+For optional row styling, install `MCP_VIEW_CONTEXT_SELECTION_CSS` alongside the shared
+`MCP_VIEW_THEME_CSS` from `@mcpview/components`. Apply class `mcp-view-context-selection` and
+`data-context-state={context.selectionState(item)}` to the selection control. The styles use the
+shared light/dark theme tokens; dashed borders distinguish adding/removing from confirmed selection.
+Expose the pending state in accessible text or `aria-busy`, and derive desired `aria-pressed` from
+`selected`/`adding`. The basket count still uses acknowledged selections. Connect `onPreview` to
+`context.previewToggle(item)` for immediate row feedback during the arbiter's default 500 ms delay.
+
+See the [context example](../view/examples/context/README.md) for a complete integration. The
+controls are experimental. An ACK confirms host acceptance only; model consumption, production host
+behavior and cross-iframe ownership require separate validation.
