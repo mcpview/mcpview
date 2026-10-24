@@ -5,14 +5,14 @@ scope to the **mcpview** brand: scope `@mcpview` on JSR and npm, repository
 [`mcpview/mcpview`](https://github.com/mcpview/mcpview), site
 [mcpview.dev](https://mcpview.dev). The packages are maintained by Casys.
 
-The package-name migration preserved APIs, behavior, and operational identifiers.
-Version numbers continue instead of restarting, and every old name stays published
-as a deprecated alias that re-exports the new package.
+The package-name migration preserved APIs, behavior, and operational
+identifiers. Version numbers continue instead of restarting, and every old name
+stays published as a deprecated alias that re-exports the new package.
 
 The current versions used in the commands below also include the MCP SDK v2
-migration: server 0.30.0, view 0.11.0, components 0.12.0, and compose 0.11.0 require
-Node 20+ and Zod 4.2+, with split MCP SDK imports. Review their CHANGELOG entries
-when upgrading from the first releases under the new names.
+migration: server 0.30.0, view 0.11.0, components 0.12.0, and compose 0.11.0
+require Node 20+ and Zod 4.2+, with split MCP SDK imports. Review their
+CHANGELOG entries when upgrading from the first releases under the new names.
 
 ## Name mapping
 
@@ -47,15 +47,15 @@ current minor (for example `@mcpview/view@^0.11.0`), and are guarded by a parity
 test that fails when the target gains, drops, or renames an export. On npm they
 carry a deprecation notice ("Moved to @mcpview/…").
 
-| Alias                        | Re-exports            | Sub-paths                                                                                  |
-| ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
-| `@casys/mcp-server`          | `@mcpview/server`     | `.`                                                                                        |
-| `@casys/mcp-platform`        | `@mcpview/server`     | `.`                                                                                        |
-| `@casys/mcp-view`            | `@mcpview/view`       | `.`, `./contracts`, `./react`, `./context`                                                              |
+| Alias                        | Re-exports            | Sub-paths                                                                                                      |
+| ---------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `@casys/mcp-server`          | `@mcpview/server`     | `.`                                                                                                            |
+| `@casys/mcp-platform`        | `@mcpview/server`     | `.`                                                                                                            |
+| `@casys/mcp-view`            | `@mcpview/view`       | `.`, `./contracts`, `./react`, `./context`                                                                     |
 | `@casys/mcp-view-components` | `@mcpview/components` | `.`, `./preact`, `./preact/components`, `./preact/context`, `./scaffold`\*, `./surface`, `./layout`, `./fonts` |
-| `@casys/mcp-view-contracts`  | `@mcpview/contracts`  | `.`                                                                                        |
-| `@casys/mcp-compose`         | `@mcpview/compose`    | `.`, `./core`, `./sdk`, `./host`, `./runtime`, `./deploy`                                  |
-| `@casys/mcp-bridge`          | `@mcpview/bridge`     | `.`, `./adapters/network`                                                                  |
+| `@casys/mcp-view-contracts`  | `@mcpview/contracts`  | `.`                                                                                                            |
+| `@casys/mcp-compose`         | `@mcpview/compose`    | `.`, `./core`, `./sdk`, `./host`, `./runtime`, `./deploy`                                                      |
+| `@casys/mcp-bridge`          | `@mcpview/bridge`     | `.`, `./adapters/network`                                                                                      |
 
 \* `./scaffold` is Deno/JSR-only, as in `@mcpview/components`: it exists on JSR
 and not in the npm package.
