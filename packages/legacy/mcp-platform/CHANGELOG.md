@@ -7,6 +7,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-10-24
+
+### Changed
+
+- Follows `@mcpview/server` 0.30.0: both the JSR and npm publications now depend on
+  `@mcpview/server@^0.30.0`. Still a deprecated alias that re-exports the new package unchanged; see
+  `packages/server/CHANGELOG.md` for what 0.30.0 brings.
+
 ## [0.29.0] - 2026-10-17
 
 ### Changed

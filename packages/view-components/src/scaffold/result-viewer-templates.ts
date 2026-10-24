@@ -6,9 +6,9 @@ export const resultViewerTemplates: Readonly<Record<string, string>> = {
     "lib": ["deno.ns", "deno.window", "dom", "dom.iterable", "dom.asynciterable", "esnext"]
   },
   "imports": {
-    "@mcpview/view": "jsr:@mcpview/view@0.10.1",
-    "@mcpview/components": "jsr:@mcpview/components@0.11.0",
-    "@mcpview/components/surface": "jsr:@mcpview/components@0.11.0/surface"
+    "@mcpview/view": "jsr:@mcpview/view@0.11.0",
+    "@mcpview/components": "jsr:@mcpview/components@0.12.0",
+    "@mcpview/components/surface": "jsr:@mcpview/components@0.12.0/surface"
   },
   "minimumDependencyAge": {
     "age": "P1D",
@@ -48,9 +48,9 @@ export const resultViewerTemplates: Readonly<Record<string, string>> = {
     `import { dirname, fromFileUrl, join, resolve, toFileUrl } from "jsr:@std/path@^1.1.0";
 
 const here = dirname(fromFileUrl(import.meta.url));
-const mcpViewModule = moduleSpecifier(Deno.env.get("MCP_VIEW_MODULE") ?? "jsr:@mcpview/view@0.10.1");
+const mcpViewModule = moduleSpecifier(Deno.env.get("MCP_VIEW_MODULE") ?? "jsr:@mcpview/view@0.11.0");
 const mcpViewComponentsModule = moduleSpecifier(
-  Deno.env.get("MCP_VIEW_COMPONENTS_MODULE") ?? "jsr:@mcpview/components@0.11.0",
+  Deno.env.get("MCP_VIEW_COMPONENTS_MODULE") ?? "jsr:@mcpview/components@0.12.0",
 );
 const mcpViewSurfaceModule = moduleSpecifier(
   Deno.env.get("MCP_VIEW_COMPONENTS_SURFACE_MODULE") ?? subpathModule(mcpViewComponentsModule, "surface"),

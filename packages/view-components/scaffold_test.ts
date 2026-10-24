@@ -41,10 +41,10 @@ Deno.test("result-viewer scaffold creates a standalone component project", async
 
     const configPath = join(target, "deno.json");
     const generatedConfig = await Deno.readTextFile(configPath);
-    assertStringIncludes(generatedConfig, '"@mcpview/view": "jsr:@mcpview/view@0.10.1"');
+    assertStringIncludes(generatedConfig, '"@mcpview/view": "jsr:@mcpview/view@0.11.0"');
     assertStringIncludes(
       generatedConfig,
-      '"@mcpview/components": "jsr:@mcpview/components@0.11.0"',
+      '"@mcpview/components": "jsr:@mcpview/components@0.12.0"',
     );
     assertStringIncludes(generatedConfig, '"minimumDependencyAge"');
     assertStringIncludes(generatedConfig, '"jsr:@mcpview/components"');
@@ -67,9 +67,9 @@ Deno.test("result-viewer scaffold creates a standalone component project", async
     await Deno.writeTextFile(
       configPath,
       generatedConfig
-        .replace("jsr:@mcpview/view@0.10.1", coreModule)
-        .replace("jsr:@mcpview/components@0.11.0/surface", surfaceModule)
-        .replace("jsr:@mcpview/components@0.11.0", componentsModule),
+        .replace("jsr:@mcpview/view@0.11.0", coreModule)
+        .replace("jsr:@mcpview/components@0.12.0/surface", surfaceModule)
+        .replace("jsr:@mcpview/components@0.12.0", componentsModule),
     );
 
     // A bare path is accepted where the fleet passes file URLs; /surface is derived from it.

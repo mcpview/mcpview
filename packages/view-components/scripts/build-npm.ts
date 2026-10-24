@@ -4,7 +4,7 @@ import { build, emptyDir } from "@deno/dnt";
 
 const denoJson = JSON.parse(
   await Deno.readTextFile(new URL("../deno.json", import.meta.url)),
-) as { version?: string };
+) as { version?: string; imports: Record<string, string> };
 if (!denoJson.version) throw new Error("[build-npm] missing view-components version");
 const coreDenoJson = JSON.parse(
   await Deno.readTextFile(new URL("../../view/deno.json", import.meta.url)),
@@ -17,6 +17,16 @@ if (!coreDenoJson.version || !contractsDenoJson.version) {
 }
 
 await emptyDir("./dist-node");
+const npmImportMapPath = "./dist-node/.npm-import-map.json";
+const siblingModules = {
+  "@mcpview/view": new URL("../../view/mod.ts", import.meta.url).href,
+  "@mcpview/view/context": new URL("../../view/context.ts", import.meta.url).href,
+  "@mcpview/contracts": new URL("../../view-contracts/mod.ts", import.meta.url).href,
+};
+await Deno.writeTextFile(
+  npmImportMapPath,
+  JSON.stringify({ imports: { ...denoJson.imports, ...siblingModules } }, null, 2) + "\n",
+);
 await build({
   // `./scaffold` is intentionally Deno/JSR-only: its public contract uses
   // Deno filesystem APIs and `deno fmt`. Do not emit a nominal Node entry.
@@ -49,8 +59,18 @@ await build({
   compilerOptions: { lib: ["ES2022", "DOM", "DOM.Iterable"], target: "ES2022" },
   typeCheck: false,
   test: false,
-  importMap: "./deno.json",
-});
+  importMap: npmImportMapPath,
+  // Keep sibling packages external without fetching unpublished npm versions
+  // during dnt's install. Their release ranges are added below after the build.
+  mappings: {
+    [siblingModules["@mcpview/view"]]: { name: "@mcpview/view" },
+    [siblingModules["@mcpview/view/context"]]: {
+      name: "@mcpview/view",
+      subPath: "context",
+    },
+    [siblingModules["@mcpview/contracts"]]: { name: "@mcpview/contracts" },
+  },
+}).finally(() => Deno.remove(npmImportMapPath));
 
 const packageJsonPath = "dist-node/package.json";
 const packageJson = JSON.parse(await Deno.readTextFile(packageJsonPath));

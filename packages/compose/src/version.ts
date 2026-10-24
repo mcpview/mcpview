@@ -18,7 +18,7 @@
  */
 
 /** @mcpview/compose package version. */
-export const COMPOSE_VERSION = "0.10.0" as const;
+export const COMPOSE_VERSION = "0.11.0" as const;
 
 /**
  * MCP Apps protocol version targeted by compose.

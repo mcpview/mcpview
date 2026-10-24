@@ -602,6 +602,7 @@
       "packages/compose": {
         "dependencies": [
           "jsr:@deno/dnt@0.41",
+          "jsr:@mcpview/server@0.30",
           "jsr:@std/assert@1",
           "jsr:@std/yaml@1",
           "npm:@modelcontextprotocol/client@^2.3.1",
@@ -622,31 +623,31 @@
       },
       "packages/legacy/mcp-compose": {
         "dependencies": [
-          "jsr:@mcpview/compose@0.10",
+          "jsr:@mcpview/compose@0.11",
           "jsr:@std/assert@1"
         ]
       },
       "packages/legacy/mcp-platform": {
         "dependencies": [
-          "jsr:@mcpview/server@0.29",
+          "jsr:@mcpview/server@0.30",
           "jsr:@std/assert@1"
         ]
       },
       "packages/legacy/mcp-server": {
         "dependencies": [
-          "jsr:@mcpview/server@0.29",
+          "jsr:@mcpview/server@0.30",
           "jsr:@std/assert@1"
         ]
       },
       "packages/legacy/mcp-view": {
         "dependencies": [
-          "jsr:@mcpview/view@0.10",
+          "jsr:@mcpview/view@0.11",
           "jsr:@std/assert@1"
         ]
       },
       "packages/legacy/mcp-view-components": {
         "dependencies": [
-          "jsr:@mcpview/components@0.11",
+          "jsr:@mcpview/components@0.12",
           "jsr:@std/assert@1"
         ]
       },
@@ -675,6 +676,7 @@
       "packages/view": {
         "dependencies": [
           "jsr:@deno/dnt@0.41",
+          "jsr:@mcpview/contracts@0.2",
           "jsr:@std/assert@1",
           "npm:@modelcontextprotocol/client@^2.3.1",
           "npm:@modelcontextprotocol/core@^2.3.1",
@@ -685,6 +687,8 @@
       "packages/view-components": {
         "dependencies": [
           "jsr:@deno/dnt@0.41",
+          "jsr:@mcpview/contracts@0.2",
+          "jsr:@mcpview/view@0.11",
           "jsr:@std/assert@1",
           "jsr:@std/path@^1.1.0",
           "npm:preact@^10.28.3"

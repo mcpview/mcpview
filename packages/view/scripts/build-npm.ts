@@ -13,7 +13,10 @@ import { build, emptyDir } from "@deno/dnt";
 const denoJsonText = await Deno.readTextFile(
   new URL("../deno.json", import.meta.url),
 );
-const denoJson = JSON.parse(denoJsonText) as { version?: string };
+const denoJson = JSON.parse(denoJsonText) as {
+  version?: string;
+  imports: Record<string, string>;
+};
 const VERSION = denoJson.version;
 if (!VERSION) {
   throw new Error(
@@ -29,6 +32,15 @@ if (!contractsDenoJson.version) {
 console.log(`[build-npm] Version: ${VERSION}`);
 
 await emptyDir("./dist-node");
+
+const contractsEntryPoint = new URL("../../view-contracts/mod.ts", import.meta.url).href;
+const npmImportMapPath = "./dist-node/.npm-import-map.json";
+await Deno.writeTextFile(
+  npmImportMapPath,
+  JSON.stringify({
+    imports: { ...denoJson.imports, "@mcpview/contracts": contractsEntryPoint },
+  }),
+);
 
 await build({
   entryPoints: [
@@ -69,8 +81,13 @@ await build({
   },
   typeCheck: false,
   test: false,
-  importMap: "./deno.json",
-});
+  importMap: npmImportMapPath,
+  // Keep contracts external without fetching npm during dnt installation.
+  // The dependency range is added below after the build.
+  mappings: {
+    [contractsEntryPoint]: { name: "@mcpview/contracts" },
+  },
+}).finally(() => Deno.remove(npmImportMapPath));
 
 const pkgPath = "dist-node/package.json";
 const pkg = JSON.parse(await Deno.readTextFile(pkgPath));
