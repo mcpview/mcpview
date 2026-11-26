@@ -673,13 +673,13 @@
       },
       "packages/legacy/mcp-platform": {
         "dependencies": [
-          "jsr:@mcpview/server@0.30",
+          "jsr:@mcpview/server@~0.30.2",
           "jsr:@std/assert@1"
         ]
       },
       "packages/legacy/mcp-server": {
         "dependencies": [
-          "jsr:@mcpview/server@0.30",
+          "jsr:@mcpview/server@~0.30.2",
           "jsr:@std/assert@1"
         ]
       },
@@ -691,7 +691,7 @@
       },
       "packages/legacy/mcp-view-components": {
         "dependencies": [
-          "jsr:@mcpview/components@0.12",
+          "jsr:@mcpview/components@0.13",
           "jsr:@std/assert@1"
         ]
       },

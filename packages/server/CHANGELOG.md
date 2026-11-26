@@ -5,6 +5,15 @@ All notable changes to `@mcpview/server` (published as `@casys/mcp-server` up to
 
 ## [Unreleased]
 
+## [0.30.2] - 2026-11-26
+
+### Added
+
+- Code-mode hosts can save successful programs by execution reference through
+  `@mcpview/server/snippets`. The scoped catalog supports listing, source
+  inspection and replay with fresh parameters. The default store is in memory.
+  Hosts can use the local file store for persistence or supply a `SnippetStore`.
+
 ## [0.30.1] - 2026-11-26
 
 ### Added

@@ -8,6 +8,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-26
+
+### Added
+
+- `SnippetLibrary` in `@mcpview/components/preact/components` gives Apps a reusable interface for
+  browsing, searching and inspecting saved code-mode snippets. The App supplies the entries and
+  retrieves the source when requested.
+
+### Changed
+
+- New result-viewer projects pin `@mcpview/components@0.13.0` in their generated configuration and
+  build defaults.
+
 ## [0.12.1] - 2026-11-26
 
 ### Changed

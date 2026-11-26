@@ -7,8 +7,8 @@ export const resultViewerTemplates: Readonly<Record<string, string>> = {
   },
   "imports": {
     "@mcpview/view": "jsr:@mcpview/view@0.11.1",
-    "@mcpview/components": "jsr:@mcpview/components@0.12.1",
-    "@mcpview/components/surface": "jsr:@mcpview/components@0.12.1/surface"
+    "@mcpview/components": "jsr:@mcpview/components@0.13.0",
+    "@mcpview/components/surface": "jsr:@mcpview/components@0.13.0/surface"
   },
   "minimumDependencyAge": {
     "age": "P1D",
@@ -50,7 +50,7 @@ export const resultViewerTemplates: Readonly<Record<string, string>> = {
 const here = dirname(fromFileUrl(import.meta.url));
 const mcpViewModule = moduleSpecifier(Deno.env.get("MCP_VIEW_MODULE") ?? "jsr:@mcpview/view@0.11.1");
 const mcpViewComponentsModule = moduleSpecifier(
-  Deno.env.get("MCP_VIEW_COMPONENTS_MODULE") ?? "jsr:@mcpview/components@0.12.1",
+  Deno.env.get("MCP_VIEW_COMPONENTS_MODULE") ?? "jsr:@mcpview/components@0.13.0",
 );
 const mcpViewSurfaceModule = moduleSpecifier(
   Deno.env.get("MCP_VIEW_COMPONENTS_SURFACE_MODULE") ?? subpathModule(mcpViewComponentsModule, "surface"),

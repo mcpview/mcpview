@@ -129,6 +129,7 @@ export {
   type DeclaredViewNativeResult,
   type DeclaredViewResolution,
 } from "./src/ui/declared-view-execution.ts";
+export * from "./snippets.ts";
 
 // NOTE: UI composition helpers (`composeEvents`, `uiMeta`, `COMPOSE_EVENT_METHOD`
 // and their types) are NOT re-exported here. They live in `@mcpview/compose`
