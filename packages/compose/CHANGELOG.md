@@ -5,6 +5,17 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-26
+
+### Added
+
+- `@mcpview/compose/code-mode` connects approved snippets on independent MCP servers to a single
+  `execute` tool. Programs can pass values between providers, select and order their results, and
+  save or replay a chain in a caller-scoped catalog.
+- `@mcpview/compose/code-mode/board` turns selected receipts into a Compose descriptor for one
+  interactive MCP App. It preserves repeated views as separate panels and reuses the original
+  results when rendering.
+
 ## [0.11.0] - 2026-10-24
 
 ### Changed

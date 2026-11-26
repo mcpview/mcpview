@@ -67,6 +67,66 @@ npm i @mcpview/compose
 import { buildCompositeUi, createCollector, renderComposite } from "@mcpview/compose";
 ```
 
+## Code Mode across MCP servers
+
+A chat can call one `execute` tool that runs snippets on several MCP servers. For example, a CAD
+provider generates a plate and returns an STL digest. A slicing provider accepts that digest and
+estimates print time. The script decides which results to show and in what order.
+
+```js
+const plate = await api.runSnippet("cad", "plate-stl", { thicknessMm: api.params.thicknessMm });
+const estimate = await api.runSnippet("slicer", "pla-print-estimate", {
+  stlSha256: plate.value.stlSha256,
+});
+await api.panel(estimate.id, "PLA estimate");
+await api.panel(plate.id, "Plate geometry");
+return { seconds: estimate.value.print_time_s };
+```
+
+To offer this workflow, register the upstream connections on the server that owns the board. The
+following code assumes an existing MCPView `app` with a registered MCP App resource at
+`ui://parts/board`.
+
+```ts
+import {
+  connectSnippetProviders,
+  createSnippetChain,
+  createSnippetExecuteTool,
+} from "@mcpview/compose/code-mode";
+
+const connections = await connectSnippetProviders([
+  { alias: "cad", url: "http://127.0.0.1:3614/mcp", snippets: ["plate-stl"] },
+  { alias: "slicer", url: "http://127.0.0.1:3622/mcp", snippets: ["pla-print-estimate"] },
+]);
+const execute = createSnippetChain(connections.providers);
+app.registerTool(
+  createSnippetExecuteTool({ resourceUri: "ui://parts/board", providers: connections.providers }),
+  (args, ctx) => execute(args, { signal: ctx?.request?.signal }),
+);
+// On shutdown, await connections.close().
+```
+
+On an upstream MCPView server, `registerSnippetProvider(app, { snippets, authorize })` exposes
+`list_snippets` and `run_snippet`. Each definition supplies its name, description, JSON input schema
+and `run(input, context)` callback for its saved program. The callback returns a native MCP result
+with the script-visible JSON in `structuredContent.value`. Discovery and replay both check the
+configured authorization. A configured URL uses the host's upstream identity. Where users have
+different permissions, bind a client resolver for the authenticated caller.
+
+To save complete workflows, pass a catalog from `@mcpview/server/snippets` as the second argument to
+`createSnippetChain`, set `savedChains: true` on the tool declaration and supply a trusted `scope`
+per call. The host derives this scope from the authenticated user and integration. `saveAs` retains
+the program and its parameter types. `replay` runs it with fresh inputs and the caller's current
+provider permissions.
+
+In the board's MCP Apps tool-result handler, call `composeSnippetBoard(result, { layout: "split" })`
+from `@mcpview/compose/code-mode/board`. Each selected receipt has its own component ID, including
+two instances of the same viewer. The board renders each child from `child.context.panel.result`.
+For a result with no declared UI resource, supply `resolveView` to select a local renderer. This
+path uses results already returned by the script. The runnable engineering example includes the
+server, both providers, and a single-frame board with a 3D viewer and interactive print report.
+[Engineering example and setup](https://github.com/mcpview/mcpview/tree/main/packages/compose/examples/multi-mcp-snippets)
+
 ## MCP SDK compatibility
 
 Compose uses MCP Apps 2.x and the split MCP SDK 2.x packages. Integrations importing SDK types or

@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-26
+
+### Added
+
+- Re-export the server-side Code Mode API at `./code-mode` and the browser-side panel composition
+  API at `./code-mode/board` from `@mcpview/compose@^0.12.0`.
+
 ## [0.11.0] - 2026-10-24
 
 ### Changed
