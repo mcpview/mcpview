@@ -36,6 +36,7 @@ const app = new McpApp({
   logger: () => {},
   instructions: "fixture server",
   advertiseAppOnlyTools: true,
+  cache: { ttlMs: 250, scope: "public" },
 });
 
 app.registerTool(

@@ -3,8 +3,8 @@
  * `ui/initialize` handshake via `PostMessageTransport`, then mounts the
  * initial view.
  *
- * Public entry points: {@link createMcpApp} and {@link defineView}. All
- * other exports are type-only and flow through `mod.ts`.
+ * Public entry points: {@link createMcpApp}, {@link defineView}, and
+ * {@link mountDeclaredSessionApp}.
  *
  * @module
  */
@@ -59,7 +59,10 @@ export function createMcpApp<S = Record<string, never>, TSession = never>(
   return bootstrap(config);
 }
 
-/** Start a publisher surface on the shell's existing host and its scoped session lifecycle. */
+/**
+ * Start a publisher surface on the shell's existing host. Disposing the mount
+ * releases its host subscriptions and registered tools before asynchronous cleanup.
+ */
 export async function mountDeclaredSessionApp(
   host: App,
   session: unknown,
@@ -67,35 +70,42 @@ export async function mountDeclaredSessionApp(
   start: (runtime: { createApp: typeof createMcpApp }) => Promise<{ dispose(): Promise<void> }>,
 ): Promise<{ applySession(next: unknown): Promise<void>; dispose(): void }> {
   signal.throwIfAborted();
+  const lifetime = new AbortController();
   let apply: ((value: unknown) => Promise<void>) | undefined;
-  const surface = await start({
-    createApp: (config) =>
-      bootstrap(config, {
-        host,
-        ready: (receiver) => {
-          apply = receiver;
-        },
-      }),
-  });
+  let surface: { dispose(): Promise<void> } | undefined;
   let closing: Promise<void> | undefined;
   const close = () => {
     signal.removeEventListener("abort", dispose);
-    return closing ??= surface.dispose();
+    lifetime.abort(signal.reason);
+    const mounted = surface;
+    return mounted
+      ? closing ??= Promise.resolve().then(() => mounted.dispose())
+      : Promise.resolve();
   };
   const dispose = () => {
     void close().catch(console.error);
   };
-  if (signal.aborted) await close();
-  else signal.addEventListener("abort", dispose, { once: true });
+  signal.addEventListener("abort", dispose, { once: true });
   const applySession = async (value: unknown) => {
-    if (signal.aborted) return;
+    if (lifetime.signal.aborted) return;
     if (!apply) throw new TypeError("Mounted App must subscribe to viewer.session.apply");
     await apply(value);
   };
   try {
+    surface = await start({
+      createApp: (config) =>
+        bootstrap(config, {
+          host,
+          signal: lifetime.signal,
+          ready: (receiver) => {
+            apply = receiver;
+          },
+        }),
+    });
+    if (lifetime.signal.aborted) await close();
     await applySession(session);
   } catch (error) {
-    await close();
+    await close().catch(console.error);
     throw error;
   }
   return { applySession, dispose };
@@ -103,8 +113,13 @@ export async function mountDeclaredSessionApp(
 
 async function bootstrap<S, TSession>(
   config: AppConfig<S, TSession>,
-  mounted?: { host: App; ready(apply: (session: unknown) => Promise<void>): void },
+  mounted?: {
+    host: App;
+    signal: AbortSignal;
+    ready(apply: (session: unknown) => Promise<void>): void;
+  },
 ): Promise<AppHandle<S>> {
+  mounted?.signal.throwIfAborted();
   validateConfig(config);
   if (mounted && !config.viewerSession) {
     throw new TypeError("Expected a viewer.session.apply subscription");
@@ -188,11 +203,32 @@ async function bootstrap<S, TSession>(
   };
   app.addEventListener("hostcontextchanged", onHostContextChanged);
 
-  let handle: AppHandle<S>;
-  try {
-    const router = new Router<S>(config.views, config.root);
-    const toolRegistry = new ToolRegistry<S>(app);
+  const router = new Router<S>(config.views, config.root, mounted?.signal);
+  const toolRegistry = new ToolRegistry<S>(app);
+  let handle: AppHandle<S> | undefined;
+  let listening = true;
+  const detachHost = () => {
+    if (!listening) return;
+    listening = false;
+    app.removeEventListener("hostcontextchanged", onHostContextChanged);
+    mounted?.signal.removeEventListener("abort", abortMount);
+  };
+  const abortMount = () => {
+    detachHost();
+    viewerSession?.dispose();
+    // The next mount can use the same tool names while this view's hooks finish.
+    try {
+      toolRegistry.unregisterAll();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      void (handle?.dispose() ?? router.dispose()).catch(console.error);
+    }
+  };
 
+  try {
+    mounted?.signal.addEventListener("abort", abortMount, { once: true });
+    mounted?.signal.throwIfAborted();
     // Build the context. `navigate` and `callTool` close over `router` and
     // `app` respectively; the same object reference is reused for the whole
     // app lifetime, as documented in AppHandle.
@@ -216,6 +252,7 @@ async function bootstrap<S, TSession>(
     router.setToolRegistry(toolRegistry);
 
     await router.goto(config.initialView, config.initialArgs);
+    mounted?.signal.throwIfAborted();
 
     let transportClosePromise: Promise<void> | undefined;
     const closeTransport = (): Promise<void> => {
@@ -227,7 +264,7 @@ async function bootstrap<S, TSession>(
       try {
         await router.dispose();
       } finally {
-        app.removeEventListener("hostcontextchanged", onHostContextChanged);
+        detachHost();
         events?.destroy();
       }
     };
@@ -257,12 +294,14 @@ async function bootstrap<S, TSession>(
     // early host notifications and serialise any arrivals during that replay.
     await lifecycle?.activate(handle);
     await viewerSession?.activate(handle);
+    mounted?.signal.throwIfAborted();
     if (viewerSession) mounted?.ready(viewerSession.apply);
   } catch (err) {
-    app.removeEventListener("hostcontextchanged", onHostContextChanged);
+    detachHost();
     viewerSession?.dispose();
     events?.destroy();
     teardown.abort(err);
+    if (mounted) await router.dispose().catch(console.error);
     await transport?.close().catch(() => {}); // best-effort, rethrowing
     throw err;
   }

@@ -460,8 +460,8 @@ Deno.test("stdio e2e - modern discover and tools/list carry the 2026 result enve
   assertEquals(result.supportedVersions, [PROTOCOL_VERSION]);
   assertEquals(result.instructions, "fixture server");
   assertEquals(result.resultType, "complete");
-  assertEquals(result.cacheScope, "private");
-  assertEquals(result.ttlMs, 0);
+  assertEquals(result.cacheScope, "public");
+  assertEquals(result.ttlMs, 250);
   assertEquals(
     (result._meta as Record<string, unknown>)[SERVER_INFO_KEY],
     SERVER_INFO,

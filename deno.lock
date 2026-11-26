@@ -732,8 +732,8 @@
       "packages/view-components": {
         "dependencies": [
           "jsr:@deno/dnt@0.41",
-          "jsr:@mcpview/contracts@0.2",
-          "jsr:@mcpview/view@0.11",
+          "jsr:@mcpview/contracts@~0.2.1",
+          "jsr:@mcpview/view@~0.11.1",
           "jsr:@std/assert@1",
           "jsr:@std/path@^1.1.0",
           "npm:preact@^10.28.3"

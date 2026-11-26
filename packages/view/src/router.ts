@@ -34,7 +34,7 @@ export class Router<S> {
   private _disposed = false;
   private _disposePromise: Promise<void> | null = null;
 
-  constructor(views: ViewMap<S>, root: HTMLElement) {
+  constructor(views: ViewMap<S>, root: HTMLElement, private readonly mountSignal?: AbortSignal) {
     this.views = views;
     this.root = root;
   }
@@ -116,6 +116,7 @@ export class Router<S> {
   }
 
   private async _doGoto(name: string, args: unknown): Promise<void> {
+    this.mountSignal?.throwIfAborted();
     if (this._context === null) {
       throw new MCPViewError(
         "ROUTER_NOT_INITIALIZED",
@@ -150,7 +151,9 @@ export class Router<S> {
       this._toolRegistry?.unregisterAll();
     }
 
+    this.mountSignal?.throwIfAborted();
     const data = target.onEnter ? await target.onEnter(this._context, args) : undefined;
+    this.mountSignal?.throwIfAborted();
 
     // Register tools after onEnter so the user's data-loading code runs
     // before the host can call them. ext-apps emits tools/list_changed
@@ -159,6 +162,7 @@ export class Router<S> {
 
     const output = target.render(this._context, data);
 
+    this.mountSignal?.throwIfAborted();
     mount(this.root, output);
     this._currentView = name;
   }
