@@ -37,6 +37,7 @@
     "npm:@opentelemetry/api@^1.9.0": "1.9.0",
     "npm:@types/react-dom@18.3.7": "18.3.7_@types+react@18.3.28",
     "npm:@types/react@18.3.28": "18.3.28",
+    "npm:acorn@^8.19.0": "8.19.0",
     "npm:ajv@^8.17.1": "8.18.0",
     "npm:esbuild@0.24": "0.24.2",
     "npm:hono@4": "4.12.8",
@@ -393,6 +394,10 @@
         "csstype"
       ]
     },
+    "acorn@8.19.0": {
+      "integrity": "sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw==",
+      "bin": true
+    },
     "ajv@8.18.0": {
       "integrity": "sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==",
       "dependencies": [
@@ -736,6 +741,7 @@
           "jsr:@mcpview/view@~0.11.1",
           "jsr:@std/assert@1",
           "jsr:@std/path@^1.1.0",
+          "npm:acorn@^8.19.0",
           "npm:preact@^10.28.3"
         ]
       },

@@ -270,7 +270,8 @@ technical control. Keep consequential state in `status` or `primary`.
 Import `SnippetLibrary` from `@mcpview/components/preact/components`. Supply the snippet summaries
 as `entries` and localized text as `labels`. The library filters names and descriptions locally. Use
 `onInspect(entry)` to fetch the selected source, then pass it as `source` to show the program as
-selectable text. Clear `source` in `onBack` to return to the list.
+selectable text. Set `source.language` to `"javascript"` for syntax highlighting. Clear `source` in
+`onBack` to return to the list.
 
 The App owns the catalog calls and can provide navigation next to the library title through
 `headerAction`. The component uses the package's existing theme styles.
@@ -596,7 +597,7 @@ local checkout); the `/surface` entry is derived from the latter unless
 `MCP_VIEW_COMPONENTS_SURFACE_MODULE` names it. Run the generator from JSR:
 
 ```sh
-deno run -A jsr:@mcpview/components@0.13.0/scaffold result-viewer ./result-viewer
+deno run -A jsr:@mcpview/components@0.13.1/scaffold result-viewer ./result-viewer
 ```
 
 The npm package contains only the runtime and presentation entry points. It does not export or ship
