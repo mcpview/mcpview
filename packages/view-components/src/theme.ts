@@ -791,6 +791,17 @@ export const MCP_VIEW_THEME_CSS: string = String.raw`
   border: 0;
   white-space: pre;
 }
+.mcp-view-snippet-code code {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+.mcp-view-snippet-token-comment { color: var(--mcp-view-muted); }
+.mcp-view-snippet-token-keyword { color: var(--mcp-view-brand-text); }
+.mcp-view-snippet-token-string {
+  color: var(--mcp-view-text-secondary);
+  color: color-mix(in srgb, var(--mcp-view-success) 85%, var(--mcp-view-text-secondary));
+}
+.mcp-view-snippet-token-literal { color: var(--mcp-view-accent-text); }
 .mcp-view-snippet-source button { justify-self: start; }
 .mcp-view-snippet-empty {
   padding: 8px;

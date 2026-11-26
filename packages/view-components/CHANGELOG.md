@@ -8,6 +8,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-26
+
+### Changed
+
+- `SnippetLibrary` highlights JavaScript syntax when displaying a saved program, preserving
+  selectable source text.
+- New result-viewer projects pin `@mcpview/components@0.13.1` in their generated configuration and
+  build defaults.
+
 ## [0.13.0] - 2026-11-26
 
 ### Added

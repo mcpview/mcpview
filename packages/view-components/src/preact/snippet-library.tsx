@@ -1,8 +1,9 @@
 /** @jsxImportSource preact */
 
 import type { ComponentChildren, JSX } from "preact";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import { Button, CodeBlock } from "./components.tsx";
+import { javascriptHighlightRanges } from "./snippet-javascript.ts";
 
 export interface SnippetLibraryEntry {
   /** Stable identifier passed back to the caller in onInspect. */
@@ -15,6 +16,8 @@ export interface SnippetLibrarySource {
   readonly name: string;
   readonly description?: string;
   readonly code: string;
+  /** Omit to display plain text. */
+  readonly language?: "javascript";
 }
 
 export interface SnippetLibraryLabels {
@@ -36,6 +39,32 @@ export interface SnippetLibraryProps {
   readonly headerAction?: ComponentChildren;
   readonly onInspect?: (entry: SnippetLibraryEntry) => void;
   readonly onBack?: () => void;
+}
+
+function SnippetCode(
+  { code, language }: Pick<SnippetLibrarySource, "code" | "language">,
+): JSX.Element {
+  const content = useMemo((): ComponentChildren => {
+    if (language !== "javascript") return code;
+
+    const ranges = javascriptHighlightRanges(code);
+    if (!ranges.length) return code;
+
+    const children: ComponentChildren[] = [];
+    let offset = 0;
+    for (const { start, end, style } of ranges) {
+      if (start > offset) children.push(code.slice(offset, start));
+      children.push(
+        <span key={start} class={`mcp-view-snippet-token-${style}`}>
+          {code.slice(start, end)}
+        </span>,
+      );
+      offset = end;
+    }
+    children.push(code.slice(offset));
+    return children;
+  }, [code, language]);
+  return <CodeBlock>{content}</CodeBlock>;
 }
 
 /** Search snippet metadata and present caller-supplied source as exact, selectable text. */
@@ -81,7 +110,7 @@ export function SnippetLibrary({
               tabIndex={0}
               dir="ltr"
             >
-              <CodeBlock>{source.code}</CodeBlock>
+              <SnippetCode code={source.code} language={source.language} />
             </div>
             {onBack && (
               <Button disabled={busy} onClick={onBack}>
