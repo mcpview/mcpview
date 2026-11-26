@@ -231,7 +231,7 @@ function render(result: unknown) {
   const board = node("div");
   board.className = "layout-areas";
   for (const child of descriptor.children) {
-    const panel = child.context?.panel as Panel;
+    const panel = { ...record(child.context?.panel), ...record(child.context?.view) } as Panel;
     board.append(renderPanel(panel, child.slot, mounted.signal));
   }
   root.replaceChildren(board);

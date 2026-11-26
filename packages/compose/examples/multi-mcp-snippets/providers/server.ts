@@ -6,7 +6,8 @@ import {
   createSnippetCatalog,
   type SnippetParameters,
 } from "../../../../server/snippets.ts";
-import { runProgram } from "../sandbox.ts";
+import { runProgram } from "../../../src/code-mode/sandbox.ts";
+import { registerSnippetProvider } from "@mcpview/compose/code-mode";
 
 const viewerUri = "ui://mcp-build123d/results-viewer";
 const viewerMimeType = "text/html;profile=mcp-app";
@@ -341,78 +342,60 @@ async function registerSnippet(
     parameters: binding.parameters,
     code: await Deno.readTextFile(new URL(`./${snippet.name}.js`, import.meta.url)),
   });
-  server.registerTool({
-    name: "list_snippets",
-    description: "List the named snippets available on this pilot provider.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-  }, async () => ({
-    content: snippet.description,
-    structuredContent: {
-      snippets: (await catalog.list(scope)).map((summary) => ({
-        ...summary,
-        inputSchema: snippet.inputSchema,
-      })),
-    },
-  }));
-  server.registerTool({
-    name: "run_snippet",
-    description: "Run a saved pilot snippet with its declared parameters.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      properties: { name: { type: "string", const: snippet.name }, input: snippet.inputSchema },
-      required: ["name", "input"],
-    },
-    ...(resourceUri ? { _meta: { ui: { resourceUri } } } : {}),
-  }, async (args, context) => {
-    const deadline = AbortSignal.timeout(snippetTimeoutMs);
-    const requestSignal = context?.request?.signal;
-    const signal = requestSignal ? AbortSignal.any([deadline, requestSignal]) : deadline;
-    try {
-      if (args.name !== snippet.name) throw new PilotError("INVALID_INPUT");
-      return await catalog.run(scope, snippet.name, args.input, {
-        validate: object,
-        async execute(code, input) {
-          let native: JsonObject | undefined;
-          let invocationError: unknown;
-          const execute = runProgram(code, input, async (operation, args, sandboxSignal) => {
-            const executionSignal = AbortSignal.any([signal, sandboxSignal]);
-            executionSignal.throwIfAborted();
-            if (
-              native || operation !== "runSnippet" || args[0] !== binding.operation ||
-              args.length !== 2
-            ) throw new PilotError("INVALID_INPUT");
-            try {
-              native = await run(object(args[1]), executionSignal);
-              return object(native.structuredContent).value;
-            } catch (error) {
-              invocationError = error;
-              throw error;
-            }
+  registerSnippetProvider(server, {
+    runResourceUri: resourceUri,
+    snippets: [{
+      ...snippet,
+      async run(input, context) {
+        const deadline = AbortSignal.timeout(snippetTimeoutMs);
+        const requestSignal = context?.request?.signal;
+        const signal = requestSignal ? AbortSignal.any([deadline, requestSignal]) : deadline;
+        try {
+          return await catalog.run(scope, snippet.name, input, {
+            validate: object,
+            async execute(code, input) {
+              let native: JsonObject | undefined;
+              let invocationError: unknown;
+              const execute = runProgram(code, input, async (operation, args, sandboxSignal) => {
+                const executionSignal = AbortSignal.any([signal, sandboxSignal]);
+                executionSignal.throwIfAborted();
+                if (
+                  native || operation !== "runSnippet" || args[0] !== binding.operation ||
+                  args.length !== 2
+                ) throw new PilotError("INVALID_INPUT");
+                try {
+                  native = await run(object(args[1]), executionSignal);
+                  return object(native.structuredContent).value;
+                } catch (error) {
+                  invocationError = error;
+                  throw error;
+                }
+              });
+              const value = await execute.catch((error) => {
+                throw invocationError ?? error;
+              });
+              signal.throwIfAborted();
+              if (!native) throw new PilotError("UPSTREAM_ERROR");
+              return {
+                ...native,
+                structuredContent: { ...object(native.structuredContent), value },
+              };
+            },
           });
-          const value = await execute.catch((error) => {
-            throw invocationError ?? error;
-          });
-          signal.throwIfAborted();
-          if (!native) throw new PilotError("UPSTREAM_ERROR");
+        } catch (error) {
+          const code = signal.aborted
+            ? "TIMEOUT"
+            : error instanceof PilotError
+            ? error.code
+            : "UPSTREAM_ERROR";
           return {
-            ...native,
-            structuredContent: { ...object(native.structuredContent), value },
+            isError: true,
+            content: [{ type: "text", text: diagnosticMessages[code] }],
+            structuredContent: { error: { code } },
           };
-        },
-      });
-    } catch (error) {
-      const code = signal.aborted
-        ? "TIMEOUT"
-        : error instanceof PilotError
-        ? error.code
-        : "UPSTREAM_ERROR";
-      return {
-        isError: true,
-        content: [{ type: "text", text: diagnosticMessages[code] }],
-        structuredContent: { error: { code } },
-      };
-    }
+        }
+      },
+    }],
   });
 }
 

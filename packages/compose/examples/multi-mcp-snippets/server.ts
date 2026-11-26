@@ -1,10 +1,13 @@
-import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import { McpApp } from "../../../server/mod.ts";
-import { createFileSnippetStore } from "../../../server/snippets.ts";
+import { McpApp } from "@mcpview/server";
+import { createFileSnippetStore, createSnippetCatalog } from "@mcpview/server/snippets";
+import {
+  connectSnippetProviders,
+  createSnippetChain,
+  createSnippetExecuteTool,
+} from "@mcpview/compose/code-mode";
 import { parseProviders } from "./config.ts";
-import { boardUri, createChain } from "./chain.ts";
-import { maxCodeLength } from "./sandbox.ts";
 
+const boardUri = "ui://multi-mcp-snippets/board";
 const mimeType = "text/html;profile=mcp-app";
 function readPort(variable: string, fallback: number) {
   const port = Number(Deno.env.get(variable) ?? fallback);
@@ -29,50 +32,16 @@ const serverPort = readPort("PILOT_CHAIN_PORT", 3630);
 if (bindings.some(({ port }) => port === serverPort)) {
   throw new Error("The chain server requires a separate loopback port.");
 }
-const connected = await Promise.allSettled(bindings.map(async ({ alias, port, snippets }) => {
-  const url = new URL(`http://127.0.0.1:${port}/mcp`);
-  const client = new Client({ name: "multi-mcp-snippets", version: "0.1.0" }, {
-    versionNegotiation: { mode: { pin: "2026-07-28" } },
-  });
-  try {
-    await client.connect(
-      new StreamableHTTPClientTransport(url, {
-        requestInit: { redirect: "error" },
-      }),
-      { timeout: 3000 },
-    );
-    return [alias, snippets, client] as const;
-  } catch (error) {
-    await client.close().catch(() => {});
-    throw error;
-  }
-}));
-const providers = connected.flatMap((entry) => entry.status === "fulfilled" ? [entry.value] : []);
-const failure = connected.find((entry) => entry.status === "rejected");
-if (failure) {
-  await Promise.allSettled(providers.map(([, , client]) => client.close()));
-  throw failure.reason;
-}
-
+const connections = await connectSnippetProviders(bindings.map(({ alias, snippets, port }) => ({
+  alias,
+  snippets,
+  url: new URL(`http://127.0.0.1:${port}/mcp`),
+})));
 const storePath = Deno.env.get("PILOT_SNIPPET_STORE");
-const execute = createChain(
-  new Map(providers.map(([provider, names, client]) => [provider, {
-    names,
-    call: async (
-      tool: "list_snippets" | "run_snippet",
-      args: Record<string, unknown>,
-      signal: AbortSignal,
-    ) => {
-      try {
-        return await client.callTool({ name: tool, arguments: args }, { signal, timeout: 25_000 });
-      } catch {
-        signal.throwIfAborted();
-        throw new Error(`The ${provider} snippet service could not complete the request.`);
-      }
-    },
-  }])),
-  storePath ? createFileSnippetStore(storePath) : undefined,
-);
+const catalog = createSnippetCatalog({
+  store: storePath ? createFileSnippetStore(storePath) : undefined,
+});
+const execute = createSnippetChain(connections.providers, catalog);
 
 const app = new McpApp({
   name: "multi-mcp-snippets",
@@ -85,45 +54,24 @@ const app = new McpApp({
   instructions: "Compose approved saved MCP snippets in one JavaScript execution.",
 });
 
-app.registerTool({
-  name: "execute",
-  description: [
-    "Run a JavaScript function body with api.params (the supplied JSON object).",
-    "Discover approved snippets with await api.listSnippets(provider).",
-    "Configured providers and approved snippets are " +
-    JSON.stringify(Object.fromEntries(bindings.map(({ alias, snippets }) => [alias, snippets]))) +
-    ".",
-    "Call await api.runSnippet(provider, name, input) to get a receipt {id, value}.",
-    "Add a result panel with await api.panel(receipt.id, optionalTitle). Return a JSON summary.",
-    "Supply saveAs to save a successful chain in the local catalog. Use listSaved to discover saved chains, or replay with the saved name and a params object matching its parameter types.",
-  ].join(" "),
-  inputSchema: {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      code: { type: "string", minLength: 1, maxLength: maxCodeLength },
-      params: { type: "object" },
-      saveAs: { type: "string", minLength: 1, maxLength: 64 },
-      replay: { type: "string", minLength: 1, maxLength: 64 },
-      listSaved: { type: "boolean", const: true },
+app.registerTool(
+  createSnippetExecuteTool({
+    resourceUri: boardUri,
+    providers: connections.providers,
+    savedChains: true,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: Boolean(configPath),
+      openWorldHint: Boolean(configPath),
+      idempotentHint: false,
     },
-    oneOf: [
-      { required: ["code"] },
-      { required: ["replay"] },
-      { required: ["listSaved"] },
-    ],
-  },
-  annotations: {
-    readOnlyHint: false,
-    destructiveHint: Boolean(configPath),
-    idempotentHint: false,
-    openWorldHint: Boolean(configPath),
-  },
-  _meta: {
-    ui: { resourceUri: boardUri, visibility: ["model"] },
-    ...{ "openai/outputTemplate": boardUri },
-  },
-}, (args, context) => execute(args, context?.request?.signal));
+  }),
+  (args, context) =>
+    execute(args, {
+      scope: "single-user-loopback-pilot",
+      signal: context?.request?.signal,
+    }),
+);
 
 const htmlPath = Deno.env.get("PILOT_BOARD_HTML") ??
   new URL("./ui/dist/index.html", import.meta.url);
@@ -160,5 +108,5 @@ const server = Deno.serve(
 try {
   await server.finished;
 } finally {
-  await Promise.allSettled(providers.map(([, , client]) => client.close()));
+  await connections.close();
 }

@@ -1,7 +1,18 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { createFileSnippetStore } from "../../../server/snippets.ts";
-import { createChain, panelMetaKey } from "./chain.ts";
-import { parseProviders } from "./config.ts";
+import { assertEquals, assertRejects } from "@std/assert";
+import {
+  createFileSnippetStore,
+  createSnippetCatalog,
+  type SnippetStore,
+} from "@mcpview/server/snippets";
+import { createSnippetChain } from "./chain.ts";
+import { SNIPPET_PANELS_META_KEY as panelMetaKey } from "./board.ts";
+import type { SnippetProvider } from "./providers.ts";
+
+function forTestAccount(providers: ReadonlyMap<string, SnippetProvider>, store?: SnippetStore) {
+  const run = createSnippetChain(providers, createSnippetCatalog({ store }));
+  return (args: Record<string, unknown>, signal?: AbortSignal) =>
+    run(args, { scope: "account", signal });
+}
 
 function setup() {
   const calls: unknown[] = [];
@@ -14,7 +25,7 @@ function setup() {
     content: [{ type: "text" as const, text: "Original slicer result" }],
     structuredContent: { value: { minutes: 24 } },
   };
-  const execute = createChain(
+  const execute = forTestAccount(
     new Map([
       ["cad", {
         names: ["plate-stl"],
@@ -122,36 +133,12 @@ Deno.test("rejects unapproved calls, forged panel receipts, and queued work with
   });
 });
 
-Deno.test("validates local provider bindings and discovers a third configured alias", async () => {
-  const cad = { alias: "cad", port: 9991, snippets: ["plate-stl"] };
-  const slicer = { alias: "slicer", port: 9992, snippets: ["pla-print-estimate"] };
-  const finish = { alias: "finish", port: 9993, snippets: ["finish-report"] };
-  assertEquals(parseProviders([cad, slicer, finish]), [cad, slicer, finish]);
-  assertThrows(() => parseProviders([cad, { ...slicer, alias: "cad" }]), Error, "unique");
-  assertThrows(() => parseProviders([cad, { ...slicer, port: 9991 }]), Error, "unique");
-  assertThrows(() => parseProviders([{ ...cad, url: "https://example.com" }]));
-  assertThrows(() => parseProviders([{ ...cad, port: "9991" }]));
-  assertThrows(() => parseProviders([{ ...cad, snippets: ["plate-stl", "plate-stl"] }]));
-  const execute = createChain(
-    new Map([[finish.alias, {
-      names: finish.snippets,
-      call: () =>
-        Promise.resolve({
-          content: [],
-          structuredContent: { snippets: [{ name: "finish-report" }] },
-        }),
-    }]]),
-  );
-  const result = await execute({ code: 'return await api.listSnippets("finish");' });
-  assertEquals(result.structuredContent, { value: [{ name: "finish-report" }], panels: [] });
-});
-
 Deno.test("can reload the catalog from a single-user durable store without persisted receipts", async () => {
   const directory = await Deno.makeTempDir();
   try {
-    const first = createChain(new Map(), createFileSnippetStore(directory));
+    const first = forTestAccount(new Map(), createFileSnippetStore(directory));
     await first({ code: "return api.params.value + 1;", params: { value: 1 }, saveAs: "add" });
-    const reloaded = createChain(new Map(), createFileSnippetStore(directory));
+    const reloaded = forTestAccount(new Map(), createFileSnippetStore(directory));
     const result = await reloaded({ replay: "add", params: { value: 8 } });
     assertEquals(result.structuredContent, { value: 9, panels: [] });
   } finally {
@@ -160,7 +147,7 @@ Deno.test("can reload the catalog from a single-user durable store without persi
 });
 
 Deno.test("applies the saved-chain cap to entries inherited from storage", async () => {
-  const execute = createChain(new Map(), {
+  const execute = forTestAccount(new Map(), {
     list: () =>
       Promise.resolve(
         Array.from({ length: 64 }, (_, index) => ({ id: `old-${index}`, name: `old-${index}` })),
@@ -190,7 +177,7 @@ Deno.test("distinguishes typed provider failures from malformed results without 
     },
     { content },
   ];
-  const execute = createChain(
+  const execute = forTestAccount(
     new Map([["slicer", {
       names: ["estimate"],
       call: () => Promise.resolve(responses.shift()!),
@@ -199,13 +186,16 @@ Deno.test("distinguishes typed provider failures from malformed results without 
   const run = () => execute({ code: 'return await api.runSnippet("slicer", "estimate", {});' });
   for (
     const message of [
-      "Snippet estimate: The configured slicer profile is invalid or unavailable.",
+      "Snippet estimate: The configured provider profile is invalid or unavailable.",
       "Snippet estimate: The provider reported an execution error.",
       "Snippet estimate returned an invalid result.",
     ]
   ) {
     const error = await assertRejects(run, Error);
-    assertEquals(error.message, message);
+    assertEquals(
+      error.message,
+      `${message} One or more upstream operations may have completed. Check their effects before replaying the chain.`,
+    );
   }
 });
 
@@ -226,7 +216,7 @@ Deno.test("rejects a pre-aborted request before a provider call or catalog write
 Deno.test("passes cancellation to the provider and skips saving an aborted run", async () => {
   const controller = new AbortController();
   let providerSignal: AbortSignal | undefined;
-  const execute = createChain(
+  const execute = forTestAccount(
     new Map([["cad", {
       names: ["plate-stl"],
       call: (_tool, _args, signal) => {
@@ -249,4 +239,146 @@ Deno.test("passes cancellation to the provider and skips saving an aborted run",
     value: { snippets: [] },
     panels: [],
   });
+});
+
+Deno.test("catalog operations require an independently authenticated scope, including replay", async () => {
+  const observed: (string | undefined)[] = [];
+  const run = createSnippetChain(
+    new Map([["reporting", {
+      names: ["snapshot"],
+      call: (_tool, _args, _signal, context) => {
+        observed.push(context.scope);
+        return Promise.resolve({ content: [], structuredContent: { value: context.scope } });
+      },
+    }]]),
+    createSnippetCatalog(),
+  );
+  const code = 'const x = await api.runSnippet("reporting","snapshot",{}); return x.value;';
+  for (
+    const args of [{ code, saveAs: "report" }, { listSaved: true }, { replay: "report" }, {
+      code,
+      saveAs: "report",
+      scope: "forged",
+    }]
+  ) {
+    await assertRejects(() => run(args), Error, "trusted scope");
+  }
+  assertEquals(observed, []);
+  const alice = { scope: "tenant-A/alice" }, bob = { scope: "tenant-B/bob" };
+  await run({ code, saveAs: "report" }, alice);
+  assertEquals((await run({ listSaved: true }, bob)).structuredContent, {
+    value: { snippets: [] },
+    panels: [],
+  });
+  await assertRejects(() => run({ replay: "report" }, bob), Error, "not found");
+  await run({ replay: "report" }, alice);
+  await run({ code, saveAs: "report" }, bob);
+  assertEquals(observed, [alice.scope, alice.scope, bob.scope]);
+});
+
+Deno.test("a transient script can select two receipts of the same provider in reverse order", async () => {
+  const run = createSnippetChain(
+    new Map([["parts", {
+      names: ["part"],
+      call: (_tool, args) =>
+        Promise.resolve({ content: [], structuredContent: { value: args.input } }),
+    }]]),
+  );
+  const result = await run({
+    code: `
+    const a = await api.runSnippet("parts","part",{id:1});
+    const b = await api.runSnippet("parts","part",{id:2});
+    await api.panel(b.id); await api.panel(a.id);
+    return 2;
+  `,
+  });
+  const panels = result._meta?.[panelMetaKey] as {
+    id: string;
+    result: { structuredContent: { value: { id: number } } };
+  }[];
+  assertEquals(panels.map((p) => p.result.structuredContent.value.id), [2, 1]);
+  assertEquals(new Set(panels.map((p) => p.id)).size, 2);
+  await assertRejects(
+    () => run({ listSaved: true }, { scope: "user" }),
+    Error,
+    "configured catalog",
+  );
+});
+
+Deno.test("cancellation releases a VM waiting for an uncooperative provider", async () => {
+  const controller = new AbortController();
+  const run = createSnippetChain(
+    new Map([["reports", {
+      names: ["poll"],
+      call: () => {
+        controller.abort();
+        return new Promise(() => {});
+      },
+    }]]),
+  );
+  await assertRejects(
+    () =>
+      run({ code: 'return await api.runSnippet("reports", "poll", {});' }, {
+        signal: controller.signal,
+      }),
+    DOMException,
+  );
+});
+
+Deno.test("discovers, invokes, and saves international human-readable snippet names exactly", async () => {
+  const name = "État des échéances";
+  const calls: Record<string, unknown>[] = [];
+  const run = forTestAccount(
+    new Map([["erp", {
+      names: [name],
+      call: (tool, args) => {
+        calls.push(args);
+        return Promise.resolve({
+          content: [],
+          structuredContent: tool === "list_snippets" ? { snippets: [{ name }] } : { value: 12 },
+        });
+      },
+    }]]),
+  );
+  const code =
+    'const list = await api.listSnippets("erp"); return (await api.runSnippet("erp",list[0].name,{})).value;';
+  const saved = "Ma revue du lundi – 台灣";
+  await run({ code, saveAs: saved });
+  const result = await run({ replay: saved });
+  assertEquals(result.structuredContent, { value: 12, panels: [] });
+  assertEquals(calls, [{}, { name, input: {} }, {}, { name, input: {} }]);
+  await assertRejects(() => run({ code, saveAs: "日".repeat(86) }), Error, "UTF-8");
+});
+
+Deno.test("a late guest, provider or persistence failure reports possible upstream effects", async () => {
+  let calls = 0;
+  const providers = new Map<string, SnippetProvider>([["erp", {
+    names: ["commit"],
+    call: () => {
+      calls++;
+      if (calls === 3) throw new Error("private-host-transport-diagnostic");
+      return Promise.resolve({ content: [], structuredContent: { value: "finished" } });
+    },
+  }]]);
+  const run = forTestAccount(providers, {
+    list: () => Promise.resolve([]),
+    get: () => Promise.resolve(undefined),
+    putIfAbsent: () => Promise.reject(new Error("private-store-diagnostic")),
+  });
+  const step = 'await api.runSnippet("erp","commit",{});';
+  for (
+    const args of [{ code: step + 'throw "private-guest-diagnostic";' }, { code: step + step }, {
+      code: step,
+      saveAs: "month-end",
+    }]
+  ) {
+    const error = await assertRejects(
+      () => run(args),
+      Error,
+      "Check their effects before replaying",
+    );
+    assertEquals(error.message.includes("private-"), false);
+    if (args.saveAs) assertEquals(error.message.includes("saved"), true);
+  }
+  assertEquals(calls, 4);
 });

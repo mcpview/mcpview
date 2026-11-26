@@ -110,5 +110,6 @@ that endpoint and its authentication method, then choose **Try in chat**. Ask to
 plate at 2 mm. Open a new chat with the same app and ask for 4 mm. Inside the board, drag the plate
 to rotate it and click **Print settings** to inspect the slicing parameters.
 
-The local prototype uses a single-user catalog. The ChatGPT test used a private plugin pointing to a
-temporary HTTPS facade with just the saved plate workflow and those two thicknesses enabled.
+This example uses the published Compose Code Mode API and a local single-user catalog. The ChatGPT
+test used a private plugin pointing to a temporary HTTPS facade with just the saved plate workflow
+and those two thicknesses enabled.

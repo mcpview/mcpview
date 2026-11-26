@@ -11,6 +11,10 @@ import * as aliasRuntime from "./runtime.ts";
 import * as targetRuntime from "@mcpview/compose/runtime";
 import * as aliasDeploy from "./deploy.ts";
 import * as targetDeploy from "@mcpview/compose/deploy";
+import * as aliasCodeMode from "./code-mode.ts";
+import * as targetCodeMode from "@mcpview/compose/code-mode";
+import * as aliasBoard from "./code-mode-board.ts";
+import * as targetBoard from "@mcpview/compose/code-mode/board";
 
 Deno.test("@casys/mcp-compose declares the sub-paths of @mcpview/compose", async () => {
   await assertExportMapParity(
@@ -36,4 +40,10 @@ Deno.test("@casys/mcp-compose/runtime re-exports @mcpview/compose/runtime", () =
 });
 Deno.test("@casys/mcp-compose/deploy re-exports @mcpview/compose/deploy", () => {
   assertModuleParity("./deploy", aliasDeploy, targetDeploy);
+});
+Deno.test("@casys/mcp-compose/code-mode re-exports @mcpview/compose/code-mode", () => {
+  assertModuleParity("./code-mode", aliasCodeMode, targetCodeMode);
+});
+Deno.test("@casys/mcp-compose/code-mode/board re-exports @mcpview/compose/code-mode/board", () => {
+  assertModuleParity("./code-mode/board", aliasBoard, targetBoard);
 });

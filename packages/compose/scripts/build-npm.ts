@@ -16,7 +16,7 @@ import { build, emptyDir } from "@deno/dnt";
 const denoJsonText = await Deno.readTextFile(
   new URL("../deno.json", import.meta.url),
 );
-const denoJson = JSON.parse(denoJsonText) as { version?: string };
+const denoJson = JSON.parse(denoJsonText) as { version?: string; imports: Record<string, string> };
 const VERSION = denoJson.version;
 if (!VERSION) {
   throw new Error(
@@ -27,10 +27,27 @@ console.log(`[build-npm] Version: ${VERSION}`);
 
 await emptyDir("./dist-node");
 
+// dnt follows the graph of type-only imports as well. Keep the server package
+// external so that its host runtime stays out of the browser and CommonJS bundles.
+const serverEntry = new URL("../../server/mod.ts", import.meta.url).href;
+const snippetsEntry = new URL("../../server/snippets.ts", import.meta.url).href;
+const npmImportMap = "./dist-node/.npm-import-map.json";
+await Deno.writeTextFile(
+  npmImportMap,
+  JSON.stringify({
+    imports: {
+      ...denoJson.imports,
+      "@mcpview/server": serverEntry,
+      "@mcpview/server/snippets": snippetsEntry,
+    },
+  }),
+);
 await build({
   entryPoints: [
     "./mod.ts",
     { name: "./core", path: "./src/core/mod.ts" },
+    { name: "./code-mode", path: "./src/code-mode/mod.ts" },
+    { name: "./code-mode/board", path: "./src/code-mode/board.ts" },
     { name: "./sdk", path: "./src/sdk/mod.ts" },
     { name: "./host", path: "./src/host/mod.ts" },
     { name: "./runtime", path: "./src/runtime/mod.ts" },
@@ -68,8 +85,12 @@ await build({
   },
   typeCheck: false,
   test: false,
-  importMap: "./deno.json",
-});
+  importMap: npmImportMap,
+  mappings: {
+    [serverEntry]: { name: "@mcpview/server", version: "^0.30.2" },
+    [snippetsEntry]: { name: "@mcpview/server", version: "^0.30.2", subPath: "snippets" },
+  },
+}).finally(() => Deno.remove(npmImportMap));
 
 // Patch package.json: add "types" field for broader TS compatibility
 const pkgPath = "dist-node/package.json";

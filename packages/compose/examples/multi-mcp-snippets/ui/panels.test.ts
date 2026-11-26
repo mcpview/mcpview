@@ -49,7 +49,7 @@ test("mounted panels preserve the native results and selected receipt order", ()
     "slice",
     "cad",
   ]);
-  expect(result.children.map((child) => child.context?.panel)).toMatchObject([
+  expect(result.children.map((child) => child.context?.view)).toMatchObject([
     { adapter: "slice", data: slice.structuredContent.value },
     { adapter: "cad", data: cad.structuredContent.value.geometry },
   ]);
@@ -98,7 +98,10 @@ test("an export without the CAD snapshot and descriptor falls back to its summar
     },
   });
 
+  expect(result.children.map((child) => child.context?.view)).toMatchObject(
+    nativeResults.map(() => ({ adapter: "summary" })),
+  );
   expect(result.children.map((child) => child.context?.panel)).toMatchObject(
-    nativeResults.map((result) => ({ adapter: "summary", result })),
+    nativeResults.map((result) => ({ result })),
   );
 });
