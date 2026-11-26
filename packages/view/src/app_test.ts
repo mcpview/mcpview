@@ -1,6 +1,7 @@
 import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
 
-import { createMcpApp, defineView } from "./app.ts";
+import { createMcpApp, defineView, mountDeclaredSessionApp } from "./app.ts";
+import type { App } from "@modelcontextprotocol/ext-apps";
 import { MCPViewError } from "./errors.ts";
 import type { AppConfig } from "./types.ts";
 
@@ -253,4 +254,55 @@ Deno.test("validateConfig throws when a view is missing render", async () => {
     Error,
     'View "broken" is missing a render function',
   );
+});
+
+Deno.test("aborting the first mounted session releases its router without touching the host", async () => {
+  const entered = Promise.withResolvers<void>();
+  const unblock = Promise.withResolvers<void>();
+  const cleaned = Promise.withResolvers<void>();
+  let listeners = 0;
+  let teardowns = 0;
+  const host = Object.freeze({
+    getHostContext: () => ({}),
+    getHostCapabilities: () => ({}),
+    addEventListener: () => listeners++,
+    removeEventListener: () => listeners--,
+  }) as unknown as App;
+  const root = { replaceChildren() {}, innerHTML: "" } as unknown as HTMLElement;
+  const abort = new AbortController();
+  const config: AppConfig<Record<string, never>, string> = {
+    info: minimalInfo,
+    root,
+    autoTheme: false,
+    views: { home: defineView({ render: () => "" }) },
+    initialView: "home",
+    onTeardown: () => {
+      teardowns++;
+    },
+    viewerSession: {
+      validate: (value): value is string => typeof value === "string",
+      onSession: async () => {
+        entered.resolve();
+        await unblock.promise;
+      },
+    },
+  };
+  const mounting = mountDeclaredSessionApp(host, "first", abort.signal, async (runtime) => {
+    const handle = await runtime.createApp(config);
+    return {
+      dispose: async () => {
+        await handle.dispose();
+        cleaned.resolve();
+      },
+    };
+  });
+  await entered.promise;
+  assertEquals(listeners, 1);
+  abort.abort();
+  await cleaned.promise;
+  assertEquals(listeners, 0);
+  unblock.resolve();
+  const mounted = await mounting;
+  mounted.dispose();
+  assertEquals(teardowns, 1);
 });

@@ -49,12 +49,14 @@ for (const folder of UI_VIEWERS) {
   if (entries.length !== 1) throw new Error(`Expected one module entry for ${resourceUri}`);
   const entry = resolve(viewer, entries[0][1]);
   if (!entry.startsWith(viewer + sep)) throw new Error(`Entry escapes its folder: ${resourceUri}`);
-  const boot = adaptEntry(entry, await readFile(entry, "utf8"));
+  const code = await readFile(entry, "utf8");
+  const direct = adaptEntry(entry, code);
+  const boot = direct ?? adaptSessionEntry(entry, code);
+  const delivery = direct ? "tool-result" : "viewer.session.apply";
   if (!boot) {
     unsupported.push({
       resourceUri,
-      reason:
-        "The declared entry does not mount a direct Preact tool-result component. Use its native MCP App lifecycle.",
+      reason: "The declared entry has no supported Preact result or session bootstrap.",
     });
     continue;
   }
@@ -92,36 +94,53 @@ for (const folder of UI_VIEWERS) {
       resolveDir: dirname(entry),
       sourcefile: basename(entry),
     },
-    plugins: [{
-      name: "mounted-erpnext-app",
-      setup(builder) {
-        builder.onResolve(
-          { filter: /^@modelcontextprotocol\/ext-apps$/ },
-          () => ({ path: "scoped-app", namespace: "erpnext" }),
-        );
-        builder.onLoad({ filter: /.*/, namespace: "erpnext" }, () => ({
-          contents: "export class App { constructor() { return __mcpviewMount.app; } }",
-        }));
-      },
-    }],
+    plugins: direct
+      ? [{
+        name: "mounted-erpnext-app",
+        setup(builder) {
+          builder.onResolve(
+            { filter: /^@modelcontextprotocol\/ext-apps$/ },
+            () => ({ path: "scoped-app", namespace: "erpnext" }),
+          );
+          builder.onLoad({ filter: /.*/, namespace: "erpnext" }, () => ({
+            contents: "export class App { constructor() { return __mcpviewMount.app; } }",
+          }));
+        },
+      }]
+      : [],
   });
   const module = "./" + folder + ".js";
   // Instantiate the whole upstream module (including its `new App()`) per
   // mount. Concurrent roots cannot overwrite each other's hooks or results.
-  const contents = [
-    'import { mountPreactResource } from "./adapter.js";',
-    "export function mount(root, host, result, signal) {",
-    `  return mountPreactResource(root, host, result, signal, ${
-      JSON.stringify(styles.join("\n"))
-    }, (__mcpviewMount) => {`,
-    bundle.outputFiles[0].text,
-    "    return viewEntry.unmount;",
-    "  });",
-    "}",
-    "",
-  ].join("\n");
-  await writeFile(resolve(output, module), contents);
-  views.push({ resourceUri, module });
+  const contents = direct
+    ? [
+      'import { mountPreactResource } from "./adapter.js";',
+      "export function mount(root, host, result, signal) {",
+      `  return mountPreactResource(root, host, result, signal, ${
+        JSON.stringify(styles.join("\n"))
+      }, (__mcpviewMount) => {`,
+      bundle.outputFiles[0].text,
+      "    return viewEntry.unmount;",
+      "  });",
+      "}",
+      "",
+    ]
+    : [
+      'import { mountDeclaredSessionApp } from "./shell.js";',
+      'import { scopedStyles } from "./adapter.js";',
+      "export async function mountSession(root, host, session, signal) {",
+      "  const __mcpviewMount = {root};",
+      `  const removeStyle = scopedStyles(root, ${JSON.stringify(styles.join("\n"))}, signal);`,
+      "  try {",
+      bundle.outputFiles[0].text,
+      "    const view = await mountDeclaredSessionApp(host, session, signal, viewEntry.start);",
+      "    return { applySession: view.applySession, dispose() { try { view.dispose(); } finally { removeStyle(); } } };",
+      "  } catch (error) { removeStyle(); throw error; }",
+      "}",
+      "",
+    ];
+  await writeFile(resolve(output, module), contents.join("\n"));
+  views.push({ resourceUri, module, delivery });
 }
 
 if (!views.length) throw new Error("No compatible ERPNext resources found.");
@@ -221,4 +240,70 @@ function acceptsDirectResults(file) {
   }
   visit(ast);
   return connectsAfterSubscription;
+}
+
+// Surface Apps publish a bootstrap that accepts a SurfaceAppRuntime. Preserve the
+// publisher's startup, validator and component registry; supply the shell runtime.
+function adaptSessionEntry(file, code) {
+  const ast = ts.createSourceFile(file, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const declarations = ast.statements.filter(ts.isVariableStatement)
+    .flatMap((statement) => [...statement.declarationList.declarations]);
+  const root = declarations.find(({ name, initializer }) =>
+    ts.isIdentifier(name) && initializer && ts.isCallExpression(initializer) &&
+    initializer.expression.getText(ast) === "document.getElementById"
+  );
+  if (!root) return undefined;
+  for (const statement of ast.statements.filter(ts.isExpressionStatement)) {
+    const outer = statement.expression;
+    if (!ts.isVoidExpression(outer) || !ts.isCallExpression(outer.expression)) continue;
+    const chain = outer.expression.expression;
+    if (!ts.isPropertyAccessExpression(chain) || chain.name.text !== "catch") continue;
+    const start = chain.expression;
+    if (
+      !ts.isCallExpression(start) || !ts.isIdentifier(start.expression) ||
+      start.arguments.length !== 2 || start.arguments[0].getText(ast) !== root.name.text
+    ) continue;
+    const dependency = ast.statements.find((node) =>
+      ts.isImportDeclaration(node) && node.moduleSpecifier.text.startsWith(".") &&
+      node.importClause?.namedBindings?.elements?.some((item) =>
+        item.name.text === start.expression.text
+      )
+    );
+    if (!dependency) continue;
+    const owner = ts.resolveModuleName(dependency.moduleSpecifier.text, file, {
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      allowImportingTsExtensions: true,
+    }, ts.sys).resolvedModule;
+    if (!owner) continue;
+    const impl = ts.createSourceFile(
+      owner.resolvedFileName,
+      readFileSync(owner.resolvedFileName, "utf8"),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    const kit = impl.statements.find((node) =>
+      ts.isImportDeclaration(node) &&
+      ["@mcpview/components", "@mcpview/components/preact"].includes(node.moduleSpecifier.text) &&
+      node.importClause?.namedBindings?.elements?.some((binding) =>
+        (binding.propertyName ?? binding.name).text === "SurfaceAppRuntime"
+      )
+    );
+    const runtimeType = kit?.importClause.namedBindings.elements.find((binding) =>
+      (binding.propertyName ?? binding.name).text === "SurfaceAppRuntime"
+    )?.name.text;
+    const fn = impl.statements.find((node) =>
+      ts.isFunctionDeclaration(node) && node.name?.text === start.expression.text
+    );
+    if (
+      !runtimeType || !fn || fn.parameters.length !== 3 ||
+      fn.parameters[2].type?.getText(impl) !== runtimeType
+    ) continue;
+
+    return code.slice(0, root.initializer.getStart(ast)) + "__mcpviewMount.root" +
+      code.slice(root.initializer.end, statement.getStart(ast)) +
+      `export function start(runtime) { return ${start.expression.text}(${
+        start.arguments.map((a) => a.getText(ast)).join(", ")
+      }, runtime); }` +
+      code.slice(statement.end);
+  }
 }

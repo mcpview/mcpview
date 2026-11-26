@@ -2,6 +2,7 @@ import { assertEquals, assertRejects, assertStrictEquals } from "@std/assert";
 import { withDeclaredViewUri } from "@mcpview/contracts";
 import {
   createDeclaredViewDispatcher,
+  type DeclaredSessionViewModule,
   type DeclaredViewModule,
   type MountedDeclaredView,
 } from "./declared-view.ts";
@@ -21,7 +22,9 @@ function result(uri: string, value = ""): ToolResult {
   return withDeclaredViewUri(native, uri);
 }
 
-function fixture(loaders: Map<string, () => Promise<Module>>) {
+function fixture(
+  loaders: ReadonlyMap<string, () => Promise<Module | DeclaredSessionViewModule<typeof host>>>,
+) {
   // Only the three DOM operations used by the dispatcher need a test double.
   let child: HTMLElement | undefined;
   const root = {
@@ -239,5 +242,75 @@ Deno.test("an HTML-only entry or an invalid module instance fails without retain
   );
   await assertRejects(() => view.dispatch(result(list)), TypeError, "must export mount()");
   await assertRejects(() => view.dispatch(result(detail)), TypeError, "instance with dispose()");
+  assertEquals(view.child(), undefined);
+});
+
+Deno.test("a session-only resource receives the original session, updates and rejects raw results", async () => {
+  const first = { schemaVersion: "acme/1.0", value: 1 };
+  const second = { ...first, value: 2 };
+  const received: unknown[] = [];
+  const events: string[] = [];
+  const sessionModule: DeclaredSessionViewModule<typeof host> = {
+    mountSession(_root, app, session) {
+      assertStrictEquals(app, host);
+      received.push(session);
+      events.push("mount");
+      return {
+        applySession(s) {
+          received.push(s);
+          events.push("apply");
+        },
+        dispose() {
+          events.push("dispose");
+        },
+      };
+    },
+  };
+  const view = fixture(new Map([[detail, () => Promise.resolve(sessionModule)]]));
+  const withSession = (s: Record<string, unknown>) =>
+    withDeclaredViewUri(result(detail), detail, s);
+  assertEquals(await view.dispatch(withSession(first)), true);
+  assertEquals(await view.dispatch(withSession(second)), true);
+  assertStrictEquals(received[0], first);
+  assertStrictEquals(received[1], second);
+  assertEquals(await view.dispatch(result(detail)), false);
+  assertEquals(view.child(), undefined);
+  assertEquals(events, ["mount", "apply", "dispose"]);
+});
+
+Deno.test("a session cannot fall back to an ordinary result or leave rejected data visible", async () => {
+  const recorded = { schemaVersion: "acme/1.0" };
+  let resultMounts = 0;
+  let disposed = false;
+  const view = fixture(
+    new Map<string, () => Promise<Module | DeclaredSessionViewModule<typeof host>>>([
+      [list, () =>
+        Promise.resolve({
+          mount() {
+            resultMounts++;
+            return { dispose() {} };
+          },
+        })],
+      [detail, () =>
+        Promise.resolve({
+          mountSession() {
+            return {
+              applySession() {
+                throw new Error("rejected");
+              },
+              dispose() {
+                disposed = true;
+              },
+            };
+          },
+        })],
+    ]),
+  );
+  assertEquals(await view.dispatch(withDeclaredViewUri(result(list), list, recorded)), false);
+  assertEquals(resultMounts, 0);
+  const session = withDeclaredViewUri(result(detail), detail, recorded);
+  await view.dispatch(session);
+  await assertRejects(() => view.dispatch(session), Error, "rejected");
+  assertEquals(disposed, true);
   assertEquals(view.child(), undefined);
 });

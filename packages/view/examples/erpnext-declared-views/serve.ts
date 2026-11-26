@@ -8,7 +8,8 @@ import { withDeclaredViewUri } from "@mcpview/contracts";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { runReadProgram } from "./sandbox.ts";
-import { rpc, uiCapability, uiMime } from "./upstream.ts";
+import { discoverSessionResources, rpc, uiCapability, uiMime } from "./upstream.ts";
+import { buyEvidenceTool, createBuyEvidenceReader } from "./buy-archive.ts";
 
 // Explicit capabilities of this synthetic invoice workspace. Descriptors and results select the UI.
 const readScope = new Set(["erpnext_doc_list", "erpnext_kpi_overdue", "erpnext_sales_invoice_get"]);
@@ -20,10 +21,22 @@ const port = Number(Deno.env.get("PORT") ?? 45289);
 const traceProgram = Deno.env.get("TRACE_PROGRAM") === "1";
 const origin = new URL(Deno.env.get("PUBLIC_ORIGIN") ?? `http://127.0.0.1:${port}`).origin;
 const assets = pathToFileURL(resolve(Deno.env.get("VIEW_ASSETS_DIR") ?? "dist") + "/");
-const manifest: { views: { resourceUri: string; module: string }[] } = JSON.parse(
+type ViewEntry = {
+  resourceUri: string;
+  module: string;
+  delivery: "tool-result" | "viewer.session.apply";
+};
+const manifest: { views: ViewEntry[] } = JSON.parse(
   await Deno.readTextFile(new URL("manifest.json", assets)),
 );
-const mountable = manifest.views.map((view) => view.resourceUri);
+const directUris = manifest.views.filter((v) => v.delivery === "tool-result").map((v) =>
+  v.resourceUri
+);
+const sessionUris = new Set(
+  manifest.views.filter((v) => v.delivery === "viewer.session.apply").map((v) => v.resourceUri),
+);
+const sessionResources = await discoverSessionResources(backend, sessionUris);
+const readBuyEvidence = createBuyEvidenceReader(assets);
 const shell = await Deno.readFile(new URL("shell.js", assets));
 const assetFiles = new Set([
   "loaders.js",
@@ -51,7 +64,8 @@ const callbackDescriptors = appTools.map((t) => ({
   ...t,
   _meta: { ui: { visibility: ["app"] }, "openai/widgetAccessible": true },
 }));
-const modelTools = declarations.filter((t) => permits(t, "model"));
+// The archive supplies the recorded artifact. ERPNext supplies its display contract.
+const modelTools = [...declarations.filter((t) => permits(t, "model")), buyEvidenceTool];
 const shellUri = "ui://declared-views/workspace-v1";
 const app = new McpApp({
   name: "erpnext-declared-views",
@@ -61,7 +75,8 @@ const app = new McpApp({
   maxConcurrent: 4,
   backpressureStrategy: "reject",
   toolErrorMapper: (error) => String(error instanceof Error ? error.message : error),
-  instructions: "Read the synthetic ERPNext invoice workspace.",
+  instructions:
+    "Read the synthetic ERPNext workspace. Its execute tool lists the available business operations.",
 });
 async function callRead(
   name: string,
@@ -78,7 +93,13 @@ async function callRead(
 }
 app.registerTool({
   name: "execute",
-  description: "Run a read-only JavaScript function body in the invoice workspace.",
+  description: [
+    "Run a read-only JavaScript function body. Use erp.call(name, args) and return the original response to open a record.",
+    "Available business operations: " + modelTools.map((t) => t.name).join(", ") + ".",
+    `${buyEvidenceTool.name}: ${buyEvidenceTool.description} Arguments: ${
+      JSON.stringify(buyEvidenceTool.inputSchema)
+    }.`,
+  ].join(" "),
   inputSchema: {
     type: "object",
     properties: { code: { type: "string", minLength: 1, maxLength: 16384 } },
@@ -99,10 +120,16 @@ app.registerTool({
   if (traceProgram) console.info(JSON.stringify({ event: "program", code }));
   const execution = createDeclaredViewExecution({
     tools: modelTools,
-    mountableResourceUris: mountable,
+    mountableResourceUris: directUris,
+    sessionResources,
   });
   const trace: string[] = [];
   const output = await runReadProgram(String(code), async (name, args) => {
+    if (name === buyEvidenceTool.name) {
+      const { result, session } = await readBuyEvidence(args);
+      trace.push(name);
+      return execution.captureSession(name, result, session);
+    }
     const native = await callRead(name, args, modelTools);
     trace.push(name);
     return execution.capture(name, native);
@@ -110,9 +137,14 @@ app.registerTool({
   if ("native" in output) {
     const selected = execution.resolve(output.native.reference);
     if (!selected) throw new Error("Unknown result from the current execution.");
-    console.info(JSON.stringify({ event: "execute", trace, resourceUri: selected.resourceUri }));
+    console.info(JSON.stringify({
+      event: "execute",
+      trace,
+      resourceUri: selected.resourceUri,
+      ...(selected.session ? { action: "viewer.session.apply" } : {}),
+    }));
     return selected.resourceUri
-      ? withDeclaredViewUri(selected.result, selected.resourceUri)
+      ? withDeclaredViewUri(selected.result, selected.resourceUri, selected.session)
       : selected.result;
   }
   console.info(JSON.stringify({ event: "execute", trace, computed: true }));

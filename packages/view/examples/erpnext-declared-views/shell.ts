@@ -1,8 +1,10 @@
 import { App } from "@modelcontextprotocol/ext-apps";
-import { createDeclaredViewDispatcher, type DeclaredViewModule } from "@mcpview/view";
+import { createDeclaredViewDispatcher, type DeclaredViewDispatcherOptions } from "@mcpview/view";
+
+export { mountDeclaredSessionApp } from "@mcpview/view";
 
 /** The shell owns the single host connection. Publisher modules mount inside its existing root. */
-export async function start(loaders: ReadonlyMap<string, () => Promise<DeclaredViewModule<App>>>) {
+export async function start(loaders: DeclaredViewDispatcherOptions<App>["loaders"]) {
   const root = document.getElementById("root");
   if (!root) throw new Error("Missing application root.");
   const host = new App({ name: "erpnext-declared-views", version: "1.0.0" }, {});

@@ -25,11 +25,13 @@ test "$(git -C "$ERP_SOURCE" rev-parse HEAD)" = 8de156fbb09adec1fb891b5cfd872d9b
 npm pack @casys/mcp-erpnext@3.5.0 --pack-destination "$BUILD_DIR" --silent
 tar -xzf "$BUILD_DIR/casys-mcp-erpnext-3.5.0.tgz" -C "$BUILD_DIR"
 node "$EX/build.mjs" --source "$ERP_SOURCE" --published "$BUILD_DIR/package" --output "$ASSETS"
+node "$EX/prepare-buy-archive.mjs" --source "$ERP_SOURCE" --output "$ASSETS"
 deno bundle --no-lock --platform=browser --minify "$EX/shell.ts" -o "$ASSETS/shell.js"
 cat "$ASSETS/manifest.json"
 ```
 
-The manifest lists eight mountable modules and one standalone resource for ERPNext 3.5.0. The
+The generated manifest lists nine modules for ERPNext 3.5.0. Eight receive a native tool result
+and one receives a recorded session. The
 generated directory includes the original release's styles embedded in the modules, its license and
 third-party notices. With a local Git clone containing the tag, `git archive v3.5.0` unpacked into
 `$ERP_SOURCE` provides the same source files.
@@ -121,9 +123,10 @@ two invoices behind its €300 total. Each request used the same outer tool and 
    native content and metadata. Selection uses the upstream tool’s `_meta.ui.resourceUri`, or a
    complete result’s explicit UI resource, subject to the publisher's exact list of mountable
    resources. An error, a returned copy, or a calculation has no mounted view.
-3. The outer tool always declares the same MCP Apps resource. The server writes the chosen inner URI
-   to the mcpview extension `_meta["dev.mcpview/declared-view"]` with `version: 1`. Hosts only need
-   to open the declared shell and deliver its tool result using the MCP Apps protocol.
+3. The outer tool always declares the same MCP Apps resource. For direct results the server writes
+   the chosen inner URI to `_meta["dev.mcpview/declared-view"]` with `version: 1`. A validated
+   archive read uses version 2 with its session and action. It matches the recorded schema to the
+   manifests read from the upstream MCP resource catalog. Hosts open the same shell in both cases.
 4. [The shell](shell.ts) owns the MCP Apps SDK connection. Its dispatcher looks up the exact URI in
    the generated imports, mounts the component in the shell's document and passes through the native
    result. Subsequent results for the same resource update the mounted tree. Switching resources
@@ -138,11 +141,12 @@ the supplied element, and binds the component's SDK instance to the shell throug
 [one adapter](adapter.js). The module is instantiated separately for each mount. The publisher's
 global stylesheet and document language and theme still apply to the shell document.
 
-This adapter was exercised with upstream fixtures for invoice, stock, document list, document,
-chart, KPI, funnel and kanban. Buy evidence expects a recorded viewer session and explicitly rejects
-a raw tool result. Its different entry stays in the manifest's `unsupported` list. Another publisher
-can export `mount(root, host, result, signal)` with its own framework and session contract. An
-arbitrary standalone HTML resource does not by itself provide that mount contract.
+The direct-result adapter was exercised with upstream fixtures for invoice, stock, document list,
+document, chart, KPI, funnel and kanban. Buy Evidence's existing surface accepts
+`viewer.session.apply`. The session adapter starts that surface with its own component registry
+and applies the session through its validated action handler in the shell's document. Its raw-result
+rejection remains in force. Publishers can provide a module exporting
+`mount(root, host, result, signal)` or `mountSession(root, host, session, signal)`.
 [Buy session contract](https://github.com/Casys-AI/mcp-erpnext/blob/8de156fbb09adec1fb891b5cfd872d9b6c9dfbe4/src/ui/buy-evidence-viewer/src/app.ts)
 
 The invoice workspace enables three read operations, for the invoice list, invoice detail and
@@ -151,3 +155,28 @@ navigation hints are preserved. In particular, the invoice's Payments action req
 document type and the façade denies it. The example binds only to loopback and carries sample data.
 An application connecting live ERP data needs to enforce its own user identity and authorization in
 the tool dispatcher.
+
+## Replay the recorded purchase evidence
+
+The build step `prepare-buy-archive.mjs` prepares a server-side reference archive from the pinned
+checkout. It runs ERPNext 3.5.0's own synthetic
+contract fixture generator, copies its complete and unavailable recorded sessions, and bundles its
+session validator. The reader verifies the stored envelope again at each read, including its SHA-256
+fingerprint and its links to the sealed bundle and source captures. The fixtures model Digital
+Thread's recording format using test values. A production integration would read sessions actually
+recorded by the authorized archive.
+[Upstream fixture generator](https://github.com/Casys-AI/mcp-erpnext/blob/8de156fbb09adec1fb891b5cfd872d9b6c9dfbe4/src/buy/write_contract_fixtures.ts)
+
+The example archive adds one read capability to the sandbox. Returning
+`await erp.call("buy_evidence_read", {})` displays the reference configuration's four fasteners
+at €1.25 each, for a €5.00 total. Passing `{ record: "unavailable" }` opens the publisher's
+unavailable state. The operation returns the recorded business projection to the program.
+The verified session travels separately through the executor and the declared action. ERPNext's
+`erpnext_buy_capture` reads source documents for a recording workflow. A capture on its own
+does not supply a recorded session.
+
+In ChatGPT Work, a request for the recorded purchase cost ran one `execute` with
+`erp.call("buy_evidence_read", {})`. The publisher's view displayed the €5 total and expanded
+the fastener line when clicked. A separate request displayed the unavailable state. The host
+used the same receivables skill for both requests. The archive operation and its argument
+schema are advertised by the executor.

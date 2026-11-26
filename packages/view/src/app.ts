@@ -23,7 +23,7 @@ import { Router } from "./router.ts";
 import { createComposeEventClient } from "./compose-events.ts";
 import { callServerToolGated } from "./capabilities.ts";
 import { MCPViewError } from "./errors.ts";
-import { wireLifecycleCallbacks, wireTeardownLifecycle } from "./lifecycle.ts";
+import { TeardownDispatcher, wireLifecycleCallbacks, wireTeardownLifecycle } from "./lifecycle.ts";
 import { sampleGated } from "./sample.ts";
 import { ToolRegistry, viewsDeclareTools } from "./tools.ts";
 import { onViewerSession } from "./viewer-session.ts";
@@ -53,10 +53,62 @@ export function defineView<S, A = void, D = void>(
  * Throws if `window.parent` is unavailable (must run inside an iframe),
  * if `initialView` is not a registered view, or if the handshake fails.
  */
-export async function createMcpApp<S = Record<string, never>, TSession = never>(
+export function createMcpApp<S = Record<string, never>, TSession = never>(
   config: AppConfig<S, TSession>,
 ): Promise<AppHandle<S>> {
+  return bootstrap(config);
+}
+
+/** Start a publisher surface on the shell's existing host and its scoped session lifecycle. */
+export async function mountDeclaredSessionApp(
+  host: App,
+  session: unknown,
+  signal: AbortSignal,
+  start: (runtime: { createApp: typeof createMcpApp }) => Promise<{ dispose(): Promise<void> }>,
+): Promise<{ applySession(next: unknown): Promise<void>; dispose(): void }> {
+  signal.throwIfAborted();
+  let apply: ((value: unknown) => Promise<void>) | undefined;
+  const surface = await start({
+    createApp: (config) =>
+      bootstrap(config, {
+        host,
+        ready: (receiver) => {
+          apply = receiver;
+        },
+      }),
+  });
+  let closing: Promise<void> | undefined;
+  const close = () => {
+    signal.removeEventListener("abort", dispose);
+    return closing ??= surface.dispose();
+  };
+  const dispose = () => {
+    void close().catch(console.error);
+  };
+  if (signal.aborted) await close();
+  else signal.addEventListener("abort", dispose, { once: true });
+  const applySession = async (value: unknown) => {
+    if (signal.aborted) return;
+    if (!apply) throw new TypeError("Mounted App must subscribe to viewer.session.apply");
+    await apply(value);
+  };
+  try {
+    await applySession(session);
+  } catch (error) {
+    await close();
+    throw error;
+  }
+  return { applySession, dispose };
+}
+
+async function bootstrap<S, TSession>(
+  config: AppConfig<S, TSession>,
+  mounted?: { host: App; ready(apply: (session: unknown) => Promise<void>): void },
+): Promise<AppHandle<S>> {
   validateConfig(config);
+  if (mounted && !config.viewerSession) {
+    throw new TypeError("Expected a viewer.session.apply subscription");
+  }
 
   // Auto-advertise the `tools.listChanged` capability if any view declares
   // tools — ext-apps refuses registerTool() otherwise. We merge with the
@@ -72,31 +124,32 @@ export async function createMcpApp<S = Record<string, never>, TSession = never>(
   // full — passing `{}` would clobber `autoResize: true` because the
   // 1.7.1 constructor uses a default-parameter assignment, not a merge.
   const appOptions = buildAppOptions(config);
-  const app = appOptions
-    ? new App(config.info, finalCaps, appOptions)
-    : new App(config.info, finalCaps);
+  const app = mounted?.host ??
+    (appOptions ? new App(config.info, finalCaps, appOptions) : new App(config.info, finalCaps));
 
   // ext-apps treats these as one-shot notifications and warns (or throws in
   // strict mode) if their handlers are first installed after connect(). The
   // dispatcher buffers anything the host sends while the handshake and the
   // initial route are still creating the AppHandle.
-  const lifecycle = wireLifecycleCallbacks(app, config);
-  const teardown = wireTeardownLifecycle(app, config.onTeardown);
+  const lifecycle = mounted ? undefined : wireLifecycleCallbacks(app, config);
+  const teardown = mounted
+    ? new TeardownDispatcher(config.onTeardown)
+    : wireTeardownLifecycle(app, config.onTeardown);
 
-  const frame = getFrameWindow();
-  const parent = frame.parent;
-  const events = createComposeEventClient(parent, frame);
+  const frame = mounted ? undefined : getFrameWindow();
+  const parent = frame?.parent;
+  const events = parent && createComposeEventClient(parent, frame);
   // Install the whole-resource session action synchronously before connect.
   // The dispatcher retains validated early actions until the handle exists.
   const viewerSession = config.viewerSession
     ? onViewerSession(events, config.viewerSession)
     : undefined;
-  const transport = new PostMessageTransport(parent, parent);
+  const transport = parent && new PostMessageTransport(parent, parent);
   try {
-    await app.connect(transport);
+    if (transport) await app.connect(transport);
   } catch (error) {
     viewerSession?.dispose();
-    events.destroy();
+    events?.destroy();
     teardown.abort(error);
     throw error;
   }
@@ -110,9 +163,9 @@ export async function createMcpApp<S = Record<string, never>, TSession = never>(
       "ui/initialize handshake completed without host capabilities — the host response was malformed.",
     );
     viewerSession?.dispose();
-    events.destroy();
+    events?.destroy();
     teardown.abort(error);
-    await transport.close().catch(() => {});
+    await transport?.close().catch(() => {});
     throw error;
   }
   const capabilities: McpUiHostCapabilities = Object.freeze({ ...hostCaps });
@@ -166,7 +219,7 @@ export async function createMcpApp<S = Record<string, never>, TSession = never>(
 
     let transportClosePromise: Promise<void> | undefined;
     const closeTransport = (): Promise<void> => {
-      transportClosePromise ??= transport.close();
+      transportClosePromise ??= transport?.close() ?? Promise.resolve();
       return transportClosePromise;
     };
     const cleanup = async (): Promise<void> => {
@@ -175,7 +228,7 @@ export async function createMcpApp<S = Record<string, never>, TSession = never>(
         await router.dispose();
       } finally {
         app.removeEventListener("hostcontextchanged", onHostContextChanged);
-        events.destroy();
+        events?.destroy();
       }
     };
     handle = {
@@ -202,14 +255,15 @@ export async function createMcpApp<S = Record<string, never>, TSession = never>(
 
     // The handle is now complete (including the initial route), so replay
     // early host notifications and serialise any arrivals during that replay.
-    await lifecycle.activate(handle);
+    await lifecycle?.activate(handle);
     await viewerSession?.activate(handle);
+    if (viewerSession) mounted?.ready(viewerSession.apply);
   } catch (err) {
     app.removeEventListener("hostcontextchanged", onHostContextChanged);
     viewerSession?.dispose();
-    events.destroy();
+    events?.destroy();
     teardown.abort(err);
-    await transport.close().catch(() => {}); // best-effort, rethrowing
+    await transport?.close().catch(() => {}); // best-effort, rethrowing
     throw err;
   }
   return handle;

@@ -4,7 +4,10 @@ import {
   assertNotEquals,
   assertThrows,
 } from "@std/assert";
-import { DECLARED_VIEW_META_KEY } from "@mcpview/contracts";
+import {
+  DECLARED_VIEW_META_KEY,
+  VIEWER_SESSION_APPLY_ACTION,
+} from "@mcpview/contracts";
 import {
   createDeclaredViewExecution,
   type DeclaredViewNativeResult,
@@ -23,6 +26,117 @@ const invoice = {
   structuredContent: { record: { id: 17 } },
   _meta: { "io.casys/viewer": { version: 1, refresh: "get" } },
 };
+
+const archive = {
+  uri: "ui://erp/archive",
+  ownership: "whole-view",
+  resultSchemas: ["erp.record/1.0"],
+  sessionSchemas: ["erp.session/1.0"],
+  acceptedActions: [VIEWER_SESSION_APPLY_ACTION],
+} as const;
+
+Deno.test("an authorized recording selects by exact manifest schema and stays outside the guest projection", () => {
+  const opts = { ...catalog, sessionResources: [archive] };
+  const run = createDeclaredViewExecution(opts);
+  const session = {
+    schemaVersion: "erp.session/1.0",
+    basis: { fingerprint: "original" },
+  };
+  const expected = structuredClone(session);
+  const capture = run.captureSession("sum", invoice, session);
+  session.basis.fingerprint = "changed";
+  assertEquals(capture.data, invoice.structuredContent);
+  assertEquals(run.resolve(capture.reference), {
+    result: invoice,
+    resourceUri: archive.uri,
+    session: expected,
+  });
+  assertEquals(
+    createDeclaredViewExecution(opts).resolve(capture.reference),
+    undefined,
+  );
+  const foreign = {
+    ...invoice,
+    _meta: {
+      ui: { resourceUri: archive.uri },
+      [DECLARED_VIEW_META_KEY]: {
+        version: 2,
+        action: VIEWER_SESSION_APPLY_ACTION,
+        resourceUri: archive.uri,
+        session,
+      },
+    },
+  };
+  assertEquals(run.resolve(run.capture("sum", foreign).reference), {
+    result: { ...invoice, _meta: { ui: foreign._meta.ui } },
+  });
+});
+
+Deno.test("session delivery requires a complete authorized read and an unambiguous compatible resource", () => {
+  const archive2 = { ...archive, uri: "ui://erp/archive2" };
+  const session = { schemaVersion: archive.sessionSchemas[0] };
+  const run = createDeclaredViewExecution({
+    ...catalog,
+    sessionResources: [archive, archive2],
+  });
+  for (
+    const [name, native, sessionInput] of [
+      ["sum", invoice, session], // two compatible modules without an upstream hint
+      ["list", invoice, session], // a known direct URI is incompatible
+      ["sum", {
+        ...invoice,
+        _meta: { ui: { resourceUri: "ui://other/archive" } },
+      }, session],
+      [
+        "unknown",
+        { ...invoice, _meta: { ui: { resourceUri: archive.uri } } },
+        session,
+      ],
+      ["sum", {
+        ...invoice,
+        isError: true,
+        _meta: { ui: { resourceUri: archive.uri } },
+      }, session],
+      ["sum", {
+        ...invoice,
+        resultType: "input_required",
+        _meta: { ui: { resourceUri: archive.uri } },
+      }, session],
+      ["sum", { ...invoice, _meta: { ui: { resourceUri: archive.uri } } }, {
+        schemaVersion: "erp.session/2.0",
+      }],
+      [
+        "sum",
+        { ...invoice, _meta: { ui: { resourceUri: archive.uri } } },
+        null,
+      ],
+    ] as const
+  ) {
+    const ref = run.captureSession(name, native, sessionInput).reference;
+    assertEquals(run.resolve(ref), { result: native });
+  }
+  const native = { ...invoice, _meta: { ui: { resourceUri: archive2.uri } } };
+  assertEquals(
+    run.resolve(run.captureSession("sum", native, session).reference),
+    { result: native, resourceUri: archive2.uri, session },
+  );
+  for (
+    const invalid of [
+      { ...archive, acceptedActions: [] },
+      { ...archive, sessionSchemas: ["erp.session/latest"] },
+      { ...archive, uri: "https://invalid/archive" },
+    ]
+  ) {
+    assertThrows(
+      () =>
+        createDeclaredViewExecution({
+          ...catalog,
+          sessionResources: [invalid],
+        }),
+      TypeError,
+    );
+  }
+});
 
 Deno.test("declared execution resolves the returned call among equal data and multiple completed calls", () => {
   const execution = createDeclaredViewExecution(catalog);

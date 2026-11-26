@@ -1,6 +1,6 @@
 /** Mount a server-selected MCP App view in the shell's existing document. @module */
 
-import { readDeclaredViewUri } from "@mcpview/contracts";
+import { readDeclaredViewSelection, VIEWER_SESSION_APPLY_ACTION } from "@mcpview/contracts";
 import type { ToolResult } from "./types.ts";
 
 /** The instance owns its DOM, event subscriptions and any in-flight work. */
@@ -9,6 +9,8 @@ export interface MountedDeclaredView {
   dispose(): void;
   /** Receive the next native result in place. Without this hook the shell remounts. */
   update?(result: ToolResult): void | Promise<void>;
+  /** Receive another recorded session through the same publisher action. */
+  applySession?(session: Record<string, unknown>): void | Promise<void>;
 }
 
 /** A module provided by the publisher for an exact resource URI. */
@@ -27,13 +29,26 @@ export interface DeclaredViewModule<THost> {
   ): MountedDeclaredView | Promise<MountedDeclaredView>;
 }
 
+/** Mount an exact resource from the recorded-session action it declares. */
+export interface DeclaredSessionViewModule<THost> {
+  mountSession(
+    root: HTMLElement,
+    host: THost,
+    session: Record<string, unknown>,
+    signal: AbortSignal,
+  ): MountedDeclaredView | Promise<MountedDeclaredView>;
+}
+
 export interface DeclaredViewDispatcherOptions<THost> {
   /** Exclusive DOM root for the mounted view. */
   root: HTMLElement;
   /** Already-connected host, e.g. the App from the shell's MCP Apps SDK. */
   host: THost;
   /** Trusted build-time imports keyed by the complete resource URI. */
-  loaders: ReadonlyMap<string, () => Promise<DeclaredViewModule<THost>>>;
+  loaders: ReadonlyMap<
+    string,
+    () => Promise<DeclaredViewModule<THost> | DeclaredSessionViewModule<THost>>
+  >;
 }
 
 export interface DeclaredViewDispatcher {
@@ -49,6 +64,7 @@ export interface DeclaredViewDispatcher {
 
 interface Entry {
   uri: string;
+  action: string;
   target: HTMLElement;
   controller: AbortController;
   mounted?: MountedDeclaredView;
@@ -82,21 +98,24 @@ export function createDeclaredViewDispatcher<THost>(
 
   async function dispatch(result: ToolResult): Promise<boolean> {
     if (disposed) return false;
-    const uri = result.isError ? undefined : readDeclaredViewUri(result);
-    const load = uri && routes.get(uri);
-    if (!uri || !load) {
+    const selection = result.isError ? undefined : readDeclaredViewSelection(result);
+    const load = selection && routes.get(selection.resourceUri);
+    if (!selection || !load) {
       clear();
       return false;
     }
 
+    const { resourceUri: uri, action } = selection;
     const previous = active;
     const mounted = previous?.mounted;
-    if (previous && previous.uri === uri && mounted?.update) {
-      const update = mounted.update.bind(mounted);
+    const update = action === VIEWER_SESSION_APPLY_ACTION
+      ? mounted?.applySession?.bind(mounted, selection.session)
+      : mounted?.update?.bind(mounted, result);
+    if (previous?.uri === uri && previous.action === action && update) {
       const delivery = previous.updates.then(async () => {
         if (active !== previous) return;
         try {
-          await update(result);
+          await update();
         } catch (error) {
           if (active === previous) {
             clear();
@@ -113,6 +132,7 @@ export function createDeclaredViewDispatcher<THost>(
 
     const entry: Entry = {
       uri,
+      action,
       target: root.ownerDocument.createElement("div"),
       controller: new AbortController(),
       updates: Promise.resolve(),
@@ -123,11 +143,20 @@ export function createDeclaredViewDispatcher<THost>(
       if (active !== entry) return true;
       const module = await load();
       if (active !== entry) return true;
-      if (typeof module?.mount !== "function") {
-        throw new TypeError(`Declared view ${uri} must export mount()`);
+      const sessionMount = module && "mountSession" in module && module.mountSession;
+      const resultMount = module && "mount" in module && module.mount;
+      if (!sessionMount && !resultMount) {
+        throw new TypeError(`Declared view ${uri} must export mount() or mountSession()`);
+      }
+      const mount = action === VIEWER_SESSION_APPLY_ACTION
+        ? sessionMount && sessionMount.bind(module, entry.target, host, selection.session)
+        : resultMount && resultMount.bind(module, entry.target, host, result);
+      if (!mount) {
+        clear();
+        return false;
       }
       root.replaceChildren(entry.target);
-      const view = await module.mount(entry.target, host, result, entry.controller.signal);
+      const view = await mount(entry.controller.signal);
       if (typeof view?.dispose !== "function") {
         throw new TypeError(`Declared view ${uri} must return an instance with dispose()`);
       }

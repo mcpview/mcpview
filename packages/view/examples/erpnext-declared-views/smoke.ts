@@ -1,4 +1,9 @@
-import { readDeclaredViewUri } from "@mcpview/contracts";
+import {
+  parseViewAppManifestJson,
+  readDeclaredViewSelection,
+  readDeclaredViewUri,
+  VIEWER_SESSION_APPLY_ACTION,
+} from "@mcpview/contracts";
 import { assert, assertEquals } from "@std/assert";
 import type { MCPTool } from "@mcpview/server";
 import { rpc, uiMime } from "./upstream.ts";
@@ -21,7 +26,7 @@ assert(shell.contents[0].text.includes("loaders.js"));
 interface Result {
   content: { text: string }[];
   isError?: boolean;
-  structuredContent?: { value?: unknown; data?: unknown };
+  structuredContent?: Record<string, unknown>;
 }
 const execute = (code: string) =>
   rpc<Result>(endpoint, "tools/call", { name: "execute", arguments: { code } });
@@ -72,6 +77,44 @@ assertEquals(
   (await execute(`return [typeof fetch, typeof Deno, typeof process];`)).structuredContent?.value,
   ["undefined", "undefined", "undefined"],
 );
+const manifestRead = await rpc<{ contents: { text: string }[] }>(
+  upstream,
+  "resources/read",
+  { uri: "ui://mcp-erpnext/buy-evidence-manifest" },
+);
+const [buy] = parseViewAppManifestJson(manifestRead.contents[0].text).resources;
+const purchase = 'await erp.call("buy_evidence_read", {})';
+const complete = await execute(`const chosen = ${purchase}; ${list}; return chosen;`);
+const selected = readDeclaredViewSelection(complete);
+assert(selected?.action === VIEWER_SESSION_APPLY_ACTION);
+assertEquals(selected.resourceUri, buy.uri);
+assert(buy.sessionSchemas?.includes(String(selected.session.schemaVersion)));
+const projection = selected.session.projection as {
+  status: string;
+  result: { totals: { kind: string; amount: string; currency: string }[] };
+};
+assertEquals(complete.structuredContent, projection);
+assertEquals(projection.status, "available");
+assertEquals(projection.result.totals.find((t) => t.kind === "complete-total"), {
+  kind: "complete-total",
+  amount: "5.00",
+  currency: "EUR",
+});
+const unavailable = readDeclaredViewSelection(
+  await execute(
+    'return await erp.call("buy_evidence_read", {record: "unavailable"});',
+  ),
+);
+assert(unavailable?.action === VIEWER_SESSION_APPLY_ACTION);
+assertEquals(unavailable.session.projection, {
+  status: "unavailable",
+  reason: "unavailable recorded bundle bytes",
+});
+assertEquals(readDeclaredViewSelection(await execute(`return {...${purchase}};`)), undefined);
+assertEquals(
+  (await execute('return await erp.call("buy_evidence_read", {record: "unknown"});')).isError,
+  true,
+);
 console.log(
-  "Validated three native views, earlier-result selection, computed output, object identity and the read-only capability boundary.",
+  "Validated three direct views, complete and unavailable Buy sessions, earlier-result selection, computed output, object identity and the read-only capability boundary.",
 );

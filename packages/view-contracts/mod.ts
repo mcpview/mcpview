@@ -9,7 +9,10 @@
 
 export {
   DECLARED_VIEW_META_KEY,
+  type DeclaredViewSelection,
+  isExactSchemaIdentity,
   isExactUiResourceUri,
+  readDeclaredViewSelection,
   readDeclaredViewUri,
   withDeclaredViewUri,
 } from "./src/declared-view.ts";

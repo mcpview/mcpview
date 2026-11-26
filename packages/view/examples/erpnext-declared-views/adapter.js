@@ -36,9 +36,7 @@ export function mountPreactResource(root, host, firstResult, signal, css, start)
     if (typeof host[name] === "function") app[name] = host[name].bind(host);
   }
 
-  const style = root.ownerDocument.createElement("style");
-  style.textContent = css;
-  root.ownerDocument.head.append(style);
+  const removeStyle = scopedStyles(root, css);
   let unmount;
   function dispose() {
     if (disposed) return;
@@ -48,7 +46,7 @@ export function mountPreactResource(root, host, firstResult, signal, css, start)
     } finally {
       app.onhostcontextchanged = undefined;
       app.ontoolresult = undefined;
-      style.remove();
+      removeStyle();
       signal?.removeEventListener("abort", dispose);
     }
   }
@@ -67,4 +65,17 @@ export function mountPreactResource(root, host, firstResult, signal, css, start)
     },
     dispose,
   };
+}
+
+export function scopedStyles(root, css, signal) {
+  signal?.throwIfAborted();
+  const style = root.ownerDocument.createElement("style");
+  style.textContent = css;
+  root.ownerDocument.head.append(style);
+  const remove = () => {
+    style.remove();
+    signal?.removeEventListener("abort", remove);
+  };
+  signal?.addEventListener("abort", remove, { once: true });
+  return remove;
 }

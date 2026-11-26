@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { VIEWER_SESSION_APPLY_ACTION } from "@mcpview/contracts";
 
 import type { ComposeEventClient, ComposeEventHandler } from "./compose-events.ts";
@@ -191,4 +191,28 @@ Deno.test("a session callback can await App disposal without a dispatcher drain 
   }));
   assertEquals(finished, true);
   assertEquals(events.handlers.has(VIEWER_SESSION_APPLY_ACTION), false);
+});
+
+Deno.test("local delivery uses the same validation and rejects an invalid replacement", async () => {
+  const applied: unknown[] = [];
+  const dispatcher = onViewerSession<State, RecordedSession>(undefined, {
+    validate: isRecordedSession,
+    onSession(session) {
+      if (session.artifactUri === "bad") throw new Error("Invalid projection");
+      applied.push(session);
+    },
+    onError() {},
+  });
+  await dispatcher.activate(fakeHandle());
+  const first = { schema: "io.casys.thread.cad-viewer-session/1.0", artifactUri: "a" };
+  await dispatcher.apply(first);
+  await assertRejects(() => dispatcher.apply({}), TypeError, "rejected");
+  await assertRejects(
+    () => dispatcher.apply({ ...first, artifactUri: "bad" }),
+    Error,
+    "Invalid projection",
+  );
+  assertEquals(applied, [first]);
+  dispatcher.dispose();
+  await assertRejects(() => dispatcher.apply(first), TypeError);
 });
