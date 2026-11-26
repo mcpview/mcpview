@@ -127,6 +127,28 @@ path uses results already returned by the script. The runnable engineering examp
 server, both providers, and a single-frame board with a 3D viewer and interactive print report.
 [Engineering example and setup](https://github.com/mcpview/mcpview/tree/main/packages/compose/examples/multi-mcp-snippets)
 
+The server can declare event ports for each snippet under the provider binding's `events` field. For
+example, use
+`{ "invoice-list": { emits: ["invoice.selected"] }, "invoice-detail": {
+accepts: ["invoice.focus"] } }`.
+The `execute` description advertises the configured ports. Once the program has selected both
+receipts with `api.panel`, it can add a route:
+
+```js
+await api.sync({
+  from: list.id,
+  event: "invoice.selected",
+  to: detail.id,
+  action: "invoice.focus",
+});
+```
+
+The route is scoped to those two receipts in the current result. For local renderers, declare the
+implemented ports in each `resolveView` result and call
+`emitSnippetBoardEvent(descriptor, sourceReceiptId, event, data, deliver)` with the active board
+descriptor. The board's `deliver(targetReceiptId, action, data)` callback handles the action
+locally. The target view owns validation of its action data.
+
 ## MCP SDK compatibility
 
 Compose uses MCP Apps 2.x and the split MCP SDK 2.x packages. Integrations importing SDK types or

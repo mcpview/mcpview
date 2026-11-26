@@ -1,5 +1,14 @@
 import type { CallToolResult } from "@modelcontextprotocol/client";
 import type { SnippetCatalog, SnippetParameters } from "@mcpview/server/snippets";
+import type { ViewComponentEventPorts } from "../core/types/components.ts";
+import type { UiSyncRule } from "../core/types/sync-rules.ts";
+import {
+  parseSnippetSyncRule,
+  SNIPPET_SYNC_META_KEY,
+  snippetPorts,
+  snippetSyncKey,
+  supportsSnippetSync,
+} from "./sync.ts";
 import { SNIPPET_PANELS_META_KEY } from "./board.ts";
 import { isSnippetName, type SnippetChainContext, type SnippetProvider } from "./providers.ts";
 import { encodeValue, runProgram } from "./sandbox.ts";
@@ -12,6 +21,7 @@ export interface SnippetPanelReceipt {
   name: string;
   title: string;
   result: CallToolResult;
+  events?: ViewComponentEventPorts;
 }
 
 const maxNativeSize = 4 * 1024 * 1024;
@@ -68,16 +78,20 @@ function output(
   value: unknown,
   panels: SnippetPanelReceipt[] = [],
   saved?: string,
+  sync: UiSyncRule[] = [],
 ): CallToolResult {
   const visible = {
     value,
-    panels: panels.map(({ result: _result, ...panel }) => panel),
+    panels: panels.map(({ result: _result, events: _events, ...panel }) => panel),
     ...(saved === undefined ? {} : { saved }),
   };
   return {
     content: [{ type: "text", text: JSON.stringify(visible) }],
     structuredContent: visible,
-    _meta: { [SNIPPET_PANELS_META_KEY]: panels },
+    _meta: {
+      [SNIPPET_PANELS_META_KEY]: panels,
+      ...(sync.length ? { [SNIPPET_SYNC_META_KEY]: sync } : {}),
+    },
   };
 }
 
@@ -112,6 +126,8 @@ export function createSnippetChain(
   ) {
     const receipts = new Map<string, SnippetPanelReceipt>();
     const selected = new Map<string, SnippetPanelReceipt>();
+    const exposedPorts = new Map<string, ViewComponentEventPorts | undefined>();
+    const sync = new Map<string, UiSyncRule>();
     let totalBytes = 0;
     const value = await runProgram(code, params, async (operation, args, signal) => {
       signal.throwIfAborted();
@@ -123,6 +139,18 @@ export function createSnippetChain(
           throw new Error("Panel titles may contain at most 120 characters.");
         }
         selected.set(panel.id, { ...panel, title: second ?? panel.title });
+        exposedPorts.set(panel.id, panel.events);
+        return null;
+      }
+      if (operation === "sync") {
+        const rule = args.length === 1 ? parseSnippetSyncRule(first) : undefined;
+        if (!rule || !supportsSnippetSync(rule, exposedPorts)) {
+          status.diagnostic =
+            "Sync requires distinct selected panel receipts and their declared event and action.";
+          throw new Error(status.diagnostic);
+        }
+        const key = snippetSyncKey(rule);
+        sync.set(key, rule);
         return null;
       }
       const provider = typeof first === "string" ? providers.get(first) : undefined;
@@ -167,10 +195,18 @@ export function createSnippetChain(
         throw new Error("Native snippet receipts exceed the board size limit.");
       }
       const id = crypto.randomUUID();
-      receipts.set(id, { id, provider: first as string, name: second, title: second, result });
+      const events = snippetPorts(provider.events, second);
+      receipts.set(id, {
+        id,
+        provider: first as string,
+        name: second,
+        title: second,
+        result,
+        ...(events ? { events } : {}),
+      });
       return { id, value };
     }, context.signal);
-    return { value, panels: [...selected.values()] };
+    return { value, panels: [...selected.values()], sync: [...sync.values()] };
   }
 
   async function call(input: RecordValue, context: SnippetChainContext, status: ExecutionStatus) {
@@ -189,7 +225,7 @@ export function createSnippetChain(
         status,
       );
       signal?.throwIfAborted();
-      return output(result.value, result.panels);
+      return output(result.value, result.panels, undefined, result.sync);
     }
     if (!catalog || typeof scope !== "string" || !scope.trim()) {
       throw new Error("Saved chains require a configured catalog and a trusted scope.");
@@ -210,7 +246,7 @@ export function createSnippetChain(
         },
       );
       signal?.throwIfAborted();
-      return output(result.value, result.panels);
+      return output(result.value, result.panels, undefined, result.sync);
     }
     if (
       typeof input.code !== "string" || !has("saveAs") || !keysAllowed("code", "saveAs", "params")
@@ -263,7 +299,7 @@ export function createSnippetChain(
         const ref = catalog.recordSuccess(scope, input.code, params);
         const saved = await catalog.save(scope, ref, name);
         reserved = false;
-        return output(result.value, result.panels, saved.name);
+        return output(result.value, result.panels, saved.name, result.sync);
       } finally {
         usage.saving.delete(name);
         if (reserved) savedNames.delete(name);

@@ -17,3 +17,10 @@ export {
   registerSnippetProvider,
   type SnippetProviderOptions,
 } from "./provider-tools.ts";
+
+export {
+  parseSnippetSyncRule,
+  SNIPPET_SYNC_META_KEY,
+  snippetSyncKey,
+  supportsSnippetSync,
+} from "./sync.ts";

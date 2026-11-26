@@ -1,4 +1,5 @@
 import type { CallToolResult } from "@modelcontextprotocol/client";
+import type { ViewComponentEventPorts } from "../core/types/components.ts";
 
 /** Trusted, per-request server context, supplied by the host rather than guest code. */
 export interface SnippetChainContext {
@@ -12,6 +13,8 @@ export interface SnippetChainContext {
 export interface SnippetProvider {
   /** The subset of this provider's snippets reachable by a program. */
   readonly names: readonly string[];
+  /** Board event ports declared by the host for exact snippet names. */
+  readonly events?: Readonly<Record<string, ViewComponentEventPorts>>;
   /** Forward only these protocol operations with host-owned transport credentials. */
   call(
     tool: "list_snippets" | "run_snippet",

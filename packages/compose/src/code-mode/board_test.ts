@@ -1,5 +1,13 @@
 import { assertEquals, assertStrictEquals } from "@std/assert";
-import { composeSnippetBoard, readSnippetPanels, SNIPPET_PANELS_META_KEY } from "./board.ts";
+import {
+  composeSnippetBoard,
+  emitSnippetBoardEvent,
+  readSnippetPanels,
+  readSnippetSyncRules,
+  SNIPPET_PANELS_META_KEY,
+  SNIPPET_SYNC_META_KEY,
+  type SnippetPanel,
+} from "./board.ts";
 
 const uri = "ui://ledger/invoice";
 
@@ -81,4 +89,42 @@ Deno.test("a board can mount a local adapter for a data-only provider alongside 
   assertEquals(first.context?.view, { units: "s" });
   assertEquals(first.surface, surface);
   assertEquals(board.children.map((child) => child.supportedWidths), [[320, 520], undefined]);
+});
+
+Deno.test("a board routes declared events between its mounted receipt IDs", () => {
+  const first = { ...invoice("first"), events: { emits: ["invoice.selected"] } };
+  const detail = { ...invoice("detail"), events: { accepts: ["invoice.focus"] } };
+  const distractor = { ...detail, id: "distractor" };
+  const rule = {
+    from: first.id,
+    event: "invoice.selected",
+    to: detail.id,
+    action: "invoice.focus",
+  };
+  const result = envelope([distractor, detail, first]);
+  Object.assign(result._meta, {
+    [SNIPPET_SYNC_META_KEY]: [rule, rule, { ...rule, to: "*" }, { ...rule, to: uri }],
+  });
+  assertEquals(readSnippetSyncRules(result), [rule]);
+  const local = (panel: SnippetPanel) => ({ resourceUri: uri, events: panel.events });
+  const board = composeSnippetBoard(result, { resolveView: local });
+  assertEquals(board.sync, [{ from: 2, event: rule.event, to: 1, action: rule.action }]);
+  const deliveries: unknown[][] = [];
+  const deliver = (...args: unknown[]) => deliveries.push(args);
+  emitSnippetBoardEvent(board, first.id, rule.event, { invoice: "INV-001" }, deliver);
+  emitSnippetBoardEvent(board, distractor.id, rule.event, { invoice: "INV-002" }, deliver);
+  emitSnippetBoardEvent(board, first.id, "*", { invoice: "INV-003" }, deliver);
+  emitSnippetBoardEvent(board, first.id, rule.event, 123n, deliver);
+  emitSnippetBoardEvent(board, first.id, rule.event, "x".repeat(128 * 1024), deliver);
+  assertEquals(deliveries, [[detail.id, rule.action, { invoice: "INV-001" }]]);
+  const narrowed = composeSnippetBoard(result, {
+    resolveView: (panel) => panel.id === detail.id ? { resourceUri: uri } : local(panel),
+  });
+  assertEquals(narrowed.sync, []);
+  const absent = composeSnippetBoard(result, {
+    resolveView: (panel) => panel.id === detail.id ? { resourceUri: "" } : local(panel),
+  });
+  assertEquals(absent.sync, []);
+  result._meta[SNIPPET_PANELS_META_KEY].push(first);
+  assertEquals(readSnippetSyncRules(result), []);
 });
