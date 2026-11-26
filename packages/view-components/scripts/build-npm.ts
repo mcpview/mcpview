@@ -6,15 +6,6 @@ const denoJson = JSON.parse(
   await Deno.readTextFile(new URL("../deno.json", import.meta.url)),
 ) as { version?: string; imports: Record<string, string> };
 if (!denoJson.version) throw new Error("[build-npm] missing view-components version");
-const coreDenoJson = JSON.parse(
-  await Deno.readTextFile(new URL("../../view/deno.json", import.meta.url)),
-) as { version?: string };
-const contractsDenoJson = JSON.parse(
-  await Deno.readTextFile(new URL("../../view-contracts/deno.json", import.meta.url)),
-) as { version?: string };
-if (!coreDenoJson.version || !contractsDenoJson.version) {
-  throw new Error("[build-npm] missing view family dependency version");
-}
 
 await emptyDir("./dist-node");
 const npmImportMapPath = "./dist-node/.npm-import-map.json";
@@ -113,8 +104,9 @@ packageJson.exports = {
   },
 };
 packageJson.dependencies ??= {};
-packageJson.dependencies["@mcpview/view"] = `^${coreDenoJson.version}`;
-packageJson.dependencies["@mcpview/contracts"] = `^${contractsDenoJson.version}`;
+for (const name of ["@mcpview/view", "@mcpview/contracts"]) {
+  packageJson.dependencies[name] = denoJson.imports[name].replace(`jsr:${name}@`, "");
+}
 
 const preactVersion = packageJson.dependencies?.preact;
 if (!preactVersion) throw new Error("[build-npm] expected dnt dependency preact");

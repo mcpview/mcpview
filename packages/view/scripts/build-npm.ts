@@ -23,12 +23,6 @@ if (!VERSION) {
     "[build-npm] failed to read version from packages/view/deno.json",
   );
 }
-const contractsDenoJson = JSON.parse(
-  await Deno.readTextFile(new URL("../../view-contracts/deno.json", import.meta.url)),
-) as { version?: string };
-if (!contractsDenoJson.version) {
-  throw new Error("[build-npm] failed to read packages/view-contracts version");
-}
 console.log(`[build-npm] Version: ${VERSION}`);
 
 await emptyDir("./dist-node");
@@ -115,7 +109,10 @@ pkg.exports = {
   },
 };
 pkg.dependencies ??= {};
-pkg.dependencies["@mcpview/contracts"] = `^${contractsDenoJson.version}`;
+pkg.dependencies["@mcpview/contracts"] = denoJson.imports["@mcpview/contracts"].replace(
+  "jsr:@mcpview/contracts@",
+  "",
+);
 
 // dnt sees the optional React entry point and initially records its imports as
 // hard dependencies. Keep the base package renderer-neutral: npm consumers
@@ -182,6 +179,7 @@ async function smokeTestPackageImport(): Promise<void> {
         "--eval",
         [
           "const mod = await import('@mcpview/view');",
+          "if (typeof mod.createDeclaredViewDispatcher !== 'function') throw new Error('declared view dispatcher missing');",
           "if (typeof mod.createMcpApp !== 'function') {",
           "  throw new Error('createMcpApp export missing');",
           "}",

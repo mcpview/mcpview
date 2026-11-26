@@ -5,6 +5,7 @@ import type {
   ViewComponentDescriptor,
   ViewComponentEventPorts,
 } from "./composition-contracts.ts";
+import { isExactUiResourceUri } from "./declared-view.ts";
 
 export const VIEW_APP_MANIFEST_SCHEMA = "io.casys.mcp.view-app-manifest/1.0" as const;
 export const VIEWER_SESSION_APPLY_ACTION = "viewer.session.apply" as const;
@@ -358,10 +359,7 @@ function requireExactSchemaIdentity(value: string, path: string): string {
 
 function requireUiUri(value: unknown, index: number): string {
   const uri = requireNonEmptyString(value, `View App manifest resources[${index}].uri`);
-  if (!/^ui:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*$/.test(uri)) {
-    throw new TypeError(`View App manifest resources[${index}].uri must be an exact ui:// URI`);
-  }
-  if (uri.split(/[/?#]/).some((segment) => segment.toLowerCase() === "latest")) {
+  if (!isExactUiResourceUri(uri)) {
     throw new TypeError(`View App manifest resources[${index}].uri must be an exact ui:// URI`);
   }
   return uri;

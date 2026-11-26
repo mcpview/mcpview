@@ -660,6 +660,7 @@
       "packages/server": {
         "dependencies": [
           "jsr:@deno/dnt@0.41",
+          "jsr:@mcpview/contracts@~0.2.1",
           "jsr:@std/assert@1",
           "jsr:@std/yaml@1",
           "npm:@modelcontextprotocol/client@^2.3.1",
@@ -676,7 +677,7 @@
       "packages/view": {
         "dependencies": [
           "jsr:@deno/dnt@0.41",
-          "jsr:@mcpview/contracts@0.2",
+          "jsr:@mcpview/contracts@~0.2.1",
           "jsr:@std/assert@1",
           "npm:@modelcontextprotocol/client@^2.3.1",
           "npm:@modelcontextprotocol/core@^2.3.1",
