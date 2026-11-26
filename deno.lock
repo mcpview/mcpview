@@ -44,6 +44,7 @@
     "npm:jose@6": "6.2.2",
     "npm:linkedom@0.18.12": "0.18.12",
     "npm:preact@^10.28.3": "10.29.7",
+    "npm:quickjs-emscripten@0.32.0": "0.32.0",
     "npm:react-dom@18.3.1": "18.3.1_react@18.3.1",
     "npm:react@18.3.1": "18.3.1",
     "npm:zod@^4.2.0": "4.4.3"
@@ -301,6 +302,33 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
+    "@jitl/quickjs-ffi-types@0.32.0": {
+      "integrity": "sha512-v9T+GQpmk43VDJ7d72sf0Nexhk+ArvtUihW27dy7lqAl0zBObFKtSBBIm5RBjwIhE8VwsPPm9PNuvPvNqLWUEg=="
+    },
+    "@jitl/quickjs-wasmfile-debug-asyncify@0.32.0": {
+      "integrity": "sha512-EX8zbXwGqCgAE764M+qvkHtyXDi/FUoMBea0JnES7vCM3P7a2+EOZOjGv85wtZ2sJhI1oJ+nekmqpOODFDY+hw==",
+      "dependencies": [
+        "@jitl/quickjs-ffi-types"
+      ]
+    },
+    "@jitl/quickjs-wasmfile-debug-sync@0.32.0": {
+      "integrity": "sha512-LeYWrPGC1uNCTBWvibo3ZLJj0CSVNYUXvJpXMCmuQ5Sap2cCACc3uvGvYV4homHHBAzfw5akoTqMMS4YFRtw+Q==",
+      "dependencies": [
+        "@jitl/quickjs-ffi-types"
+      ]
+    },
+    "@jitl/quickjs-wasmfile-release-asyncify@0.32.0": {
+      "integrity": "sha512-3oSwPfja12ICz4aIblB58cuY8JlEq5Txt8Cut4VLo+LH47QN+mzCnSgnbB03hWzg1LBcc+VyyI9UOag7a1NF+Q==",
+      "dependencies": [
+        "@jitl/quickjs-ffi-types"
+      ]
+    },
+    "@jitl/quickjs-wasmfile-release-sync@0.32.0": {
+      "integrity": "sha512-BKNDI/TPBfGlLNGYpLrhcDGXmIk4xHm4MRAisOBnOzpXVn9HZWsfmMAc9WMBrAHjvvds6HOikKeaOBKdPdpVrg==",
+      "dependencies": [
+        "@jitl/quickjs-ffi-types"
+      ]
+    },
     "@modelcontextprotocol/client@2.3.1": {
       "integrity": "sha512-mIGZXpHsjnZ6lD+gD/WCMpR5k8yVQQ8nNFH1N0Srf7AvnwTUMYD6pvTY8ng2+He5FfV7YMZLmrjL7cLa/cc3dQ==",
       "dependencies": [
@@ -540,6 +568,22 @@
     },
     "preact@10.29.7": {
       "integrity": "sha512-DCHYrK/B10yUD3ZjLfhZ3WIE/9Vf9VFUODcRE2dRomTYDpJk6z6L9wecSfhfE6M9ZTHUdyQkoC46arIDhEV84Q=="
+    },
+    "quickjs-emscripten-core@0.32.0": {
+      "integrity": "sha512-QFnPfjFey8EqknSrSxe1hZrf1/8z7/6s1QzGOmKo6++02r7QRRX7ZoyNaZh7JuVjWsVW87KnQrbZqnHkOAzUyg==",
+      "dependencies": [
+        "@jitl/quickjs-ffi-types"
+      ]
+    },
+    "quickjs-emscripten@0.32.0": {
+      "integrity": "sha512-So0Sqw869y/S2oE3Nuc0uT3Dhqgvsj8FSrwBdsuTosVsG8ME5/OcudU1GxsrIFdFABgy17GHnTVO9TYV/bLQcA==",
+      "dependencies": [
+        "@jitl/quickjs-wasmfile-debug-asyncify",
+        "@jitl/quickjs-wasmfile-debug-sync",
+        "@jitl/quickjs-wasmfile-release-asyncify",
+        "@jitl/quickjs-wasmfile-release-sync",
+        "quickjs-emscripten-core"
+      ]
     },
     "react-dom@18.3.1_react@18.3.1": {
       "integrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",

@@ -1,9 +1,9 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { VIEWER_SESSION_APPLY_ACTION } from "@mcpview/contracts";
 
+import { onViewerSession, type ViewerSessionDispatcher } from "../mod.ts";
 import type { ComposeEventClient, ComposeEventHandler } from "./compose-events.ts";
 import type { AppHandle } from "./types.ts";
-import { onViewerSession } from "./viewer-session.ts";
 
 class FakeEvents implements ComposeEventClient {
   readonly handlers = new Map<string, ComposeEventHandler>();
@@ -203,7 +203,13 @@ Deno.test("local delivery uses the same validation and rejects an invalid replac
     },
     onError() {},
   });
-  await dispatcher.activate(fakeHandle());
+  // Existing consumer adapters implement just the original lifecycle methods.
+  const legacy: ViewerSessionDispatcher<State> = {
+    activate: (handle) => dispatcher.activate(handle),
+    drain: () => dispatcher.drain(),
+    dispose: () => dispatcher.dispose(),
+  };
+  await legacy.activate(fakeHandle());
   const first = { schema: "io.casys.thread.cad-viewer-session/1.0", artifactUri: "a" };
   await dispatcher.apply(first);
   await assertRejects(() => dispatcher.apply({}), TypeError, "rejected");
@@ -213,6 +219,6 @@ Deno.test("local delivery uses the same validation and rejects an invalid replac
     "Invalid projection",
   );
   assertEquals(applied, [first]);
-  dispatcher.dispose();
+  legacy.dispose();
   await assertRejects(() => dispatcher.apply(first), TypeError);
 });

@@ -646,10 +646,7 @@ export class McpApp {
 
   /** Build one unconnected SDK server for one negotiated stdio era. */
   private createProtocolServer(): Server {
-    const cacheHint = {
-      ttlMs: this.cacheTtlMs,
-      cacheScope: this.options.cache?.scope ?? "private",
-    } as const;
+    const cacheHint = this.cacheHintsForListing();
     // Tasks currently have an HTTP adapter only. Keep its extension out of
     // stdio discovery until the same application port is served here; claiming
     // it and answering every tasks/* call with MethodNotFound would make the
@@ -678,7 +675,7 @@ export class McpApp {
         instructions: this.options.instructions,
         cacheHints: {
           "server/discover": cacheHint,
-          "tools/list": cacheHint,
+          "tools/list": this.cacheHintsForListing("tools/list"),
           "resources/list": cacheHint,
           "resources/templates/list": cacheHint,
           "resources/read": cacheHint,
@@ -775,8 +772,14 @@ export class McpApp {
     };
 
     // tools/list handler
-    server.setRequestHandler("tools/list", () => {
-      return { tools: this.buildToolListing() } as unknown as ListToolsResult;
+    server.setRequestHandler("tools/list", (_request, ctx) => {
+      const envelope = ctx.mcpReq.envelope;
+      const capabilities = isRecord(envelope)
+        ? envelope[STATELESS_CLIENT_CAPABILITIES_KEY]
+        : server.getClientCapabilities();
+      return {
+        tools: this.buildToolListing(capabilities),
+      } as unknown as ListToolsResult;
     });
 
     // tools/call handler (delegates to middleware pipeline)
@@ -1065,8 +1068,9 @@ export class McpApp {
   }
 
   /**
-   * Register a tool that is only visible to the MCP App (UI layer),
-   * not to the model via tools/list.
+   * Register a tool with MCP App visibility. When advertiseAppOnlyTools is
+   * enabled, compatible hosts receive its definition in tools/list and hide
+   * it from their model tools.
    *
    * Equivalent to registerTool() with _meta.ui.visibility: ["app"].
    * The tool is still callable via tools/call if the caller knows its name.
@@ -2379,9 +2383,9 @@ export class McpApp {
         // `null`, a scalar or an array, which then reached the handler as a
         // supposed ClientCapabilities and failed later as -32603 — an internal
         // error for what is plainly a malformed request.
-        const capabilitiesValid = isRecord(params) &&
-          isRecord(params["_meta"]) &&
-          isRecord(params["_meta"][STATELESS_CLIENT_CAPABILITIES_KEY]);
+        const clientCapabilities = isRecord(params) && isRecord(params["_meta"])
+          ? params["_meta"][STATELESS_CLIENT_CAPABILITIES_KEY]
+          : undefined;
 
         if (typeof clientVersion !== "string") {
           // Header uses fallback version — no negotiated version available yet
@@ -2419,7 +2423,7 @@ export class McpApp {
           );
         }
 
-        if (!capabilitiesValid) {
+        if (!isRecord(clientCapabilities)) {
           return jsonRpcResponse(
             {
               jsonrpc: "2.0",
@@ -2548,9 +2552,7 @@ export class McpApp {
                 clientInfo: params["_meta"][STATELESS_CLIENT_INFO_KEY] as
                   | Implementation
                   | undefined,
-                clientCapabilities: params["_meta"][
-                  STATELESS_CLIENT_CAPABILITIES_KEY
-                ] as ClientCapabilities | undefined,
+                clientCapabilities: clientCapabilities as ClientCapabilities,
                 logLevel: readLogLevel(params["_meta"]),
                 ...readTraceContext(params["_meta"]),
               }
@@ -2984,8 +2986,9 @@ export class McpApp {
             id,
             result: this.stampResult(
               this.withCacheHints(
-                { tools: this.buildToolListing() },
+                { tools: this.buildToolListing(clientCapabilities) },
                 statelessVersion,
+                { listing: "tools/list" },
               ),
               statelessVersion,
             ),
@@ -4373,6 +4376,17 @@ export class McpApp {
     this.log(`task ${task.taskId} → ${task.status}`);
   }
 
+  private cacheHintsForListing(listing?: "tools/list") {
+    // The list cache key does not include per-request client capabilities.
+    if (listing === "tools/list" && this.options.advertiseAppOnlyTools) {
+      return { ttlMs: 0, cacheScope: "private" } as const;
+    }
+    return {
+      ttlMs: this.cacheTtlMs,
+      cacheScope: this.options.cache?.scope ?? "private",
+    } as const;
+  }
+
   /**
    * Add the required `CacheableResult` fields (spec 2026-07-28, SEP-2549).
    *
@@ -4387,7 +4401,10 @@ export class McpApp {
   private withCacheHints(
     result: Record<string, unknown>,
     negotiatedVersion?: string,
-    request?: { readonly isMrtrRetry?: boolean },
+    request?: {
+      readonly isMrtrRetry?: boolean;
+      readonly listing?: "tools/list";
+    },
   ): Record<string, unknown> {
     if (negotiatedVersion !== SPEC_2026_07_28) return result;
 
@@ -4400,8 +4417,7 @@ export class McpApp {
 
     return {
       ...result,
-      ttlMs: this.cacheTtlMs,
-      cacheScope: this.options.cache?.scope ?? "private",
+      ...this.cacheHintsForListing(request?.listing),
     };
   }
 
@@ -4437,16 +4453,23 @@ export class McpApp {
   }
 
   /**
-   * Build the tools/list response, filtering out app-only tools
-   * and passing through outputSchema/annotations when defined.
+   * Build the tools/list response for the client, preserving UI visibility,
+   * outputSchema and annotations.
    */
-  private buildToolListing(): Array<Record<string, unknown>> {
+  private buildToolListing(
+    capabilities: unknown,
+  ): Array<Record<string, unknown>> {
+    const includeAppOnly = this.options.advertiseAppOnlyTools === true &&
+      isRecord(capabilities) &&
+      getMcpAppsCapability(capabilities)?.mimeTypes?.includes(
+          MCP_APP_MIME_TYPE,
+        ) === true;
     return Array.from(this.tools.values())
       .filter((t) => {
         const vis = (t._meta?.ui as { visibility?: unknown } | undefined)
           ?.visibility;
-        if (Array.isArray(vis) && !vis.includes("model")) return false;
-        return true;
+        if (!Array.isArray(vis) || vis.includes("model")) return true;
+        return includeAppOnly && vis.length === 1 && vis[0] === "app";
       })
       .map((t) => {
         const entry: Record<string, unknown> = {

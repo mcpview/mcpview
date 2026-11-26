@@ -11,13 +11,22 @@
 
 import { assertEquals } from "@std/assert";
 import { McpApp } from "./mcp-app.ts";
-import type { MCPTool } from "./types.ts";
+import {
+  MCP_APP_MIME_TYPE,
+  MCP_APPS_EXTENSION_ID,
+  type MCPTool,
+} from "./types.ts";
 
 /**
  * Helper to create test server instance
  */
 const PROTO_KEY = "io.modelcontextprotocol/protocolVersion";
 const CAPS_KEY = "io.modelcontextprotocol/clientCapabilities";
+const APPS_CAPABILITIES = {
+  extensions: {
+    [MCP_APPS_EXTENSION_ID]: { mimeTypes: [MCP_APP_MIME_TYPE] },
+  },
+};
 
 function createTestServer(): McpApp {
   return new McpApp({
@@ -145,7 +154,10 @@ async function startTestHttp(server: McpApp) {
 }
 
 /** Helper to call tools/list via HTTP (stateless 2026-07-28 format) */
-async function fetchToolsList(port: number) {
+async function fetchToolsList(
+  port: number,
+  capabilities: Record<string, unknown> = {},
+) {
   const res = await fetch(`http://localhost:${port}/mcp`, {
     method: "POST",
     headers: {
@@ -157,7 +169,9 @@ async function fetchToolsList(port: number) {
       jsonrpc: "2.0",
       id: 1,
       method: "tools/list",
-      params: { _meta: { [PROTO_KEY]: "2026-07-28", [CAPS_KEY]: {} } },
+      params: {
+        _meta: { [PROTO_KEY]: "2026-07-28", [CAPS_KEY]: capabilities },
+      },
     }),
   });
   return await res.json();
@@ -245,8 +259,67 @@ Deno.test("registerAppOnlyTool - stores tool but excludes from listing", async (
 
   const { http, port } = await startTestHttp(server);
   try {
-    const data = await fetchToolsList(port);
+    const data = await fetchToolsList(port, APPS_CAPABILITIES);
     assertEquals(data.result.tools.length, 0);
+  } finally {
+    await http.shutdown();
+  }
+});
+
+Deno.test("tools/list - advertises app-only definitions per capable HTTP request with opt-in", async () => {
+  const server = new McpApp({
+    name: "app-discovery",
+    version: "1.0.0",
+    logger: () => {},
+    advertiseAppOnlyTools: true,
+    cache: { ttlMs: 250, scope: "public" },
+  });
+  const callback = {
+    name: "refresh",
+    description: "Refresh viewer",
+    inputSchema: { type: "object" },
+    outputSchema: { type: "object" },
+    annotations: { readOnlyHint: true },
+  };
+  server.registerAppOnlyTool(callback, () => ({}));
+  const modelTool = {
+    name: "execute",
+    description: "Execute a query",
+    inputSchema: { type: "object" },
+  };
+  server.registerTool(modelTool, () => "executed");
+  server.registerTool({
+    ...modelTool,
+    name: "hidden",
+    _meta: { ui: { resourceUri: "ui://test/hidden", visibility: [] } },
+  }, () => "hidden");
+
+  const { http, port } = await startTestHttp(server);
+  try {
+    const { result } = await fetchToolsList(port, APPS_CAPABILITIES);
+    assertEquals(result.tools, [modelTool, {
+      ...callback,
+      _meta: { ui: { visibility: ["app"] } },
+    }]);
+    assertEquals(result.cacheScope, "private");
+    assertEquals(result.ttlMs, 0);
+
+    for (
+      const capabilities of [
+        {},
+        { extensions: { [MCP_APPS_EXTENSION_ID]: {} } },
+        {
+          extensions: {
+            [MCP_APPS_EXTENSION_ID]: { mimeTypes: ["text/plain"] },
+          },
+        },
+      ]
+    ) {
+      const { result } = await fetchToolsList(port, capabilities);
+      assertEquals(result.tools, [modelTool]);
+      assertEquals(result.ttlMs, 0);
+      assertEquals(result.cacheScope, "private");
+    }
   } finally {
     await http.shutdown();
   }

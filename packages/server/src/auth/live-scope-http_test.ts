@@ -10,6 +10,7 @@
 
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { McpApp } from "../mcp-app.ts";
+import { MCP_APP_MIME_TYPE, MCP_APPS_EXTENSION_ID } from "../types.ts";
 import { AuthProvider } from "./provider.ts";
 import { createStaticTokenAuthProvider } from "./static-token-provider.ts";
 import {
@@ -58,6 +59,7 @@ function callTool(
   token?: string,
   args: Record<string, unknown> = {},
   id = 1,
+  capabilities: Record<string, unknown> = {},
 ): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -79,7 +81,7 @@ function callTool(
         arguments: args,
         _meta: {
           [PROTOCOL_VERSION_KEY]: VERSION,
-          [CLIENT_CAPABILITIES_KEY]: {},
+          [CLIENT_CAPABILITIES_KEY]: capabilities,
         },
       },
     }),
@@ -142,6 +144,58 @@ Deno.test("live scoped tool denies insufficient scope and allows sufficient scop
     assertEquals(allowed.status, 200);
     assertStringIncludes(await resultText(allowed), '"reached": true');
     assertEquals(handlerCalls, 1);
+  } finally {
+    await http.shutdown();
+  }
+});
+
+Deno.test("advertised app-only tool requires the same HTTP scopes", async () => {
+  const app = new McpApp({
+    name: "app-scope",
+    version: "1.0.0",
+    logger: () => {},
+    advertiseAppOnlyTools: true,
+    auth: { provider: new TokenScopesProvider() },
+  });
+  app.registerAppOnlyTool({
+    name: "admin_callback",
+    description: "Refresh admin data for the view",
+    inputSchema: { type: "object" },
+    requiredScopes: ["admin"],
+  }, () => "refreshed");
+  const port = allocatePort();
+  const http = await app.startHttp({ port, onListen: () => {} });
+  try {
+    const capabilities = {
+      extensions: {
+        [MCP_APPS_EXTENSION_ID]: { mimeTypes: [MCP_APP_MIME_TYPE] },
+      },
+    };
+    const unauthenticated = await callTool(
+      port,
+      "admin_callback",
+      undefined,
+      {},
+      1,
+      capabilities,
+    );
+    assertEquals(unauthenticated.status, 401);
+    await unauthenticated.body?.cancel();
+
+    const denied = await callTool(
+      port,
+      "admin_callback",
+      "read-token",
+      {},
+      2,
+      capabilities,
+    );
+    assertEquals(denied.status, 403);
+    await denied.body?.cancel();
+
+    const allowed = await callTool(port, "admin_callback", "admin-token");
+    assertEquals(allowed.status, 200);
+    assertEquals(await resultText(allowed), "refreshed");
   } finally {
     await http.shutdown();
   }

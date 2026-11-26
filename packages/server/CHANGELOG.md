@@ -5,6 +5,19 @@ All notable changes to `@mcpview/server` (published as `@casys/mcp-server` up to
 
 ## [Unreleased]
 
+## [0.30.1] - 2026-11-26
+
+### Added
+
+- `createDeclaredViewExecution` lets a code executor retain the originating tool
+  result for each read. Returning a captured object selects its declared App
+  resource. Executors can also deliver a verified recording to a resource that
+  advertises its exact session schema.
+- Servers can set `advertiseAppOnlyTools: true` to list App-only callbacks for
+  clients that advertise MCP Apps support. The descriptors retain App-only
+  visibility, so viewers can use their existing callbacks in a code-mode
+  workspace.
+
 ## [0.30.0] - 2026-10-24
 
 ### Changed

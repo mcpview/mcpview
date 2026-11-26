@@ -13,6 +13,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { MCP_APP_MIME_TYPE, MCP_APPS_EXTENSION_ID } from "./types.ts";
 
 const FIXTURE = new URL("./testdata/stdio-e2e-server.ts", import.meta.url)
   .pathname;
@@ -323,30 +324,40 @@ const CLIENT_INFO_KEY = "io.modelcontextprotocol/clientInfo";
 const CLIENT_CAPABILITIES_KEY = "io.modelcontextprotocol/clientCapabilities";
 const SERVER_INFO_KEY = "io.modelcontextprotocol/serverInfo";
 const SERVER_INFO = { name: "e2e-stdio", version: "9.9.9" };
+const APPS_CAPABILITIES = {
+  extensions: {
+    [MCP_APPS_EXTENSION_ID]: { mimeTypes: [MCP_APP_MIME_TYPE] },
+  },
+};
 
 function modernRequest(
   id: number,
   method: string,
   params: Record<string, unknown> = {},
+  capabilities: Record<string, unknown> = {},
 ): Record<string, unknown> {
   return request(id, method, {
     ...params,
     _meta: {
       [PROTOCOL_VERSION_KEY]: PROTOCOL_VERSION,
       [CLIENT_INFO_KEY]: { name: "e2e-modern", version: "1.0.0" },
-      [CLIENT_CAPABILITIES_KEY]: {},
+      [CLIENT_CAPABILITIES_KEY]: capabilities,
     },
   });
 }
 
-const HANDSHAKE = [
-  request(1, "initialize", {
-    protocolVersion: LEGACY_PROTOCOL_VERSION,
-    capabilities: {},
-    clientInfo: { name: "e2e", version: "1.0.0" },
-  }),
-  { jsonrpc: "2.0", method: "notifications/initialized" },
-];
+function legacyHandshake(capabilities: Record<string, unknown> = {}) {
+  return [
+    request(1, "initialize", {
+      protocolVersion: LEGACY_PROTOCOL_VERSION,
+      capabilities,
+      clientInfo: { name: "e2e", version: "1.0.0" },
+    }),
+    { jsonrpc: "2.0", method: "notifications/initialized" },
+  ];
+}
+
+const HANDSHAKE = legacyHandshake();
 
 const harnesses = {
   exchange,
@@ -499,6 +510,46 @@ Deno.test("stdio e2e - scoped tools remain available on the trusted local transp
     diagnostic,
   );
   assertEquals(call.result.resultType, "complete", diagnostic);
+});
+
+Deno.test("stdio e2e - opted-in modern lists use per-request app capabilities", async () => {
+  const responses = await exchangeSequential([
+    modernRequest(1, "tools/list", {}, APPS_CAPABILITIES),
+    modernRequest(2, "tools/list"),
+    modernRequest(3, "tools/call", { name: "refresh_view" }),
+  ]);
+  const capable = responses.get(1)?.result?.tools as Array<
+    { name: string; _meta?: unknown }
+  >;
+  const text = responses.get(2)?.result?.tools as typeof capable;
+  assertExists(capable);
+  assertExists(text);
+  assertEquals(capable.find(({ name }) => name === "refresh_view")?._meta, {
+    ui: { visibility: ["app"] },
+  });
+  assertEquals(capable.filter(({ name }) => name !== "refresh_view"), text);
+  assertEquals(responses.get(3)?.result?.content, [{
+    type: "text",
+    text: "refreshed",
+  }]);
+});
+
+Deno.test("stdio e2e - opted-in legacy lists use initialize app capabilities", async () => {
+  const responses = await exchangeSequential([
+    ...legacyHandshake(APPS_CAPABILITIES),
+    request(2, "tools/list"),
+  ]);
+  assertEquals(
+    responses.get(1)?.result?.protocolVersion,
+    LEGACY_PROTOCOL_VERSION,
+  );
+  const tools = responses.get(2)?.result?.tools as Array<
+    { name: string; _meta?: unknown }
+  >;
+  assertExists(tools);
+  assertEquals(tools.find(({ name }) => name === "refresh_view")?._meta, {
+    ui: { visibility: ["app"] },
+  });
 });
 
 Deno.test("stdio e2e - legacy initialize keeps tools/list on the 2025 wire shape", async () => {

@@ -22,8 +22,6 @@ interface PendingSession<TSession> {
  */
 export interface ViewerSessionDispatcher<S> {
   activate(handle: AppHandle<S>): Promise<void>;
-  /** Deliver the same action locally when the publisher's resource is mounted in its host. */
-  apply(session: unknown): Promise<void>;
   /** Explicitly wait for callbacks observed so far; never called by `dispose()`. */
   drain(): Promise<void>;
   /** Synchronous unsubscribe and navigation revocation. */
@@ -42,7 +40,10 @@ export interface ViewerSessionDispatcher<S> {
 export function onViewerSession<S, TSession>(
   events: ComposeEventClient | undefined,
   subscription: ViewerSessionSubscription<S, TSession>,
-): ViewerSessionDispatcher<S> {
+): ViewerSessionDispatcher<S> & {
+  /** Deliver the same action locally when the publisher's resource is mounted in its host. */
+  apply(session: unknown): Promise<void>;
+} {
   if (typeof subscription.validate !== "function") {
     throw new TypeError("onViewerSession: validate must be a function");
   }

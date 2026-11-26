@@ -30,11 +30,10 @@ deno bundle --no-lock --platform=browser --minify "$EX/shell.ts" -o "$ASSETS/she
 cat "$ASSETS/manifest.json"
 ```
 
-The generated manifest lists nine modules for ERPNext 3.5.0. Eight receive a native tool result
-and one receives a recorded session. The
-generated directory includes the original release's styles embedded in the modules, its license and
-third-party notices. With a local Git clone containing the tag, `git archive v3.5.0` unpacked into
-`$ERP_SOURCE` provides the same source files.
+The generated manifest lists nine modules for ERPNext 3.5.0. Eight receive a native tool result and
+one receives a recorded session. The generated directory includes the original release's styles
+embedded in the modules, its license and third-party notices. With a local Git clone containing the
+tag, `git archive v3.5.0` unpacked into `$ERP_SOURCE` provides the same source files.
 [ERPNext v3.5.0](https://github.com/Casys-AI/mcp-erpnext/tree/8de156fbb09adec1fb891b5cfd872d9b6c9dfbe4)
 
 ## Run the synthetic workspace
@@ -106,12 +105,12 @@ The example fixture selects `SYN-INV-002` for €180. Returning `invoices` itsel
 while returning the sum of its balances gives an ordinary JSON value. The fixture fits in a single
 page. The skill outlines pagination for larger sets.
 
-In a fresh ChatGPT Work conversation, the request to open the largest overdue invoice produced
-one `execute` with two upstream reads. The generated code read the invoice list, compared the
-balances, and fetched the selected invoice by name. The server selected the invoice module and
-ChatGPT displayed `SYN-INV-002` with €180 outstanding. Separate requests displayed the list and
-the overdue KPI. Selecting a list row updated its active context, and clicking the KPI opened the
-two invoices behind its €300 total. Each request used the same outer tool and workspace resource.
+In a fresh ChatGPT Work conversation, the request to open the largest overdue invoice produced one
+`execute` with two upstream reads. The generated code read the invoice list, compared the balances,
+and fetched the selected invoice by name. The server selected the invoice module and ChatGPT
+displayed `SYN-INV-002` with €180 outstanding. Separate requests displayed the list and the overdue
+KPI. Selecting a list row updated its active context, and clicking the KPI opened the two invoices
+behind its €300 total. Each request used the same outer tool and workspace resource.
 
 ## How a native response reaches a view
 
@@ -143,8 +142,8 @@ global stylesheet and document language and theme still apply to the shell docum
 
 The direct-result adapter was exercised with upstream fixtures for invoice, stock, document list,
 document, chart, KPI, funnel and kanban. Buy Evidence's existing surface accepts
-`viewer.session.apply`. The session adapter starts that surface with its own component registry
-and applies the session through its validated action handler in the shell's document. Its raw-result
+`viewer.session.apply`. The session adapter starts that surface with its own component registry and
+applies the session through its validated action handler in the shell's document. Its raw-result
 rejection remains in force. Publishers can provide a module exporting
 `mount(root, host, result, signal)` or `mountSession(root, host, session, signal)`.
 [Buy session contract](https://github.com/Casys-AI/mcp-erpnext/blob/8de156fbb09adec1fb891b5cfd872d9b6c9dfbe4/src/ui/buy-evidence-viewer/src/app.ts)
@@ -159,24 +158,23 @@ the tool dispatcher.
 ## Replay the recorded purchase evidence
 
 The build step `prepare-buy-archive.mjs` prepares a server-side reference archive from the pinned
-checkout. It runs ERPNext 3.5.0's own synthetic
-contract fixture generator, copies its complete and unavailable recorded sessions, and bundles its
-session validator. The reader verifies the stored envelope again at each read, including its SHA-256
-fingerprint and its links to the sealed bundle and source captures. The fixtures model Digital
-Thread's recording format using test values. A production integration would read sessions actually
-recorded by the authorized archive.
+checkout. It runs ERPNext 3.5.0's own synthetic contract fixture generator, copies its complete and
+unavailable recorded sessions, and bundles its session validator. The reader verifies the stored
+envelope again at each read, including its SHA-256 fingerprint and its links to the sealed bundle
+and source captures. The fixtures model Digital Thread's recording format using test values. A
+production integration would read sessions actually recorded by the authorized archive.
 [Upstream fixture generator](https://github.com/Casys-AI/mcp-erpnext/blob/8de156fbb09adec1fb891b5cfd872d9b6c9dfbe4/src/buy/write_contract_fixtures.ts)
 
 The example archive adds one read capability to the sandbox. Returning
-`await erp.call("buy_evidence_read", {})` displays the reference configuration's four fasteners
-at €1.25 each, for a €5.00 total. Passing `{ record: "unavailable" }` opens the publisher's
-unavailable state. The operation returns the recorded business projection to the program.
-The verified session travels separately through the executor and the declared action. ERPNext's
-`erpnext_buy_capture` reads source documents for a recording workflow. A capture on its own
-does not supply a recorded session.
+`await erp.call("buy_evidence_read", {})` displays the reference configuration's four fasteners at
+€1.25 each, for a €5.00 total. Passing `{ record: "unavailable" }` opens the publisher's unavailable
+state. The operation returns the recorded business projection to the program. The verified session
+travels separately through the executor and the declared action. ERPNext's `erpnext_buy_capture`
+reads source documents for a recording workflow. A capture on its own does not supply a recorded
+session.
 
 In ChatGPT Work, a request for the recorded purchase cost ran one `execute` with
-`erp.call("buy_evidence_read", {})`. The publisher's view displayed the €5 total and expanded
-the fastener line when clicked. A separate request displayed the unavailable state. The host
-used the same receivables skill for both requests. The archive operation and its argument
-schema are advertised by the executor.
+`erp.call("buy_evidence_read", {})`. The publisher's view displayed the €5 total and expanded the
+fastener line when clicked. A separate request displayed the unavailable state. The host used the
+same receivables skill for both requests. The archive operation and its argument schema are
+advertised by the executor.

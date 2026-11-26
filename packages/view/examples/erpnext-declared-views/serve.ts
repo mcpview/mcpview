@@ -60,10 +60,6 @@ function permits(tool: MCPTool, actor: "model" | "app") {
   return tool._meta?.ui?.visibility?.includes(actor) ?? true;
 }
 const appTools = declarations.filter((t) => permits(t, "app"));
-const callbackDescriptors = appTools.map((t) => ({
-  ...t,
-  _meta: { ui: { visibility: ["app"] }, "openai/widgetAccessible": true },
-}));
 // The archive supplies the recorded artifact. ERPNext supplies its display contract.
 const modelTools = [...declarations.filter((t) => permits(t, "model")), buyEvidenceTool];
 const shellUri = "ui://declared-views/workspace-v1";
@@ -71,6 +67,7 @@ const app = new McpApp({
   name: "erpnext-declared-views",
   version: "1.0.0",
   extensions: uiCapability,
+  advertiseAppOnlyTools: true,
   validateSchema: true,
   maxConcurrent: 4,
   backpressureStrategy: "reject",
@@ -194,19 +191,5 @@ Deno.serve({ hostname: "127.0.0.1", port }, async (req) => {
   const method = req.headers.get("Mcp-Method");
   const ua = req.headers.get("user-agent");
   console.info(JSON.stringify({ event: "request", method, name: req.headers.get("Mcp-Name"), ua }));
-  const listing = method === "tools/list" ? req.clone() : undefined;
-  const response = await handler(req);
-  // The framework publishes model-visible tools only. UI hosts need the app-only declarations
-  // to authorize callServerTool without offering those operations to the language model.
-  if (listing && response.ok) {
-    const request = await listing.json();
-    const capabilities = request.params?._meta?.["io.modelcontextprotocol/clientCapabilities"];
-    if (!capabilities?.extensions?.["io.modelcontextprotocol/ui"]) return response;
-    const envelope = await response.json();
-    if (Array.isArray(envelope.result?.tools)) envelope.result.tools.push(...callbackDescriptors);
-    const headers = new Headers(response.headers);
-    headers.delete("Content-Length");
-    return Response.json(envelope, { headers });
-  }
-  return response;
+  return await handler(req);
 });
