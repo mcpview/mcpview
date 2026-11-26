@@ -1,0 +1,17 @@
+{
+  "name": "mcpview-multi-mcp-snippets-ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun run build.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "2.0.3",
+    "three": "0.172.0"
+  },
+  "devDependencies": {
+    "@types/three": "0.172.0"
+  }
+}
