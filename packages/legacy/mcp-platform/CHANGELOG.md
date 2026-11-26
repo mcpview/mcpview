@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.30.2] - 2026-11-26
+
+### Added
+
+- Re-exports `./snippets` from `@mcpview/server`. The alias now requires `@mcpview/server@^0.30.2`
+  on JSR and npm.
+
 ## [0.30.0] - 2026-10-24
 
 ### Changed

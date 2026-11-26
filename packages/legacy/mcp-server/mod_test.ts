@@ -1,6 +1,8 @@
 import { assertExportMapParity, assertModuleParity } from "../../../scripts/alias-parity.ts";
 import * as alias from "./mod.ts";
 import * as target from "@mcpview/server";
+import * as aliasSnippets from "./snippets.ts";
+import * as targetSnippets from "@mcpview/server/snippets";
 
 Deno.test("@casys/mcp-server declares the sub-paths of @mcpview/server", async () => {
   await assertExportMapParity(
@@ -11,4 +13,8 @@ Deno.test("@casys/mcp-server declares the sub-paths of @mcpview/server", async (
 
 Deno.test("@casys/mcp-server re-exports @mcpview/server", () => {
   assertModuleParity(".", alias, target);
+});
+
+Deno.test("@casys/mcp-server/snippets re-exports @mcpview/server/snippets", () => {
+  assertModuleParity("./snippets", aliasSnippets, targetSnippets);
 });

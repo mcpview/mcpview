@@ -36,7 +36,7 @@ await Deno.writeTextFile(
 );
 
 await build({
-  entryPoints: ["./mod.ts"],
+  entryPoints: ["./mod.ts", { name: "./snippets", path: "./snippets.ts" }],
   outDir: "./dist-node",
   shims: {
     deno: false,
@@ -100,6 +100,10 @@ packageJson.exports = {
   ".": {
     types: "./esm/mod.d.ts",
     import: "./esm/mod.js",
+  },
+  "./snippets": {
+    types: "./esm/snippets.d.ts",
+    import: "./esm/snippets.js",
   },
 };
 packageJson.files = ["esm", "README.md", "LICENSE", "CHANGELOG.md"];

@@ -735,6 +735,75 @@ export const MCP_VIEW_THEME_CSS: string = String.raw`
   white-space: pre-wrap;
 }
 
+.mcp-view-snippet-library,
+.mcp-view-snippet-search,
+.mcp-view-snippet-source {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.mcp-view-snippet-library h2,
+.mcp-view-snippet-library h3,
+.mcp-view-snippet-library p {
+  margin: 0;
+}
+
+.mcp-view-snippet-header,
+.mcp-view-snippet-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.mcp-view-snippet-list {
+  /* Use a fixed cap because the host can resize the iframe to its content. */
+  max-block-size: 20rem;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.mcp-view-snippet-list li {
+  padding-block: 8px;
+  border-block-start: 1px solid var(--mcp-view-border-soft);
+}
+.mcp-view-snippet-list li > div { flex: 1 1 12rem; min-inline-size: 0; }
+
+.mcp-view-snippet-code {
+  max-block-size: 20rem;
+  overflow: auto;
+  border: 1px solid var(--mcp-view-border-soft);
+  border-radius: var(--mcp-view-radius-sm);
+  background: var(--mcp-view-subtle);
+}
+.mcp-view-snippet-code:focus-visible {
+  outline: 2px solid var(--mcp-view-accent);
+  outline-offset: 2px;
+}
+.mcp-view-snippet-code .mcp-view-code-block {
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  white-space: pre;
+}
+.mcp-view-snippet-source button { justify-self: start; }
+.mcp-view-snippet-empty {
+  padding: 8px;
+  border-radius: var(--mcp-view-radius-sm);
+  background: var(--mcp-view-subtle);
+  color: var(--mcp-view-muted);
+}
+
+@media (pointer: coarse) {
+  .mcp-view-snippet-library .mcp-view-button,
+  .mcp-view-snippet-search .mcp-view-text-input { min-height: 44px; }
+}
+
 .mcp-view-inline-code {
   max-width: 100%;
   padding: 1px 4px;

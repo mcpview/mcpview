@@ -602,6 +602,28 @@ to introspect the protocol target directly.
 
 ---
 
+### Saved code-mode snippets
+
+Import `createSnippetCatalog` and `createFileSnippetStore` from
+`@mcpview/server/snippets`. The catalog is in-memory by default. For
+persistence, pass `{ store: createFileSnippetStore(directory) }` with a trusted,
+private directory on a filesystem that supports hard links. Grant the server
+read and write access to that directory (`--allow-read` and `--allow-write` in
+Deno). Applications can also implement `SnippetStore` for their own storage.
+
+Derive the catalog scope from the authenticated caller and workspace on the
+server. Call `recordSuccess(scope, code, params)` from the trusted executor
+after a successful run. On explicit user action, pass the returned reference to
+`save(scope, executionRef, name, description)`. Saving keeps the exact source
+and the parameter keys and JSON types. Parameter values from the original run
+are discarded. Names can contain up to 256 UTF-8 bytes. A reference defaults to
+ten minutes.
+
+Use `list(scope)` for summaries and `inspect(scope, name)` to retrieve stored
+source. The local file store reads each entry when listing a personal catalog.
+On `run(scope, name, input, runner)`, the App's runner validates fresh input and
+sends the source through its current authorized execution path.
+
 ## API Reference
 
 ### McpApp
