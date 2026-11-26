@@ -5,9 +5,14 @@ import type {
   ViewComponentDescriptor,
   ViewComponentEventPorts,
 } from "./composition-contracts.ts";
+import {
+  isExactSchemaIdentity,
+  isExactUiResourceUri,
+  VIEWER_SESSION_APPLY_ACTION,
+} from "./declared-view.ts";
 
 export const VIEW_APP_MANIFEST_SCHEMA = "io.casys.mcp.view-app-manifest/1.0" as const;
-export const VIEWER_SESSION_APPLY_ACTION = "viewer.session.apply" as const;
+export { VIEWER_SESSION_APPLY_ACTION };
 
 export type ViewAppResourceOwnership = "whole-view" | "component-catalog";
 
@@ -338,17 +343,7 @@ function validateSchemaIdentitySet(value: unknown, path: string): string[] {
 }
 
 function requireExactSchemaIdentity(value: string, path: string): string {
-  const separator = value.lastIndexOf("/");
-  const name = separator < 0 ? "" : value.slice(0, separator);
-  const version = separator < 0 ? "" : value.slice(separator + 1);
-  const numeric = "(?:0|[1-9]\\d*)";
-  const exactVersion = new RegExp(`^${numeric}\\.${numeric}(?:\\.${numeric})?$`);
-  const mutableAlias = /(?:^|\/)(latest|stable|current|next|head|v\d+)(?=$|\/)/i;
-  if (
-    value.trim() !== value || !name ||
-    !/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/.test(name) ||
-    !exactVersion.test(version) || mutableAlias.test(name)
-  ) {
+  if (!isExactSchemaIdentity(value)) {
     throw new TypeError(
       `${path} must be an exact versioned schema identity ending /<major>.<minor>[.<patch>]`,
     );
@@ -358,10 +353,7 @@ function requireExactSchemaIdentity(value: string, path: string): string {
 
 function requireUiUri(value: unknown, index: number): string {
   const uri = requireNonEmptyString(value, `View App manifest resources[${index}].uri`);
-  if (!/^ui:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*$/.test(uri)) {
-    throw new TypeError(`View App manifest resources[${index}].uri must be an exact ui:// URI`);
-  }
-  if (uri.split(/[/?#]/).some((segment) => segment.toLowerCase() === "latest")) {
+  if (!isExactUiResourceUri(uri)) {
     throw new TypeError(`View App manifest resources[${index}].uri must be an exact ui:// URI`);
   }
   return uri;

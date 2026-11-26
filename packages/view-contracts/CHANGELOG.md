@@ -8,6 +8,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-26
+
+### Added
+
+- Added a versioned result annotation for selecting a declared App resource. The executor can
+  identify a direct tool result or deliver a recorded session whose schema matches the publisher’s
+  manifest. App code can decode the selection independently of the MCP SDK.
+
 ## [0.2.0] - 2026-10-17
 
 ### Changed

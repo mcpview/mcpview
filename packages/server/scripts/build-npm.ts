@@ -11,7 +11,10 @@ import { build, emptyDir } from "@deno/dnt";
 const denoJsonText = await Deno.readTextFile(
   new URL("../deno.json", import.meta.url),
 );
-const denoJson = JSON.parse(denoJsonText) as { version?: string };
+const denoJson = JSON.parse(denoJsonText) as {
+  version?: string;
+  imports: Record<string, string>;
+};
 const version = denoJson.version;
 if (!version) {
   throw new Error(
@@ -21,6 +24,16 @@ if (!version) {
 
 console.log(`[build-npm] Version: ${version}`);
 await emptyDir("./dist-node");
+
+const contractsEntry =
+  new URL("../../view-contracts/mod.ts", import.meta.url).href;
+const npmImportMap = "./dist-node/.npm-import-map.json";
+await Deno.writeTextFile(
+  npmImportMap,
+  JSON.stringify({
+    imports: { ...denoJson.imports, "@mcpview/contracts": contractsEntry },
+  }),
+);
 
 await build({
   entryPoints: ["./mod.ts"],
@@ -60,17 +73,25 @@ await build({
   // translation, including the inactive Deno adapter in the runtime selector.
   typeCheck: false,
   test: false,
-  importMap: "./deno.json",
+  importMap: npmImportMap,
+  mappings: { [contractsEntry]: { name: "@mcpview/contracts" } },
   // runtime.ts uses top-level await to load exactly one host adapter. A CJS
   // output cannot represent that contract, so npm intentionally ships ESM.
   scriptModule: false,
-});
+}).finally(() => Deno.remove(npmImportMap));
 
 const packageJsonPath = "dist-node/package.json";
 const packageJson = JSON.parse(
   await Deno.readTextFile(packageJsonPath),
 ) as Record<string, unknown>;
 packageJson.main = "./esm/mod.js";
+packageJson.dependencies = {
+  ...packageJson.dependencies as Record<string, string>,
+  "@mcpview/contracts": denoJson.imports["@mcpview/contracts"].replace(
+    "jsr:@mcpview/contracts@",
+    "",
+  ),
+};
 // ESM-only output (scriptModule: false): without this, Node <20.19 parses
 // esm/*.js as CommonJS and every import breaks (engines floor is >=20).
 packageJson.type = "module";

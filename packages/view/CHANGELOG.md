@@ -8,6 +8,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-11-26
+
+### Added
+
+- `createDeclaredViewDispatcher` mounts the selected publisher module in the existing MCP App
+  document. It delivers native tool results or the declared `viewer.session.apply` action and
+  releases the previous instance when the selection changes.
+- `mountDeclaredSessionApp` starts a recorded-session surface on its host’s existing connection. The
+  original `ViewerSessionDispatcher` interface remains compatible with existing implementations.
+
 ## [0.11.0] - 2026-10-24
 
 ### Added

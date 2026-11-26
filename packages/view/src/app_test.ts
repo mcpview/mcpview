@@ -1,6 +1,7 @@
 import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
 
-import { createMcpApp, defineView } from "./app.ts";
+import { createMcpApp, defineView, mountDeclaredSessionApp } from "./app.ts";
+import { App } from "@modelcontextprotocol/ext-apps";
 import { MCPViewError } from "./errors.ts";
 import type { AppConfig } from "./types.ts";
 
@@ -253,4 +254,165 @@ Deno.test("validateConfig throws when a view is missing render", async () => {
     Error,
     'View "broken" is missing a render function',
   );
+});
+
+Deno.test("aborting the first mounted session releases its router without touching the host", async () => {
+  const entered = Promise.withResolvers<void>();
+  const unblock = Promise.withResolvers<void>();
+  const cleaned = Promise.withResolvers<void>();
+  let listeners = 0;
+  let teardowns = 0;
+  const host = Object.freeze({
+    getHostContext: () => ({}),
+    getHostCapabilities: () => ({}),
+    addEventListener: () => listeners++,
+    removeEventListener: () => listeners--,
+  }) as unknown as App;
+  const root = { replaceChildren() {}, innerHTML: "" } as unknown as HTMLElement;
+  const abort = new AbortController();
+  const config: AppConfig<Record<string, never>, string> = {
+    info: minimalInfo,
+    root,
+    autoTheme: false,
+    views: { home: defineView({ render: () => "" }) },
+    initialView: "home",
+    onTeardown: () => {
+      teardowns++;
+    },
+    viewerSession: {
+      validate: (value): value is string => typeof value === "string",
+      onSession: async () => {
+        entered.resolve();
+        await unblock.promise;
+      },
+    },
+  };
+  const mounting = mountDeclaredSessionApp(host, "first", abort.signal, async (runtime) => {
+    const handle = await runtime.createApp(config);
+    return {
+      dispose: async () => {
+        await handle.dispose();
+        cleaned.resolve();
+      },
+    };
+  });
+  await entered.promise;
+  assertEquals(listeners, 1);
+  abort.abort();
+  await cleaned.promise;
+  assertEquals(listeners, 0);
+  unblock.resolve();
+  const mounted = await mounting;
+  mounted.dispose();
+  assertEquals(teardowns, 1);
+});
+
+Deno.test("aborting an initial route immediately detaches the mounted App from its host", async () => {
+  const entered = Promise.withResolvers<void>();
+  const unblock = Promise.withResolvers<void>();
+  let listeners = 0;
+  let rendered = false;
+  const host = {
+    getHostContext: () => ({}),
+    getHostCapabilities: () => ({}),
+    addEventListener: () => listeners++,
+    removeEventListener: () => listeners--,
+  } as unknown as App;
+  const controller = new AbortController();
+  const mounting = mountDeclaredSessionApp(
+    host,
+    "first",
+    controller.signal,
+    ({ createApp }) =>
+      createApp({
+        info: minimalInfo,
+        root: { replaceChildren() {} } as unknown as HTMLElement,
+        autoTheme: false,
+        views: {
+          home: defineView({
+            async onEnter() {
+              entered.resolve();
+              await unblock.promise;
+            },
+            render() {
+              rendered = true;
+              return "";
+            },
+          }),
+        },
+        initialView: "home",
+        viewerSession: {
+          validate: (value): value is string => typeof value === "string",
+          onSession() {},
+        },
+      }),
+  );
+  await entered.promise;
+  assertEquals(listeners, 1);
+  controller.abort();
+  const listenersAtAbort = listeners;
+  unblock.resolve();
+  const error = await assertRejects(() => mounting, DOMException);
+  assertEquals(error.name, "AbortError");
+  assertEquals(listenersAtAbort, 0);
+  assertEquals(listeners, 0);
+  assertEquals(rendered, false);
+});
+
+Deno.test("mounted Apps release tools on a failed render or before an async onLeave completes", async () => {
+  const host = new App(minimalInfo, {});
+  host.getHostCapabilities = () => ({});
+  const leaving = Promise.withResolvers<void>();
+  const unblock = Promise.withResolvers<void>();
+  const released = Promise.withResolvers<void>();
+  const mount = (render: () => string, onLeave?: () => Promise<void>, onDispose?: () => void) =>
+    mountDeclaredSessionApp(host, "first", new AbortController().signal, async ({ createApp }) => {
+      const app = await createApp({
+        info: minimalInfo,
+        root: { replaceChildren() {} } as unknown as HTMLElement,
+        autoTheme: false,
+        views: {
+          home: defineView({
+            tools: {
+              refresh: { description: "Refresh details", handler: () => ({ content: [] }) },
+            },
+            render,
+            onLeave,
+          }),
+        },
+        initialView: "home",
+        viewerSession: {
+          validate: (value): value is string => typeof value === "string",
+          onSession() {},
+        },
+      });
+      return {
+        async dispose() {
+          await app.dispose();
+          onDispose?.();
+        },
+      };
+    });
+
+  await assertRejects(
+    () =>
+      mount(() => {
+        throw new Error("render failed");
+      }),
+    Error,
+    "render failed",
+  );
+  const first = await mount(() => "", async () => {
+    leaving.resolve();
+    await unblock.promise;
+  }, released.resolve);
+  first.dispose();
+  await leaving.promise;
+  try {
+    const next = await mount(() => "");
+    next.dispose();
+  } finally {
+    unblock.resolve();
+    await released.promise;
+  }
 });

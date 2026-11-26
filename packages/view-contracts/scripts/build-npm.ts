@@ -74,6 +74,7 @@ try {
         "const contracts = await import('@mcpview/contracts');",
         "if (contracts.VIEWER_SESSION_APPLY_ACTION !== 'viewer.session.apply') throw new Error('session action missing');",
         "if (typeof contracts.defineViewAppManifest !== 'function') throw new Error('manifest validator missing');",
+        "if (typeof contracts.readDeclaredViewUri !== 'function') throw new Error('declared view contract missing');",
       ].join("\n"),
     ],
   }).output();

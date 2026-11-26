@@ -40,7 +40,10 @@ export interface ViewerSessionDispatcher<S> {
 export function onViewerSession<S, TSession>(
   events: ComposeEventClient | undefined,
   subscription: ViewerSessionSubscription<S, TSession>,
-): ViewerSessionDispatcher<S> {
+): ViewerSessionDispatcher<S> & {
+  /** Deliver the same action locally when the publisher's resource is mounted in its host. */
+  apply(session: unknown): Promise<void>;
+} {
   if (typeof subscription.validate !== "function") {
     throw new TypeError("onViewerSession: validate must be a function");
   }
@@ -65,15 +68,12 @@ export function onViewerSession<S, TSession>(
     console.error("[mcp-view] viewer session handler failed:", error);
   };
 
-  const enqueue = (entry: PendingSession<TSession>): void => {
-    queue = queue.then(async () => {
-      if (!handle || disposed) return;
-      try {
-        await subscription.onSession(entry.session, entry.payload, handle);
-      } catch (error) {
-        reportError(error);
-      }
+  const enqueue = (entry: PendingSession<TSession>): Promise<void> => {
+    const delivery = queue.then(async () => {
+      if (handle && !disposed) await subscription.onSession(entry.session, entry.payload, handle);
     });
+    queue = delivery.catch(reportError);
+    return delivery;
   };
 
   const drain = async (): Promise<void> => {
@@ -84,8 +84,8 @@ export function onViewerSession<S, TSession>(
     }
   };
 
-  const off = events?.on(VIEWER_SESSION_APPLY_ACTION, (payload) => {
-    if (disposed) return;
+  const receive = (payload: ComposeEventPayload): false | Promise<void> => {
+    if (disposed) return false;
     let session: TSession;
     try {
       if (!subscription.validate(payload.data)) {
@@ -94,17 +94,19 @@ export function onViewerSession<S, TSession>(
         } catch (error) {
           reportError(error);
         }
-        return;
+        return false;
       }
       session = payload.data;
     } catch (error) {
       reportError(error);
-      return;
+      return false;
     }
     const entry = { session, payload };
-    if (!handle) pending.push(entry);
-    else enqueue(entry);
-  });
+    if (handle) return enqueue(entry);
+    pending.push(entry);
+    return Promise.resolve();
+  };
+  const off = events?.on(VIEWER_SESSION_APPLY_ACTION, receive);
 
   return {
     async activate(nextHandle): Promise<void> {
@@ -113,6 +115,10 @@ export function onViewerSession<S, TSession>(
       handle = createRevocableSessionHandle(nextHandle, () => disposed);
       for (const entry of pending.splice(0)) enqueue(entry);
       await drain();
+    },
+    apply(session): Promise<void> {
+      return receive({ data: session }) ||
+        Promise.reject(new TypeError("Viewer rejected the recorded session"));
     },
     drain(): Promise<void> {
       return drain();

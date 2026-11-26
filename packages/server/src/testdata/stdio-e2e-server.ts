@@ -35,6 +35,8 @@ const app = new McpApp({
   version: "9.9.9",
   logger: () => {},
   instructions: "fixture server",
+  advertiseAppOnlyTools: true,
+  cache: { ttlMs: 250, scope: "public" },
 });
 
 app.registerTool(
@@ -48,6 +50,12 @@ app.registerTool(
   },
   (args) => args.value ?? "empty",
 );
+
+app.registerAppOnlyTool({
+  name: "refresh_view",
+  description: "Refresh the fixture view",
+  inputSchema: { type: "object" },
+}, () => "refreshed");
 
 app.registerTool(
   {

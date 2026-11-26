@@ -8,6 +8,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-26
+
+### Changed
+
+- New result-viewer projects pin `@mcpview/view@0.11.1` and `@mcpview/components@0.12.1`, including
+  their build-time module defaults.
+
 ## [0.12.0] - 2026-10-24
 
 ### Added

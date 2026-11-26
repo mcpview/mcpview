@@ -41,9 +41,18 @@
  * @module mcp-view
  */
 
-export { createMcpApp, defineView } from "./src/app.ts";
+export { createMcpApp, defineView, mountDeclaredSessionApp } from "./src/app.ts";
 export { MCPViewError } from "./src/errors.ts";
 export type { MCPViewErrorCode } from "./src/errors.ts";
+
+export { createDeclaredViewDispatcher } from "./src/declared-view.ts";
+export type {
+  DeclaredSessionViewModule,
+  DeclaredViewDispatcher,
+  DeclaredViewDispatcherOptions,
+  DeclaredViewModule,
+  MountedDeclaredView,
+} from "./src/declared-view.ts";
 
 export { COMPOSE_EVENT_METHOD, createComposeEventClient } from "./src/compose-events.ts";
 export type {

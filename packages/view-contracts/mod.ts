@@ -8,6 +8,16 @@
  */
 
 export {
+  DECLARED_VIEW_META_KEY,
+  type DeclaredViewSelection,
+  isExactSchemaIdentity,
+  isExactUiResourceUri,
+  readDeclaredViewSelection,
+  readDeclaredViewUri,
+  withDeclaredViewUri,
+} from "./src/declared-view.ts";
+
+export {
   defineViewAppManifest,
   parseViewAppManifestJson,
   VIEW_APP_MANIFEST_SCHEMA,

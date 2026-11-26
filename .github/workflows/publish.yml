@@ -11,9 +11,9 @@ name: Publish
 #   contracts -> server -> view -> components -> compose -> bridge -> aliases
 #
 #   npm   view family (contracts -> view -> components, one job so the family
-#         is verified and guarded as a unit), server, compose, and bridge run
-#         first; the alias job needs all four because every alias smoke test
-#         installs its target from the registry.
+#         is verified and guarded as a unit), then server installs contracts
+#         from npm for its smoke test. Compose and bridge can run independently.
+#         The alias job needs all four because its smoke tests install from npm.
 #   JSR   one sequential job, in the order above. It waits for every npm job of
 #         the six packages, so a failed content guard stops both registries; the
 #         aliases publish last, in their own job.
@@ -35,7 +35,7 @@ jobs:
       contents: read
 
   publish-npm-server:
-    needs: tests
+    needs: [tests, publish-npm-view-family]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

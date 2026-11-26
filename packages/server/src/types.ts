@@ -145,6 +145,17 @@ export interface McpAppOptions {
   expectResources?: boolean;
 
   /**
+   * Include tools with `_meta.ui.visibility: ["app"]` in `tools/list` for
+   * hosts that declare the MCP Apps extension with support for
+   * {@link MCP_APP_MIME_TYPE}. The host uses visibility to keep these tools
+   * out of the model's tool list. Defaults to `false`.
+   *
+   * This controls discovery only. Tool calls still use the configured
+   * authentication and scope policies.
+   */
+  advertiseAppOnlyTools?: boolean;
+
+  /**
    * HTTP transport mode. Only `"stateless"` is supported as of spec 2026-07-28.
    *
    * Per-request transport: no handshake, no `Mcp-Session-Id`.
