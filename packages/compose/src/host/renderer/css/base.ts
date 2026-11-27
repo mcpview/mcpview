@@ -27,6 +27,7 @@ export function getBaseCss(): string {
       --mcc-bg-secondary: #f5f5f5;
       --mcc-bg-primary: #ffffff;
       --mcc-bg-hover: #e8e8e8;
+      --mcc-text-secondary: #51565a;
       --mcc-accent-color: #1a73e8;
     }
     body.dark {
@@ -34,6 +35,7 @@ export function getBaseCss(): string {
       --mcc-bg-secondary: #2a2a2a;
       --mcc-bg-primary: #1a1a1a;
       --mcc-bg-hover: #3a3a3a;
+      --mcc-text-secondary: #c2c5c8;
       --mcc-accent-color: #8ab4f8;
     }
     @media (prefers-color-scheme: dark) {
@@ -42,6 +44,7 @@ export function getBaseCss(): string {
         --mcc-bg-secondary: #2a2a2a;
         --mcc-bg-primary: #1a1a1a;
         --mcc-bg-hover: #3a3a3a;
+        --mcc-text-secondary: #c2c5c8;
         --mcc-accent-color: #8ab4f8;
       }
     }

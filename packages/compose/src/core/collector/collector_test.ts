@@ -4,7 +4,7 @@
  * @module collector/collector_test
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { extractUiMeta } from "./extractor.ts";
 import { createCollector } from "./collector.ts";
 
@@ -102,6 +102,25 @@ Deno.test("createCollector - assigns incrementing slot indices", () => {
 
   assertEquals(r3?.slot, 2);
   assertEquals(collector.getResources().length, 3);
+});
+
+Deno.test("createCollector - keeps the viewer's width choices local to its resource", () => {
+  const collector = createCollector();
+  const result = { _meta: { ui: { resourceUri: "ui://stock", supportedWidths: [100] } } };
+  const widths = [380, 680];
+  const panel = collector.collect("stock", result, undefined, { supportedWidths: widths });
+  widths.push(900);
+  assertEquals(panel?.supportedWidths, [380, 680]);
+  assertEquals(
+    collector.collect("fixed", result, undefined, { supportedWidths: [] })?.supportedWidths,
+    [],
+  );
+  assertEquals(collector.collect("default", result)?.supportedWidths, undefined);
+  assertThrows(
+    () => collector.collect("invalid", result, undefined, { supportedWidths: [NaN] }),
+    TypeError,
+    "supportedWidths",
+  );
 });
 
 Deno.test("createCollector - returns null for result without UI metadata", () => {

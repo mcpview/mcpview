@@ -62,6 +62,25 @@ Deno.test("validateManifest - valid http manifest passes", () => {
   assertEquals(result.valid, true);
 });
 
+Deno.test("validateManifest - tool viewer widths must be positive whole CSS pixels", () => {
+  const manifest = {
+    name: "dashboard",
+    transport: { type: "http", url: "http://localhost:3001" },
+  };
+  for (const supportedWidths of [[], [380], [380, 680]]) {
+    const parsed = parseManifest(JSON.stringify({
+      ...manifest,
+      tools: [{ name: "stock", supportedWidths }],
+    }));
+    assertEquals(parsed.tools[0].supportedWidths, supportedWidths);
+  }
+  for (const supportedWidths of [null, "380,680", 380, [0], [-1], [1.5], ["680"], [2 ** 53]]) {
+    const result = validateManifest({ ...manifest, tools: [{ name: "stock", supportedWidths }] });
+    assertEquals(result.valid, false);
+    assertEquals(result.errors.some((error) => error.includes("tools[0].supportedWidths")), true);
+  }
+});
+
 Deno.test("validateManifest - accepts explicit stateless protocol and app-only tool", () => {
   const result = validateManifest({
     name: "dashboard",

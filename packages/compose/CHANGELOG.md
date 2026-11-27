@@ -5,6 +5,17 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-27
+
+### Added
+
+- Drag a viewer by its top-left grip to swap or position it beside or below another viewer. Embedded
+  dashboards report their height to the host as rows appear or disappear. The bottom-right corner
+  snaps to widths declared by the viewer's Compose manifest or local adapter. A skeleton reserves
+  the destination during the drag so neighbors can move before release. Each App keeps its content
+  height, mounted state and event routes. Code Mode boards can use the same controls for locally
+  rendered panels.
+
 ## [0.12.0] - 2026-11-26
 
 ### Added

@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-27
+
+### Changed
+
+- Follow `@mcpview/compose@^0.13.0` on npm and JSR so existing imports can use viewer movement,
+  preset widths and intrinsic dashboard height.
+
 ## [0.12.0] - 2026-11-26
 
 ### Added

@@ -54,12 +54,14 @@ export interface McpSdkCollector {
    * @param toolName - Name of the tool that produced this result
    * @param result - MCP SDK CallToolResult (or any structurally compatible object)
    * @param context - Optional context data for the UI
+   * @param options - Compose layout options for the resulting viewer
    * @returns Collected resource, or `null` if no UI metadata or if result is an error
    */
   collectFromSdk(
     toolName: string,
     result: McpSdkCallToolResult,
     context?: Record<string, unknown>,
+    options?: Pick<CollectedUiResource, "supportedWidths">,
   ): CollectedUiResource | null;
 
   /** Get all collected resources in slot order. */
@@ -100,15 +102,11 @@ export function createMcpSdkCollector(): McpSdkCollector {
   const inner = createCollector();
 
   return {
-    collectFromSdk(
-      toolName: string,
-      result: McpSdkCallToolResult,
-      context?: Record<string, unknown>,
-    ): CollectedUiResource | null {
+    collectFromSdk(toolName, result, context, options) {
       if (result.isError) {
         return null;
       }
-      return inner.collect(toolName, result, context);
+      return inner.collect(toolName, result, context, options);
     },
 
     getResources(): CollectedUiResource[] {

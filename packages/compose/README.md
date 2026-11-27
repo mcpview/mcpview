@@ -220,10 +220,36 @@ Each step is a pure function. Use them independently or together.
 
 | Layout  | Description                   |
 | ------- | ----------------------------- |
-| `split` | Side-by-side panels (flexbox) |
+| `split` | Side-by-side panels           |
 | `tabs`  | Tabbed interface with tab bar |
 | `grid`  | Auto-fit grid for dashboards  |
 | `stack` | Vertical stack (default)      |
+
+Drag the grip in the top-left corner to move a viewer. Aim at the bottom edge of another viewer to
+place it on the row below. Drop beside it to return to one row when both widths fit, or drop in its
+center to swap. The skeleton shows where the viewer will land. An embedded Compose board reports its
+content height to the host as the rows change, including during the preview and on cancellation. You
+can also swap by clicking or tapping two handles in sequence. In a tabbed dashboard the handles
+reorder the tabs.
+
+Declare a viewer's supported widths in CSS pixels on its Compose manifest tool, for example
+`"supportedWidths": [380, 640]`. Programmatic descriptors and local Code Mode view adapters accept
+the same field. Omit it for a viewer that should keep its template size.
+
+Drag the bottom-right corner to preview an allowed width. At the right edge of the screen, pull down
+to reach a wider format. The skeleton reserves the space and neighbors shift sideways or wrap to a
+new row. When the viewer shrinks, its neighbor returns beside it with the template's original gap as
+soon as both fit. Release to apply the width or press Escape to cancel. The left and right arrow
+keys step between available widths when the corner has focus. Reopening the dashboard restores the
+template layout. Each iframe stays mounted and reports its own content height as its width changes.
+
+For a Code Mode board with local renderers, `@mcpview/compose/code-mode/board` exports
+`getPanelControlsCss()`, `installPanelMovement(board, signal?)` and
+`installPanelResizing(board, signal?)`. Mark the grid with `data-compose-board` and its direct panel
+elements with `data-compose-panel` and `data-panel-label`. Set `data-compose-widths` to the
+space-separated widths of each resizable local viewer. Place a `button[data-compose-grip]` inside
+each panel. Named layouts identify each panel's grid area with `data-area`. The
+[CAD and print estimate board](./examples/multi-mcp-snippets/ui/main.ts) shows the full setup.
 
 ## Sync Rules
 

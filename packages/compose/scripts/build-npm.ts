@@ -92,6 +92,13 @@ await build({
   },
 }).finally(() => Deno.remove(npmImportMap));
 
+// dnt infers declarations from the JS re-exports and loses the DOM-independent
+// signature supplied to Deno by @ts-self-types. Keep both npm module formats in sync.
+const controlsTypes = "src/host/renderer/panel-controls.d.ts";
+for (const format of ["esm", "script"]) {
+  await Deno.copyFile(controlsTypes, `dist-node/${format}/${controlsTypes}`);
+}
+
 // Patch package.json: add "types" field for broader TS compatibility
 const pkgPath = "dist-node/package.json";
 const pkg = JSON.parse(await Deno.readTextFile(pkgPath));

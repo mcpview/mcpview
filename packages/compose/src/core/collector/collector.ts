@@ -4,7 +4,7 @@
  * @module collector/collector
  */
 
-import type { CollectedUiResource } from "../types/resources.ts";
+import { type CollectedUiResource, isSupportedWidths } from "../types/resources.ts";
 import type { ComponentSurface } from "../types/components.ts";
 import { extractUiMeta } from "./extractor.ts";
 
@@ -28,6 +28,7 @@ export interface UiCollector {
     options?: {
       readonly componentId?: string;
       readonly surface?: ComponentSurface;
+      readonly supportedWidths?: readonly number[];
     },
   ): CollectedUiResource | null;
 
@@ -69,26 +70,23 @@ export function createCollector(): UiCollector {
   let resources: CollectedUiResource[] = [];
 
   return {
-    collect(
-      toolName: string,
-      result: unknown,
-      context?: Record<string, unknown>,
-      options?: {
-        readonly componentId?: string;
-        readonly surface?: ComponentSurface;
-      },
-    ): CollectedUiResource | null {
+    collect(toolName, result, context, options) {
       const meta = extractUiMeta(result);
       if (!meta?.resourceUri) {
         return null;
       }
 
+      const widths = options?.supportedWidths;
+      if (widths !== undefined && !isSupportedWidths(widths)) {
+        throw new TypeError("supportedWidths must be an array of positive safe integers");
+      }
       const resource: CollectedUiResource = {
         ...(options?.componentId === undefined ? {} : { componentId: options.componentId }),
         source: toolName,
         resourceUri: meta.resourceUri,
         context,
         ...(options?.surface === undefined ? {} : { surface: options.surface }),
+        ...(widths === undefined ? {} : { supportedWidths: [...widths] }),
         slot: resources.length,
       };
 

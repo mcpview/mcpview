@@ -53,9 +53,12 @@ Deno.test("createMcpSdkCollector - preserves context", () => {
     _meta: { ui: { resourceUri: "ui://test/1" } },
   };
 
-  const resource = collector.collectFromSdk("tool", result, { key: "value" });
+  const resource = collector.collectFromSdk("tool", result, { key: "value" }, {
+    supportedWidths: [400, 600],
+  });
 
   assertEquals(resource?.context, { key: "value" });
+  assertEquals(resource?.supportedWidths, [400, 600]);
 });
 
 Deno.test("createMcpSdkCollector - clear resets state", () => {

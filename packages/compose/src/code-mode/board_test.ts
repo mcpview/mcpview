@@ -66,7 +66,12 @@ Deno.test("a board can mount a local adapter for a data-only provider alongside 
   const board = composeSnippetBoard(envelope([stats, original]), {
     resolveView: (panel) =>
       panel.provider === "metrics"
-        ? { resourceUri: "ui://board/stats", context: { units: "s" }, surface }
+        ? {
+          resourceUri: "ui://board/stats",
+          context: { units: "s" },
+          supportedWidths: [320, 520],
+          surface,
+        }
         : undefined,
   });
   assertEquals(board.layout, "stack");
@@ -75,4 +80,5 @@ Deno.test("a board can mount a local adapter for a data-only provider alongside 
   assertStrictEquals(first.context?.panel, stats);
   assertEquals(first.context?.view, { units: "s" });
   assertEquals(first.surface, surface);
+  assertEquals(board.children.map((child) => child.supportedWidths), [[320, 520], undefined]);
 });
