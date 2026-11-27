@@ -7,6 +7,8 @@ documented in this file.
 
 - Capture and restore a dashboard's committed positions and supported widths using stable panel IDs.
   Hosts can associate an acknowledged layout revision with an authenticated Code Mode execution.
+- The Code Mode board can publish layout acknowledgements and merge selections from mounted panels
+  into the host's conversation context.
 
 ## [0.13.0] - 2026-11-27
 

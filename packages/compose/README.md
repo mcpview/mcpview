@@ -266,12 +266,37 @@ keys step between available widths when the corner has focus. The template suppl
 layout unless the host restores a saved layout. Each iframe stays mounted and reports its own
 content height as its width changes.
 
-A Code Mode host can store the panel order, requested widths and relative placements with a snippet.
-Give each panel a stable `data-compose-panel-id` shared by later runs. Two instances of the same
-business view need distinct IDs. After installing movement and resizing, listen to
-`compose-panel-layout-committed` on the board and read the preference with
-`capturePanelLayout(board)`. Save this geometry with the snippet when requested. The host continues
-to manage the conversation context.
+A Code Mode host can store panel order, requested widths and relative placements with a snippet.
+Give each panel a stable `data-compose-panel-id` across runs, including when two panels use the same
+viewer.
+
+Use one context writer per mounted App. Give each panel its own writer with
+`contexts.forPanel(id, title, basketSignal)`. The board uses the same queue to publish the execution
+reference and revision that the model can use to save a layout. A month or record selected in a
+panel stays in the conversation when the user moves the panel.
+
+```ts
+import { connectSnippetBoardLayout, createPanelContexts } from "@mcpview/compose/code-mode/board";
+
+const contexts = createPanelContexts(app.updateModelContext.bind(app));
+const retry = connectSnippetBoardLayout(board, {
+  host: app,
+  stageTool: "stage_dashboard_layout", // App-only callback registered by your server
+  runId,
+  savedLayout,
+  updateContext: contexts.forBoard(displaySignal),
+  signal: displaySignal,
+  onStatus: showLayoutStatus,
+});
+```
+
+`connectSnippetBoardLayout` installs the move and resize controls, restores a saved layout and
+stages each committed gesture. The server acknowledges the revision before the writer publishes its
+`ready` receipt using the host's supported context format. The App supplies its own status display
+and can call `retry()` after an error. Give the layout receipt the lifetime of the displayed board.
+If a save confirmation replaces the board while the basket still belongs to the conversation, end
+the display lifetime and call `contexts.clear()` to remove expired contributions. End the basket
+lifetime and clear again when the selection is discarded.
 
 To associate edits with the correct execution, the server can use `BoardLayoutRuns` from
 `@mcpview/compose/code-mode/layout-runs`. Register the scoped execution with `open`, passing a map

@@ -20,6 +20,18 @@ import {
 
 export { SNIPPET_SYNC_META_KEY };
 
+export {
+  createPanelContexts,
+  type PanelContexts,
+  type PanelContextUpdate,
+  type SendPanelContext,
+} from "./panel-contexts.ts";
+export {
+  connectSnippetBoardLayout,
+  type SnippetBoardLayoutOptions,
+  type SnippetLayoutReceipt,
+  type SnippetLayoutStatus,
+} from "./layout-publisher.ts";
 export { getPanelControlsCss } from "../host/renderer/css/panel-controls.ts";
 export { isPanelLayoutSnapshot, type PanelLayoutSnapshot } from "./layout.ts";
 export {
