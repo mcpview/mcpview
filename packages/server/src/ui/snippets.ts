@@ -1,5 +1,7 @@
 /** Host-side catalog for explicitly saved, successful code-mode executions. */
 
+import { isDeepStrictEqual } from "node:util";
+
 const parameterTypes = [
   "string",
   "number",
@@ -22,14 +24,24 @@ export interface SnippetSummary {
   readonly parameters?: SnippetParameters;
 }
 
+/** Host-validated dashboard geometry, serialized as a JSON object. */
+export type SnippetLayout = Readonly<Record<string, unknown>>;
+
 export interface StoredSnippet extends Omit<SnippetSummary, "id"> {
   readonly code: string;
+  readonly layout?: SnippetLayout;
 }
 
 /** Backing storage is private to the host. Implementations must isolate scopes. */
 export interface SnippetStore {
   /** Atomically insert by (scope, name), or return the existing record. */
   putIfAbsent(scope: string, snippet: StoredSnippet): Promise<StoredSnippet>;
+  /** Atomically replace only the layout of an existing record. Concurrent updates are last-write-wins. */
+  replaceLayout?(
+    scope: string,
+    name: string,
+    layout: SnippetLayout,
+  ): Promise<StoredSnippet | undefined>;
   get(scope: string, name: string): Promise<StoredSnippet | undefined>;
   list(scope: string): Promise<readonly SnippetSummary[]>;
 }
@@ -49,7 +61,11 @@ export interface SnippetRunner<Params, Result> {
     parameters?: SnippetParameters,
   ): Params | Promise<Params>;
   /** Use the current authorized sandbox, tool bindings, and result handling. */
-  execute(code: string, params: Params): Result | Promise<Result>;
+  execute(
+    code: string,
+    params: Params,
+    layout?: SnippetLayout,
+  ): Result | Promise<Result>;
 }
 
 export interface SnippetCatalog {
@@ -70,6 +86,14 @@ export interface SnippetCatalog {
     executionRef: string,
     name: string,
     description?: string,
+    layout?: SnippetLayout,
+  ): Promise<SnippetSummary>;
+  /** Explicitly apply a dashboard layout to the same successfully run program. */
+  updateLayout?(
+    scope: string,
+    executionRef: string,
+    name: string,
+    layout: SnippetLayout,
   ): Promise<SnippetSummary>;
   list(scope: string): Promise<SnippetSummary[]>;
   inspect(scope: string, name: string): Promise<StoredSnippet>;
@@ -85,7 +109,8 @@ export type SnippetCatalogErrorCode =
   | "EXECUTION_NOT_ELIGIBLE"
   | "EXECUTION_NOT_FOUND"
   | "SNIPPET_NOT_FOUND"
-  | "SNIPPET_NAME_CONFLICT";
+  | "SNIPPET_NAME_CONFLICT"
+  | "SNIPPET_UPDATE_UNSUPPORTED";
 
 export class SnippetCatalogError extends Error {
   constructor(readonly code: SnippetCatalogErrorCode, message: string) {
@@ -115,6 +140,14 @@ function createMemorySnippetStore(): SnippetStore {
       const stored = { ...snippet };
       entries.set(stored.name, stored);
       return Promise.resolve(stored);
+    },
+    replaceLayout(scope, name, layout) {
+      const entries = scopes.get(scope);
+      const previous = entries?.get(name);
+      if (!entries || !previous) return Promise.resolve(undefined);
+      const updated = { ...previous, layout };
+      entries.set(name, updated);
+      return Promise.resolve(updated);
     },
     get: (scope, name) => Promise.resolve(scopes.get(scope)?.get(name)),
     list: (scope) =>
@@ -162,6 +195,32 @@ const maxDescriptionBytes = 512;
 function fitsUtf8Limit(value: string, maxBytes: number): boolean {
   return value.length <= maxBytes &&
     encoder.encode(value).byteLength <= maxBytes;
+}
+
+/** Copy only a bounded JSON object so mutable renderer state never aliases a saved layout. */
+export function copySnippetLayout(value: unknown): SnippetLayout {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("Snippet layout must be a JSON object");
+  }
+  const json = JSON.stringify(value, (_key, item: unknown) => {
+    if (
+      item === null || typeof item === "string" || typeof item === "boolean" ||
+      (typeof item === "number" && Number.isFinite(item)) ||
+      Array.isArray(item) ||
+      (typeof item === "object" &&
+        (Object.getPrototypeOf(item) === Object.prototype ||
+          Object.getPrototypeOf(item) === null))
+    ) return item;
+    throw new TypeError("Snippet layout must contain only JSON values");
+  });
+  if (!fitsUtf8Limit(json, 64 * 1024)) {
+    throw new TypeError("Snippet layout exceeds 64 KiB");
+  }
+  const copy = JSON.parse(json);
+  if (!copy || typeof copy !== "object" || Array.isArray(copy)) {
+    throw new TypeError("Snippet layout must be a JSON object");
+  }
+  return copy;
 }
 
 function ineligible(message: string): SnippetCatalogError {
@@ -225,7 +284,7 @@ export function snippetSummary(
  */
 export function createSnippetCatalog(
   options: SnippetCatalogOptions = {},
-): SnippetCatalog {
+): Required<SnippetCatalog> {
   const store = options.store ?? createMemorySnippetStore();
   const referenceTtlMs = options.referenceTtlMs ?? 10 * 60_000;
   const maxPendingReferences = options.maxPendingReferences ?? 1024;
@@ -249,6 +308,32 @@ export function createSnippetCatalog(
       throw new SnippetCatalogError("SNIPPET_NOT_FOUND", "Snippet not found");
     }
     return snippet;
+  }
+
+  function getExecution(scope: string, ref: string): RecordedExecution {
+    const record = executions.get(ref);
+    if (!record || record.scope !== scope || record.expiresAt <= Date.now()) {
+      throw new SnippetCatalogError(
+        "EXECUTION_NOT_FOUND",
+        "Successful execution not found",
+      );
+    }
+    return record;
+  }
+
+  function requireSameProgram(
+    stored: StoredSnippet,
+    record: RecordedExecution,
+  ): void {
+    if (
+      stored.code !== record.code ||
+      !sameParameters(stored.parameters, record.parameters)
+    ) {
+      throw new SnippetCatalogError(
+        "SNIPPET_NAME_CONFLICT",
+        "Snippet name already in use by a different program",
+      );
+    }
   }
 
   return {
@@ -276,7 +361,7 @@ export function createSnippetCatalog(
       });
       return ref;
     },
-    async save(scope, executionRef, name, description) {
+    async save(scope, executionRef, name, description, layout) {
       requireScope(scope);
       requireName(name);
       if (
@@ -288,32 +373,46 @@ export function createSnippetCatalog(
           "Snippet descriptions must be at most 512 UTF-8 bytes",
         );
       }
-      const record = executions.get(executionRef);
-      if (record && record.expiresAt <= Date.now()) {
-        executions.delete(executionRef);
-      }
-      if (!record || record.scope !== scope || !executions.has(executionRef)) {
-        throw new SnippetCatalogError(
-          "EXECUTION_NOT_FOUND",
-          "Successful execution not found",
-        );
-      }
+      const record = getExecution(scope, executionRef);
+      const initialLayout = layout === undefined
+        ? undefined
+        : copySnippetLayout(layout);
       const stored = await store.putIfAbsent(scope, {
         name,
         code: record.code,
         description,
         parameters: record.parameters,
+        ...(initialLayout === undefined ? {} : { layout: initialLayout }),
       });
-      if (
-        stored.code !== record.code ||
-        !sameParameters(stored.parameters, record.parameters)
-      ) {
+      requireSameProgram(stored, record);
+      if (initialLayout && !isDeepStrictEqual(initialLayout, stored.layout)) {
         throw new SnippetCatalogError(
           "SNIPPET_NAME_CONFLICT",
-          "Snippet name already in use",
+          "Snippet already exists with a different layout. Request a layout update.",
         );
       }
       return snippetSummary(stored);
+    },
+    async updateLayout(scope, executionRef, name, layout) {
+      requireScope(scope);
+      const record = getExecution(scope, executionRef);
+      const previous = await getSnippet(scope, name);
+      requireSameProgram(previous, record);
+      if (!store.replaceLayout) {
+        throw new SnippetCatalogError(
+          "SNIPPET_UPDATE_UNSUPPORTED",
+          "This snippet store does not support layout updates",
+        );
+      }
+      const updated = await store.replaceLayout(
+        scope,
+        name,
+        copySnippetLayout(layout),
+      );
+      if (!updated) {
+        throw new SnippetCatalogError("SNIPPET_NOT_FOUND", "Snippet not found");
+      }
+      return snippetSummary(updated);
     },
     async list(scope) {
       requireScope(scope);
@@ -330,6 +429,9 @@ export function createSnippetCatalog(
       return {
         name: storedName,
         code: snippet.code,
+        ...(snippet.layout === undefined
+          ? {}
+          : { layout: copySnippetLayout(snippet.layout) }),
         ...(description === undefined ? {} : { description }),
         ...(parameters === undefined ? {} : { parameters }),
       };
@@ -340,7 +442,13 @@ export function createSnippetCatalog(
         input,
         snippetSummary(snippet).parameters,
       );
-      return await runner.execute(snippet.code, params);
+      return snippet.layout === undefined
+        ? await runner.execute(snippet.code, params)
+        : await runner.execute(
+          snippet.code,
+          params,
+          copySnippetLayout(snippet.layout),
+        );
     },
   };
 }
