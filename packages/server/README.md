@@ -619,6 +619,18 @@ and the parameter keys and JSON types. Parameter values from the original run
 are discarded. Names can contain up to 256 UTF-8 bytes. A reference defaults to
 ten minutes.
 
+For a dashboard, pass the validated layout as the optional fifth argument of
+`save`. On an explicit update, call
+`updateLayout(scope, executionRef, name, layout)` with a successful run of the
+same program and parameter contract. This replaces only the saved geometry. A
+layout must fit within 64 KiB of JSON. Regular saves keep the first version. On
+replay, the runner receives the saved layout as the third argument of `execute`.
+Programs saved without a layout continue to use the viewer's default
+arrangement. Hosts should pass only layout information to the catalog. Keep
+selections, viewer results and active conversation context in their original
+session. Implement `SnippetStore.replaceLayout` to support updates in a custom
+store.
+
 Use `list(scope)` for summaries and `inspect(scope, name)` to retrieve stored
 source. The local file store reads each entry when listing a personal catalog.
 On `run(scope, name, input, runner)`, the App's runner validates fresh input and

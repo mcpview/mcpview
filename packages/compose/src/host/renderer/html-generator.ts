@@ -111,9 +111,9 @@ function generateBodyContent(
     const widths = isSupportedWidths(child.supportedWidths) && child.supportedWidths.length
       ? ` data-compose-widths="${child.supportedWidths.join(" ")}"`
       : "";
-    return `<section class="compose-viewer" data-compose-panel data-panel-label="${
+    return `<section class="compose-viewer" data-compose-panel data-compose-panel-id="${
       escapeAttr(id)
-    }"${area}${widths}>
+    }" data-panel-label="${escapeAttr(id)}"${area}${widths}>
       ${descriptor.children.length > 1 ? grip(child) : ""}
       ${generateIframe(child, slots.get(child.slot))}
     </section>`;
@@ -144,9 +144,9 @@ function generateTabsLayout(
   const tabButtons = descriptor.children
     .map(
       (child, i) =>
-        `<div data-compose-panel data-panel-label="${
+        `<div data-compose-panel data-compose-panel-id="${
           escapeAttr(child.componentId ?? child.source)
-        }">
+        }" data-panel-label="${escapeAttr(child.componentId ?? child.source)}">
         ${descriptor.children.length > 1 ? grip(child) : ""}
         <button type="button" class="tab${i === 0 ? " active" : ""}" data-slot="${child.slot}">${
           escapeHtml(child.source)

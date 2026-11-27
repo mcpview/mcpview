@@ -14,6 +14,7 @@ export type SnippetProviderBinding =
   & {
     readonly alias: string;
     readonly snippets: readonly string[];
+    readonly events?: SnippetProvider["events"];
   }
   & ({
     readonly url: URL | string;
@@ -119,6 +120,7 @@ export async function connectSnippetProviders(
     const clientSource = source;
     const provider: SnippetProvider = {
       names,
+      events: binding.events,
       async call(tool, args, signal, context) {
         signal.throwIfAborted();
         if (closing) throw new Error("Upstream MCP connections are closed.");

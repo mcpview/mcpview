@@ -5,7 +5,13 @@ import {
   type SnippetStore,
 } from "@mcpview/server/snippets";
 import { createSnippetChain } from "./chain.ts";
-import { SNIPPET_PANELS_META_KEY as panelMetaKey } from "./board.ts";
+import {
+  readSnippetPanels,
+  readSnippetSyncRules,
+  SNIPPET_PANELS_META_KEY as panelMetaKey,
+  SNIPPET_SYNC_META_KEY,
+} from "./board.ts";
+import { createSnippetExecuteTool } from "./tool.ts";
 import type { SnippetProvider } from "./providers.ts";
 
 function forTestAccount(providers: ReadonlyMap<string, SnippetProvider>, store?: SnippetStore) {
@@ -381,4 +387,54 @@ Deno.test("a late guest, provider or persistence failure reports possible upstre
     if (args.saveAs) assertEquals(error.message.includes("saved"), true);
   }
   assertEquals(calls, 4);
+});
+
+Deno.test("declares Compose sync only for selected receipts and rebinds on saved replay", async () => {
+  const ports = { emits: ["invoice.selected"], accepts: ["invoice.focus"] };
+  const provider: SnippetProvider = {
+    names: ["invoice"],
+    events: { invoice: ports },
+    call: () => Promise.resolve({ content: [], structuredContent: { value: null } }),
+  };
+  const execute = forTestAccount(new Map([["erp", provider]]));
+  const setup = `
+const a = await api.runSnippet("erp", "invoice", {});
+const b = await api.runSnippet("erp", "invoice", {});
+await api.panel(a.id);
+await api.panel(b.id);
+const rule = {from: a.id, event: "invoice.selected", to: b.id, action: "invoice.focus"};
+`;
+  const code = setup + "await api.sync(rule); await api.sync(rule); return 2;";
+  const first = await execute({ code, saveAs: "sync" });
+  const replay = await execute({ replay: "sync" });
+  const firstRules = readSnippetSyncRules(first);
+  const replayRules = readSnippetSyncRules(replay);
+  assertEquals(firstRules.length, 1);
+  assertEquals(replayRules.length, 1);
+  assertEquals(firstRules[0].from, readSnippetPanels(first)[0].id);
+  assertEquals(replayRules[0].from, readSnippetPanels(replay)[0].id);
+  assertEquals(firstRules[0].from === replayRules[0].from, false);
+  assertEquals(Object.hasOwn(first.structuredContent ?? {}, SNIPPET_SYNC_META_KEY), false);
+  const description = createSnippetExecuteTool({
+    resourceUri: "ui://erp/board",
+    providers: new Map([["erp", provider]]),
+  }).description ?? "";
+  assertEquals(
+    description.includes("await api.sync") && description.includes("invoice.focus"),
+    true,
+  );
+
+  for (
+    const invalid of [
+      "await api.sync({...rule, to: a.id});",
+      'await api.sync({...rule, to: "*"});',
+      'await api.sync({...rule, from: "previous-execution"});',
+      'await api.sync({...rule, event: "*"});',
+      'await api.sync({...rule, action: "unadvertised"});',
+      'await api.sync({...rule, payload: { id: "INV-1" }});',
+      'const c = await api.runSnippet("erp", "invoice", {}); await api.sync({...rule, to: c.id});',
+    ]
+  ) {
+    await assertRejects(() => execute({ code: setup + invalid }), Error, "selected panel receipts");
+  }
 });

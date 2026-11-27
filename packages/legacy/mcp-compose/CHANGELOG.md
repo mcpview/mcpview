@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-27
+
+### Added
+
+- Re-export `./code-mode/layout` and `./code-mode/layout-runs` from `@mcpview/compose@^0.13.1` for
+  applications that store dashboard layout preferences with a snippet.
+
 ## [0.13.0] - 2026-11-27
 
 ### Changed

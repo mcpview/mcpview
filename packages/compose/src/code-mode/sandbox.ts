@@ -123,6 +123,7 @@ export async function runProgram(
           listSnippets: (...args) => call("listSnippets", args),
           runSnippet: (...args) => call("runSnippet", args),
           panel: (...args) => call("panel", args),
+          sync: (...args) => call("sync", args),
         });
         return (async function(api) { "use strict";\n${code}\n})(api);
       })()`,
@@ -138,7 +139,7 @@ export async function runProgram(
         if (state.type === "fulfilled") {
           const value = scope.manage(state.value);
           if (pending.length) {
-            throw new Error("Await every snippet operation, including api.panel().");
+            throw new Error("Await every snippet operation, including api.panel() and api.sync().");
           }
           return vm.typeof(value) === "undefined" ? null : read(value);
         }

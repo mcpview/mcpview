@@ -89,6 +89,7 @@ export function installPanelResizing(container, signal, createReflow = createPan
   function commitWidth(panel, width) {
     choices.set(panel, width);
     place();
+    container.dispatchEvent(new browser.Event("compose-panel-layout-committed"));
     status.textContent = (panel.dataset.panelLabel || "Viewer") + " width " + width + " pixels.";
   }
 
@@ -337,7 +338,35 @@ export function installPanelResizing(container, signal, createReflow = createPan
     schedule();
   }, { signal });
 
+  // Expose committed preferences to the owning board without touching viewer results or iframes.
+  // Symbol.for also connects hosts that embed these controls as standalone JavaScript.
+  const slotState = Symbol.for("@mcpview/compose/panel-layout-controls/v1");
+  Reflect.set(container, slotState, {
+    read: () => ({
+      widths: Array.from(choices, ([p, width]) => ({ panel: p.dataset.composePanelId, width })),
+      placements: Array.from(placements, ([p, { beside, side }]) => ({
+        panel: p.dataset.composePanelId,
+        beside: beside.dataset.composePanelId,
+        side,
+      })),
+    }),
+    supports: (/** @type {HTMLElement} */ panel, /** @type {number} */ width) =>
+      declared.get(panel)?.includes(width) === true,
+    restore: (
+      /** @type {Array<[HTMLElement, number]>} */ widths,
+      /** @type {Array<[HTMLElement, Placement]>} */ positions,
+    ) => {
+      choices.clear();
+      for (const [panel, width] of widths) choices.set(panel, width);
+      placements = new Map(positions);
+      lastSlots = panels.map(slot);
+      manualPreview = undefined;
+      place();
+      schedule();
+    },
+  });
   signal?.addEventListener("abort", () => {
+    Reflect.deleteProperty(container, slotState);
     cancelDrag?.();
     observer.disconnect();
     browser.cancelAnimationFrame(pending);

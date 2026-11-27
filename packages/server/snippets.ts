@@ -7,6 +7,7 @@ export type {
   SnippetCatalog,
   SnippetCatalogErrorCode,
   SnippetCatalogOptions,
+  SnippetLayout,
   SnippetParameters,
   SnippetParameterType,
   SnippetRunner,

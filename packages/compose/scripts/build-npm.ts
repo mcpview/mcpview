@@ -47,6 +47,8 @@ await build({
     "./mod.ts",
     { name: "./core", path: "./src/core/mod.ts" },
     { name: "./code-mode", path: "./src/code-mode/mod.ts" },
+    { name: "./code-mode/layout", path: "./src/code-mode/layout.ts" },
+    { name: "./code-mode/layout-runs", path: "./src/code-mode/layout-runs.ts" },
     { name: "./code-mode/board", path: "./src/code-mode/board.ts" },
     { name: "./sdk", path: "./src/sdk/mod.ts" },
     { name: "./host", path: "./src/host/mod.ts" },
@@ -95,8 +97,12 @@ await build({
 // dnt infers declarations from the JS re-exports and loses the DOM-independent
 // signature supplied to Deno by @ts-self-types. Keep both npm module formats in sync.
 const controlsTypes = "src/host/renderer/panel-controls.d.ts";
+const declarations = (await Deno.readTextFile(controlsTypes)).replace(
+  "../../code-mode/layout.ts",
+  "../../code-mode/layout.js",
+);
 for (const format of ["esm", "script"]) {
-  await Deno.copyFile(controlsTypes, `dist-node/${format}/${controlsTypes}`);
+  await Deno.writeTextFile(`dist-node/${format}/${controlsTypes}`, declarations);
 }
 
 // Patch package.json: add "types" field for broader TS compatibility

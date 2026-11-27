@@ -127,6 +127,28 @@ path uses results already returned by the script. The runnable engineering examp
 server, both providers, and a single-frame board with a 3D viewer and interactive print report.
 [Engineering example and setup](https://github.com/mcpview/mcpview/tree/main/packages/compose/examples/multi-mcp-snippets)
 
+The server can declare event ports for each snippet under the provider binding's `events` field. For
+example, use
+`{ "invoice-list": { emits: ["invoice.selected"] }, "invoice-detail": {
+accepts: ["invoice.focus"] } }`.
+The `execute` description advertises the configured ports. Once the program has selected both
+receipts with `api.panel`, it can add a route:
+
+```js
+await api.sync({
+  from: list.id,
+  event: "invoice.selected",
+  to: detail.id,
+  action: "invoice.focus",
+});
+```
+
+The route is scoped to those two receipts in the current result. For local renderers, declare the
+implemented ports in each `resolveView` result and call
+`emitSnippetBoardEvent(descriptor, sourceReceiptId, event, data, deliver)` with the active board
+descriptor. The board's `deliver(targetReceiptId, action, data)` callback handles the action
+locally. The target view owns validation of its action data.
+
 ## MCP SDK compatibility
 
 Compose uses MCP Apps 2.x and the split MCP SDK 2.x packages. Integrations importing SDK types or
@@ -240,8 +262,63 @@ Drag the bottom-right corner to preview an allowed width. At the right edge of t
 to reach a wider format. The skeleton reserves the space and neighbors shift sideways or wrap to a
 new row. When the viewer shrinks, its neighbor returns beside it with the template's original gap as
 soon as both fit. Release to apply the width or press Escape to cancel. The left and right arrow
-keys step between available widths when the corner has focus. Reopening the dashboard restores the
-template layout. Each iframe stays mounted and reports its own content height as its width changes.
+keys step between available widths when the corner has focus. The template supplies the initial
+layout unless the host restores a saved layout. Each iframe stays mounted and reports its own
+content height as its width changes.
+
+A Code Mode host can store panel order, requested widths and relative placements with a snippet.
+Give each panel a stable `data-compose-panel-id` across runs, including when two panels use the same
+viewer.
+
+Use one context writer per mounted App. Give each panel its own writer with
+`contexts.forPanel(id, title, basketSignal)`. The board uses the same queue to publish the execution
+reference and revision that the model can use to save a layout. A month or record selected in a
+panel stays in the conversation when the user moves the panel.
+
+```ts
+import { connectSnippetBoardLayout, createPanelContexts } from "@mcpview/compose/code-mode/board";
+
+const contexts = createPanelContexts(app.updateModelContext.bind(app));
+const retry = connectSnippetBoardLayout(board, {
+  host: app,
+  stageTool: "stage_dashboard_layout", // App-only callback registered by your server
+  runId,
+  savedLayout,
+  updateContext: contexts.forBoard(displaySignal),
+  signal: displaySignal,
+  onStatus: showLayoutStatus,
+});
+```
+
+`connectSnippetBoardLayout` installs the move and resize controls, restores a saved layout and
+stages each committed gesture. The server acknowledges the revision before the writer publishes its
+`ready` receipt using the host's supported context format. The App supplies its own status display
+and can call `retry()` after an error. Give the layout receipt the lifetime of the displayed board.
+If a save confirmation replaces the board while the basket still belongs to the conversation, end
+the display lifetime and call `contexts.clear()` to remove expired contributions. End the basket
+lifetime and clear again when the selection is discarded.
+
+On a text-only host, Compose forwards the panels' content blocks in order. In structured context,
+multiple selections are grouped under `panels` with their titles. A single panel keeps its original
+shape unless a board metadata key overlaps, in which case its selection also appears under `panels`.
+
+To associate edits with the correct execution, the server can use `BoardLayoutRuns` from
+`@mcpview/compose/code-mode/layout-runs`. Register the scoped execution with `open`, passing a map
+from stable panel IDs to their declared widths. `stage` acknowledges a snapshot and revision from
+the app. On an explicit save or update, `selected` supplies the acknowledged geometry to the snippet
+catalog. Call `saved` only after a successful save. Updates accept names bound by saving or
+replaying this dashboard. Repeating a stage request with the same revision and geometry is safe if
+the response was lost. A user-initiated retry in the App stages the current layout with a new
+revision.
+
+On a fresh board, `restorePanelLayout(board, snapshot)` applies the saved preference once the
+controls are installed. It returns false if the panel IDs or supported widths have changed
+incompatibly. On narrow screens the controls apply a width that fits and retain the requested width
+for a larger screen.
+
+`@mcpview/compose/code-mode/layout` exports the `PanelLayoutSnapshot` type and the DOM-independent
+`isPanelLayoutSnapshot` validator. The board entry point (`@mcpview/compose/code-mode/board`) also
+exports these and the browser capture and restore functions.
 
 For a Code Mode board with local renderers, `@mcpview/compose/code-mode/board` exports
 `getPanelControlsCss()`, `installPanelMovement(board, signal?)` and

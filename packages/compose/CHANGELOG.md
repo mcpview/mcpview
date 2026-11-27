@@ -5,6 +5,17 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-27
+
+### Added
+
+- Route events between mounted Code Mode panels through their declared ports. A linked panel can
+  update its result while the user keeps a separate selection in the conversation.
+- Capture and restore a dashboard's committed positions and supported widths using stable panel IDs.
+  Hosts can associate an acknowledged layout revision with an authenticated Code Mode execution.
+- The Code Mode board can publish layout acknowledgements and merge selections from mounted panels
+  into the host's conversation context.
+
 ## [0.13.0] - 2026-11-27
 
 ### Added

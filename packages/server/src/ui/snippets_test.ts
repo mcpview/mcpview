@@ -344,3 +344,150 @@ Deno.test("the first bounded description survives a repeated save and restart", 
     await Deno.remove(directory, { recursive: true });
   }
 });
+
+Deno.test("saving a layout and explicitly updating it preserves the scoped program and isolates mutable callers", async () => {
+  const catalog = createSnippetCatalog();
+  const ref = catalog.recordSuccess(alice, source, { limit: 10 });
+  const layout = { version: 1, widths: [320, 640] };
+  const updated = { version: 1, widths: [640, 320] };
+  const name = "Monday";
+  const saved = await catalog.save(alice, ref, name, "KPI dashboard", layout);
+  layout.widths.pop();
+  assertEquals((await catalog.inspect(alice, name)).layout?.widths, [320, 640]);
+  assertEquals(saved, {
+    id: name,
+    name,
+    description: "KPI dashboard",
+    parameters: { limit: "number" },
+  });
+  assertEquals(
+    await catalog.save(alice, ref, name, undefined, {
+      widths: [320, 640],
+      version: 1,
+    }),
+    saved,
+  );
+  await assertRejects(
+    () => catalog.save(alice, ref, name, undefined, updated),
+    SnippetCatalogError,
+    "layout update",
+  );
+  await assertRejects(
+    () => catalog.updateLayout(bob, ref, name, updated),
+    SnippetCatalogError,
+    "execution not found",
+  );
+  await assertRejects(
+    () => catalog.updateLayout(alice, ref, "missing", updated),
+    SnippetCatalogError,
+    "Snippet not found",
+  );
+  for (
+    const otherRun of [
+      catalog.recordSuccess(alice, "return 4;", { limit: 10 }),
+      catalog.recordSuccess(alice, source, { limit: "10" }),
+    ]
+  ) {
+    await assertRejects(
+      () => catalog.updateLayout(alice, otherRun, name, updated),
+      SnippetCatalogError,
+      "different program",
+    );
+  }
+  await assertRejects(
+    () => catalog.updateLayout(alice, ref, name, { width: Infinity }),
+    TypeError,
+    "JSON values",
+  );
+  await assertRejects(
+    () => catalog.updateLayout(alice, ref, name, { id: "a".repeat(65536) }),
+    TypeError,
+    "64 KiB",
+  );
+  assertEquals(await catalog.updateLayout(alice, ref, name, updated), saved);
+  updated.widths.pop();
+  const replayed = await catalog.run(alice, name, 25, {
+    validate: (input) => input,
+    execute: (code, params, arrangement) => ({ code, params, arrangement }),
+  });
+  assertEquals(replayed, {
+    code: source,
+    params: 25,
+    arrangement: { version: 1, widths: [640, 320] },
+  });
+  (replayed.arrangement!.widths as number[]).pop();
+  assertEquals((await catalog.inspect(alice, name)).layout?.widths, [640, 320]);
+});
+
+Deno.test("a store without layout updates still saves and replays an unmodified program", async () => {
+  const existing = { name: "old", code: source };
+  const catalog = createSnippetCatalog({
+    store: {
+      putIfAbsent: () => Promise.resolve(existing),
+      get: () => Promise.resolve(existing),
+      list: () => Promise.resolve([]),
+    },
+  });
+  const ref = catalog.recordSuccess(alice, source);
+  await catalog.save(alice, ref, existing.name);
+  assertEquals(
+    await catalog.run(alice, existing.name, {}, {
+      validate: () => ({}),
+      execute: (_code, _params, layout) => layout,
+    }),
+    undefined,
+  );
+  await assertRejects(
+    () => catalog.updateLayout(alice, ref, existing.name, {}),
+    SnippetCatalogError,
+    "does not support",
+  );
+});
+
+Deno.test("independent file catalogs upgrade older records and commit whole layouts on competing writes", async () => {
+  const directory = await Deno.makeTempDir();
+  try {
+    const open = () =>
+      createSnippetCatalog({ store: createFileSnippetStore(directory) });
+    const left = open();
+    const right = open();
+    const first = left.recordSuccess(alice, source);
+    const second = right.recordSuccess(alice, source);
+    const name = "Monday";
+    await left.save(alice, first, name, "KPI");
+    await right.save(bob, right.recordSuccess(bob, source), name, "Other team");
+    const layouts = [{ widths: [300, 600], order: ["margin", "sales"] }, {
+      widths: [500, 320],
+      order: ["sales", "margin"],
+    }];
+    await Promise.all([
+      left.updateLayout(alice, first, name, layouts[0]),
+      right.updateLayout(alice, second, name, layouts[1]),
+    ]);
+    const reopened = open();
+    const result = await reopened.inspect(alice, name);
+    assertEquals(result.code, source);
+    assertEquals(result.description, "KPI");
+    assertEquals(
+      layouts.some((item) =>
+        JSON.stringify(item) === JSON.stringify(result.layout)
+      ),
+      true,
+    );
+    assertEquals(await reopened.inspect(bob, name), {
+      code: source,
+      name,
+      description: "Other team",
+    });
+    await right.updateLayout(alice, second, name, layouts[1]);
+    assertEquals((await open().inspect(alice, name)).layout, layouts[1]);
+    assertEquals(await left.save(alice, first, name), {
+      id: name,
+      name,
+      description: "KPI",
+    });
+    assertEquals((await open().inspect(alice, name)).layout, layouts[1]);
+  } finally {
+    await Deno.remove(directory, { recursive: true });
+  }
+});
