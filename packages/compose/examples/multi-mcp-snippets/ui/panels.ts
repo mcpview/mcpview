@@ -85,7 +85,12 @@ export function composeResult(result: unknown) {
     layout: desktopLayout,
     resolveView: (panel) => {
       const view = selectAdapter(panel.result);
-      return { resourceUri: view.resourceUri, context: view };
+      return {
+        resourceUri: view.resourceUri,
+        context: view,
+        // Compact metrics, regular metrics, and expanded details in these local adapters.
+        supportedWidths: view.adapter === "summary" ? undefined : [320, 380, 640],
+      };
     },
   });
 }

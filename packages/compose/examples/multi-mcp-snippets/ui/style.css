@@ -24,8 +24,13 @@ body {
   color: var(--board-ink);
 }
 .panel {
-  min-width: 0;
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
   align-self: start;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--board-border);
   border-radius: 14px;
@@ -39,6 +44,7 @@ header h1 {
   margin: 0;
   font-size: 16px;
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 header p {
   margin: 4px 0 0;
@@ -48,18 +54,29 @@ header p {
 }
 .panel-body {
   padding: 12px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
   gap: 10px;
 }
+.panel-body > :not(.viewport) {
+  flex: none;
+}
 .viewport {
+  position: relative;
   display: grid;
   place-items: center;
   border: 1px solid var(--board-border);
   border-radius: 9px;
-  height: clamp(175px, 27vw, 245px);
+  flex: 1 1 clamp(160px, 50cqi, 280px);
+  min-height: 135px;
   background: var(--board-panel);
 }
 canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -134,8 +151,8 @@ dd {
   flex-wrap: wrap;
 }
 .metrics > div {
-  flex: 1;
-  min-width: max-content;
+  flex: 1 1 120px;
+  min-width: 0;
   border: 1px solid var(--board-border);
   border-radius: 8px;
   padding: 7px 9px;
@@ -151,10 +168,31 @@ summary {
   cursor: pointer;
   padding: 4px 0;
 }
-details dl {
+details dl:not(.metrics) {
   display: grid;
   gap: 8px;
   padding: 7px 0 3px;
+}
+@container (min-width: 426px) {
+  .mesh-measurements[open] {
+    padding: 0;
+    border: 0;
+  }
+  .mesh-measurements[open]:not(:focus-within) > summary {
+    display: none;
+  }
+}
+@container (max-width: 320px) {
+  .panel-body {
+    padding: 9px;
+  }
+  .metrics {
+    gap: 4px;
+  }
+  .metrics > div {
+    flex-basis: 95px;
+    padding: 5px 7px;
+  }
 }
 .notice {
   margin: 0;

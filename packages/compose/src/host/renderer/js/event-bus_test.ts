@@ -39,15 +39,20 @@ function createHarness(
   prefersDark = false,
 ): {
   emit(source: FakeChildWindow, data: unknown, origin?: string): void;
-  resize(): void;
+  resizePanel(child: FakeChildWindow): void;
 } {
   const listeners: MessageListener[] = [];
-  const resizeListeners: Array<() => void> = [];
+  const observed = new Map<FakeIframe, () => void>();
   const fakeWindow = {
     matchMedia: () => ({ matches: prefersDark }),
-    addEventListener(type: string, listener: MessageListener | (() => void)) {
-      if (type === "message") listeners.push(listener as MessageListener);
-      if (type === "resize") resizeListeners.push(listener as () => void);
+    ResizeObserver: class {
+      constructor(private callback: (entries: { target: FakeIframe }[]) => void) {}
+      observe(iframe: FakeIframe) {
+        observed.set(iframe, () => this.callback([{ target: iframe }]));
+      }
+    },
+    addEventListener(type: string, listener: MessageListener) {
+      if (type === "message") listeners.push(listener);
     },
   };
   const fakeDocument = {
@@ -71,8 +76,10 @@ function createHarness(
     emit(source, data, origin = "http://legacy-slot.test") {
       for (const listener of listeners) listener({ source, data, origin });
     },
-    resize() {
-      for (const listener of resizeListeners) listener();
+    resizePanel(child: FakeChildWindow) {
+      const frame = iframes.find((iframe) => iframe.contentWindow === child);
+      assert(frame && observed.has(frame), "host must observe each mounted iframe");
+      observed.get(frame)!();
     },
   };
 }
@@ -93,6 +100,45 @@ function findPost(
 async function flushPromises(): Promise<void> {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 }
+
+Deno.test("a mounted viewer supplies its natural height at each width", () => {
+  const child = new FakeChildWindow();
+  const properties = new Map<string, string>();
+  const style = {
+    getPropertyValue: (name: string) => properties.get(name) ?? "",
+    setProperty: (name: string, value: string) => properties.set(name, value),
+  };
+  let width = 380;
+  const frame = {
+    dataset: { slot: "0" },
+    contentWindow: child,
+    getBoundingClientRect: () => ({ width, height: 275 }),
+    closest: () => ({ style }),
+  };
+  const descriptor = buildCompositeUi([{ source: "stock", resourceUri: "ui://stock", slot: 0 }]);
+  const harness = createHarness(
+    generateEventBusScript(descriptor),
+    [frame],
+    () => Promise.reject(new Error("not used")),
+  );
+  harness.emit(child, { jsonrpc: "2.0", id: 1, method: "ui/initialize", params: {} });
+  const initial = child.posts[0].message as {
+    result: { hostContext: { containerDimensions: unknown } };
+  };
+  assertEquals(initial.result.hostContext.containerDimensions, { width: 380 });
+  for (const height of [274.6, -1, "auto"]) {
+    harness.emit(child, {
+      jsonrpc: "2.0",
+      method: "ui/notifications/size-changed",
+      params: { width: 800, height },
+    });
+  }
+  assertEquals([...properties], [["--compose-native-height", "275px"]]);
+  width = 640;
+  harness.resizePanel(child);
+  const update = child.posts.at(-1)?.message as { params: { containerDimensions: unknown } };
+  assertEquals(update.params.containerDimensions, { width: 640 });
+});
 
 Deno.test("generated event bus rejects unsupported ui/message requests without false success", () => {
   const descriptor = buildCompositeUi(
@@ -609,7 +655,7 @@ Deno.test("generated event bus negotiates component surfaces, updates dimensions
   });
 
   dimensions = { width: 820, height: 560 };
-  harness.resize();
+  harness.resizePanel(thermal);
   const contextChanges = thermal.posts.filter((post) =>
     (post.message as Record<string, unknown>).method ===
       "ui/notifications/host-context-changed"

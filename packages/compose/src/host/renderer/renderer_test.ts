@@ -66,16 +66,22 @@ Deno.test("renderComposite - includes container with layout class for all layout
   }
 });
 
-Deno.test("renderComposite - split layout has flexbox CSS", () => {
+Deno.test("renderComposite - split layout puts mounted panels in adjustable columns", () => {
   const descriptor = buildCompositeUi(
-    [{ source: "a", resourceUri: "ui://a", slot: 0 }],
+    [
+      { source: "a", resourceUri: "ui://a", slot: 0 },
+      { source: "b", resourceUri: "ui://b", slot: 1 },
+    ],
     { layout: "split" },
   );
 
   const html = renderComposite(descriptor);
 
-  assertStringIncludes(html, "display: flex");
-  assertStringIncludes(html, "flex: 1");
+  assertStringIncludes(html, "grid-auto-flow: column");
+  assertStringIncludes(html, '<button type="button" data-compose-grip aria-label="Move a">');
+  assertStringIncludes(html, '<section class="compose-viewer" data-compose-panel');
+  // The handle sits on the edge. The embedded viewer owns its visible header.
+  assertEquals(html.includes("<header"), false);
 });
 
 Deno.test("renderComposite - grid layout has CSS grid", () => {
@@ -88,10 +94,24 @@ Deno.test("renderComposite - grid layout has CSS grid", () => {
 
   assertStringIncludes(html, "display: grid");
   assertStringIncludes(html, "grid-template-columns");
-  assertStringIncludes(html, "minmax(400px, 1fr)");
+  assertStringIncludes(html, "repeat(auto-fit, minmax(min(100%, 400px), 1fr))");
 });
 
-Deno.test("renderComposite - stack layout has flex column", () => {
+Deno.test("renderComposite exposes only the widths declared for that viewer", () => {
+  const descriptor = buildCompositeUi([
+    { source: "stock", resourceUri: "ui://stock", slot: 0, supportedWidths: [380, 640] },
+    { source: "receipt", resourceUri: "ui://receipt", slot: 1 },
+  ]);
+  const sections = Array.from(
+    renderComposite(descriptor).matchAll(/<section\b[^>]*>/g),
+    (m) => m[0],
+  );
+  assertEquals(sections.length, 2);
+  assertStringIncludes(sections[0], 'data-compose-widths="380 640"');
+  assertEquals(sections[1].includes("data-compose-widths"), false);
+});
+
+Deno.test("renderComposite - stack rows accommodate each viewer's natural height", () => {
   const descriptor = buildCompositeUi(
     [{ source: "a", resourceUri: "ui://a", slot: 0 }],
     { layout: "stack" },
@@ -99,7 +119,8 @@ Deno.test("renderComposite - stack layout has flex column", () => {
 
   const html = renderComposite(descriptor);
 
-  assertStringIncludes(html, "flex-direction: column");
+  assertStringIncludes(html, "grid-auto-rows: minmax(auto, 1fr)");
+  assertStringIncludes(html, "var(--compose-native-height, 200px)");
 });
 
 Deno.test("renderComposite - tabs layout has tab bar and active state", () => {

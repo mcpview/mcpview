@@ -54,6 +54,10 @@ test("mounted panels preserve the native results and selected receipt order", ()
     { adapter: "cad", data: cad.structuredContent.value.geometry },
   ]);
   expect(result.children[1].context?.panel).toMatchObject({ result: cad });
+  expect(result.children.map((child) => child.supportedWidths)).toEqual([
+    [320, 380, 640],
+    [320, 380, 640],
+  ]);
   expect(result.sharedContext).toEqual({ value: { stlSha256: "same-mesh" } });
 });
 
@@ -101,6 +105,7 @@ test("an export without the CAD snapshot and descriptor falls back to its summar
   expect(result.children.map((child) => child.context?.view)).toMatchObject(
     nativeResults.map(() => ({ adapter: "summary" })),
   );
+  expect(result.children.every((child) => child.supportedWidths === undefined)).toBe(true);
   expect(result.children.map((child) => child.context?.panel)).toMatchObject(
     nativeResults.map((result) => ({ result })),
   );

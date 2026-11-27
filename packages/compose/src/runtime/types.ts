@@ -105,6 +105,8 @@ export interface McpToolDeclaration {
   accepts?: string[];
   /** UI resource URI pattern. */
   resourceUri?: string;
+  /** Widths offered by this tool's viewer in CSS pixels. An empty list disables resizing. */
+  supportedWidths?: readonly number[];
   /**
    * Whether an embedded MCP App may invoke this tool through Compose's host
    * bridge. Omitted means deny: interactive capabilities are opt-in per tool.

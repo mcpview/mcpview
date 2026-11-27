@@ -1,6 +1,6 @@
 {
   "name": "@mcpview/compose",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "exports": {
     ".": "./mod.ts",
     "./core": "./src/core/mod.ts",
@@ -15,6 +15,7 @@
     "include": [
       "mod.ts",
       "src/**/*.ts",
+      "src/host/renderer/*.js",
       "README.md",
       "CHANGELOG.md",
       "LICENSE"
@@ -33,7 +34,7 @@
     "test:stubs": "deno test --allow-read --allow-write --allow-run --allow-net --allow-env stubs/tests/",
     "test:watch": "deno test --watch --allow-read --allow-write src/",
     "demo": "deno run --allow-all stubs/demo.ts",
-    "check": "deno check mod.ts src/code-mode/mod.ts src/code-mode/board.ts stubs/shared.ts stubs/stub-chart/server.ts stubs/stub-detail/server.ts stubs/stub-filter/server.ts stubs/stub-list/server.ts",
+    "check": "deno check mod.ts src/code-mode/mod.ts src/code-mode/board.ts stubs/shared.ts stubs/stub-chart/server.ts stubs/stub-detail/server.ts stubs/stub-filter/server.ts stubs/stub-list/server.ts && deno check --check-js src/host/renderer/panel-*_test.ts",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "changelog:draft": "git -C ../.. cliff --config cliff.toml --tag-pattern '^compose-v.*' --include-path 'packages/compose/**' --unreleased",

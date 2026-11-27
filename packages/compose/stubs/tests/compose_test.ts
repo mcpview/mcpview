@@ -43,11 +43,16 @@ Deno.test({
   fn: async () => {
     const manifests = await loadAllManifests();
     const template = await loadTemplate(`${STUBS_DIR}templates/filter-chart.yaml`);
+    manifests.get("stub-chart")!.tools[0].supportedWidths = [380, 760];
 
     const result = await composeDashboard({ template, manifests });
 
     assertEquals(result.descriptor.layout, "split");
     assertEquals(result.descriptor.children.length, 2);
+    assertEquals(result.descriptor.children.map((child) => child.supportedWidths), [
+      undefined,
+      [380, 760],
+    ]);
     assertEquals(result.descriptor.sync.length, 1);
     assertEquals(
       result.descriptor.children.map((child) => [child.componentId, child.slot]),

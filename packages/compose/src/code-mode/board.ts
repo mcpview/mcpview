@@ -10,6 +10,9 @@ import type { ComponentSurface } from "../core/types/components.ts";
 import type { CompositeUiDescriptor } from "../core/types/descriptor.ts";
 import type { UiLayout } from "../core/types/layout.ts";
 
+export { getPanelControlsCss } from "../host/renderer/css/panel-controls.ts";
+export { installPanelMovement, installPanelResizing } from "../host/renderer/panel-controls.js";
+
 /** MCP App result metadata containing the receipts selected by the program. */
 export const SNIPPET_PANELS_META_KEY = "io.mcpview/snippet-panels";
 
@@ -27,6 +30,8 @@ export interface SnippetPanelView {
   readonly resourceUri: string;
   readonly context?: Record<string, unknown>;
   readonly surface?: ComponentSurface;
+  /** Widths offered by this local view in CSS pixels. An empty list disables resizing. */
+  readonly supportedWidths?: readonly number[];
 }
 
 /** Display options supplied by the board hosting the results. */
@@ -112,7 +117,7 @@ export function composeSnippetBoard(
         ...(view?.context === undefined ? {} : { view: view.context }),
         ...(Object.hasOwn(summary, "value") ? { value: summary.value } : {}),
       },
-      { componentId: panel.id, surface: view?.surface },
+      { componentId: panel.id, surface: view?.surface, supportedWidths: view?.supportedWidths },
     );
   }
   const resources = collector.getResources();

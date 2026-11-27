@@ -48,15 +48,20 @@ export function generateEventBusScript(
     const tabIframes = document.querySelectorAll('.tab-content iframe');
 
     function switchTab(slot) {
-      tabs.forEach((t, i) => t.classList.toggle('active', i === slot));
-      tabIframes.forEach((iframe, i) => iframe.classList.toggle('active', i === slot));
+      tabs.forEach(tab => {
+        const active = tab.dataset.slot === slot;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-pressed', String(active));
+      });
+      tabIframes.forEach(iframe => iframe.classList.toggle('active', iframe.dataset.slot === slot));
+      sendHostContextChanged(Number(slot));
     }
 
-    tabs.forEach((tab, i) => {
-      tab.addEventListener('click', () => switchTab(i));
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.slot));
     });
 
-    if (tabs.length > 0) switchTab(0);
+    if (tabs.length > 0) switchTab(tabs[0].dataset.slot);
   `
     : "";
 
@@ -168,6 +173,10 @@ export function generateEventBusScript(
       if (!Number.isFinite(width) || !Number.isFinite(height) || width === 0 || height === 0) {
         return undefined;
       }
+      const panel = iframe.closest?.('.compose-viewer');
+      // A fixed height in the handshake makes responsive Apps stretch to the
+      // track before they can report the height of their own content.
+      if (panel) return { width };
       return { width, height };
     }
 
@@ -456,6 +465,7 @@ export function generateEventBusScript(
     // an iframe WindowProxy first; messages from arbitrary windows never get
     // host capabilities or local MCP access.
     window.addEventListener('message', (event) => {
+      if (window.parent && window.parent !== window && event.source === window.parent) return;
       const message = event.data;
 
       // Skip non-object messages silently (browser extensions, etc.)
@@ -542,10 +552,13 @@ export function generateEventBusScript(
       }
 
       if (message.method === 'ui/notifications/size-changed') {
-        // Layout CSS owns the panel dimensions. Accept the notification (and
-        // tolerate an id from non-conforming clients) without making a size
-        // capability claim.
-        console.debug('[mcp-compose] UI size changed for slot', sourceSlot, message.params);
+        const height = message.params?.height;
+        if (initializationResponded.has(sourceSlot) && Number.isFinite(height) && height > 0) {
+          // Width belongs to the board. Only the child can measure its own document.
+          const panel = iframes.get(sourceSlot)?.closest?.('.compose-viewer');
+          panel?.style.setProperty('--compose-native-height', Math.ceil(height) + 'px');
+          panel?.parentElement?.setAttribute('data-compose-intrinsic', '');
+        }
         ackIfRequested(event.source, message, targetOrigin);
         return;
       }
@@ -582,9 +595,16 @@ export function generateEventBusScript(
         console.warn('[mcp-compose] Unknown method:', message.method);
       }
     });
-    window.addEventListener('resize', () => {
-      for (const slot of iframes.keys()) sendHostContextChanged(slot);
-    });
+    if (typeof window.ResizeObserver === 'function') {
+      const observer = new window.ResizeObserver(entries => {
+        for (const { target } of entries) sendHostContextChanged(Number(target.dataset.slot));
+      });
+      for (const iframe of iframes.values()) observer.observe(iframe);
+    } else {
+      window.addEventListener('resize', () => {
+        for (const slot of iframes.keys()) sendHostContextChanged(slot);
+      });
+    }
     ${tabSwitchingCode}
   `;
 }

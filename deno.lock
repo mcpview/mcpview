@@ -674,7 +674,7 @@
       },
       "packages/legacy/mcp-compose": {
         "dependencies": [
-          "jsr:@mcpview/compose@0.12",
+          "jsr:@mcpview/compose@0.13",
           "jsr:@std/assert@1"
         ]
       },

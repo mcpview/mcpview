@@ -7,6 +7,7 @@
  * @module runtime/manifest
  */
 
+import { isSupportedWidths } from "../core/types/resources.ts";
 import type { McpManifest } from "./types.ts";
 import { RuntimeErrorCode } from "./types.ts";
 import type { RuntimeError } from "./types.ts";
@@ -84,6 +85,8 @@ export function validateManifest(
         errors.push(`tools[${i}] must have a non-empty 'name' string`);
       } else if (tool.appCallable !== undefined && typeof tool.appCallable !== "boolean") {
         errors.push(`tools[${i}].appCallable must be a boolean if provided`);
+      } else if (tool.supportedWidths !== undefined && !isSupportedWidths(tool.supportedWidths)) {
+        errors.push(`tools[${i}].supportedWidths must be an array of positive safe integers`);
       }
     }
   }

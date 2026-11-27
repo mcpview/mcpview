@@ -1,4 +1,9 @@
 import { App, applyDocumentTheme, applyHostStyleVariables } from "@modelcontextprotocol/ext-apps";
+import {
+  getPanelControlsCss,
+  installPanelMovement,
+  installPanelResizing,
+} from "../../../src/code-mode/board.ts";
 import { getLayoutCss } from "../../../src/host/renderer/css/layouts.ts";
 import { mountCad } from "./cad.ts";
 import { composeResult, type Panel, record, stackedLayout } from "./panels.ts";
@@ -50,6 +55,30 @@ function details(label: string, list: HTMLElement) {
   return element;
 }
 
+// Open the secondary information when its own panel has room. A reader's
+// explicit choice takes precedence for the lifetime of this result.
+function adaptiveDetails(label: string, list: HTMLElement, signal: AbortSignal) {
+  const element = details(label, list);
+  let pending = 0;
+  const observer = new ResizeObserver(([entry]) => {
+    const open = entry.contentRect.width >= 400;
+    cancelAnimationFrame(pending);
+    if (element.open !== open) {
+      pending = requestAnimationFrame(() => {
+        element.open = open;
+      });
+    }
+  });
+  function stop() {
+    observer.disconnect();
+    cancelAnimationFrame(pending);
+  }
+  observer.observe(element);
+  element.querySelector("summary")!.addEventListener("click", stop, { once: true, signal });
+  signal.addEventListener("abort", stop, { once: true });
+  return element;
+}
+
 function button(label: string, action: () => void) {
   const control = node("button", label);
   control.type = "button";
@@ -97,7 +126,9 @@ async function renderCad(panel: Panel, body: HTMLElement, signal: AbortSignal) {
     ["Bounds", dimensions(metrics)],
     ["Volume", unit(metrics.volume_mm3, "mm³")],
   ], "metrics");
-  body.append(viewport, controls, stats);
+  const measurements = adaptiveDetails("Mesh measurements", stats, signal);
+  measurements.className = "mesh-measurements";
+  body.append(viewport, controls, measurements);
   if (hash) {
     body.append(details("Mesh identity", dataList([["STL SHA-256", hash]])));
   }
@@ -135,7 +166,7 @@ async function renderCad(panel: Panel, body: HTMLElement, signal: AbortSignal) {
   }
 }
 
-function renderSlice(panel: Panel, body: HTMLElement) {
+function renderSlice(panel: Panel, body: HTMLElement, signal: AbortSignal) {
   const data = panel.data;
   const config = record(record(data.effective_config_summary).values);
   const primary = node("div");
@@ -173,8 +204,8 @@ function renderSlice(panel: Panel, body: HTMLElement) {
       ["Filament length", unit(data.filament_length_mm, "mm")],
       ["Filament mass", unit(data.filament_mass_g, "g")],
     ], "metrics"),
-    details("Print settings", settings),
   );
+  if (settings.children.length) body.append(adaptiveDetails("Print settings", settings, signal));
   if (hashes.children.length) {
     body.append(details("Input and output identities", hashes));
   }
@@ -183,21 +214,27 @@ function renderSlice(panel: Panel, body: HTMLElement) {
 function renderPanel(panel: Panel, slot: number, signal: AbortSignal) {
   const section = node("section");
   section.className = "panel";
+  section.dataset.composePanel = "";
+  section.dataset.panelLabel = panel.title;
   section.dataset.area = `panel${slot}`;
   const header = node("header");
+  const grip = node("button");
+  grip.type = "button";
+  grip.dataset.composeGrip = "";
+  grip.setAttribute("aria-label", `Move ${panel.title}`);
   header.append(
     node("h1", panel.title),
     node("p", `${panel.provider} / ${panel.name}`),
   );
   const body = node("div");
   body.className = "panel-body";
-  section.append(header, body);
+  section.append(grip, header, body);
   if (panel.result.isError) {
     notice(body, nativeText(panel.result) || "The provider reported an error.");
   } else if (panel.adapter === "cad") {
     void renderCad(panel, body, signal);
   } else if (panel.adapter === "slice") {
-    renderSlice(panel, body);
+    renderSlice(panel, body, signal);
   } else {
     notice(
       body,
@@ -222,6 +259,7 @@ function render(result: unknown) {
     return;
   }
   layoutStyle.textContent = `
+    ${getPanelControlsCss()}
     ${getLayoutCss(descriptor.layout)}
     @media (max-width: 620px) {
       ${getLayoutCss(stackedLayout(count))}
@@ -230,11 +268,19 @@ function render(result: unknown) {
   `;
   const board = node("div");
   board.className = "layout-areas";
+  board.dataset.composeBoard = "";
+  board.dataset.composeIntrinsic = "";
   for (const child of descriptor.children) {
     const panel = { ...record(child.context?.panel), ...record(child.context?.view) } as Panel;
-    board.append(renderPanel(panel, child.slot, mounted.signal));
+    const section = renderPanel(panel, child.slot, mounted.signal);
+    if (child.supportedWidths?.length) {
+      section.dataset.composeWidths = child.supportedWidths.join(" ");
+    }
+    board.append(section);
   }
   root.replaceChildren(board);
+  installPanelMovement(board, mounted.signal);
+  installPanelResizing(board, mounted.signal);
 }
 
 const app = new App({ name: "CAD and print estimate", version: "0.1.0" });

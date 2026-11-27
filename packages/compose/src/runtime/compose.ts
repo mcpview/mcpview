@@ -118,6 +118,7 @@ export async function composeDashboard(
           toolName: string;
           args?: Record<string, unknown>;
           surface?: ComponentSurface;
+          supportedWidths?: readonly number[];
           allowedToolNames: string[];
           allowedTools: typeof allowedTools;
           result?: unknown;
@@ -147,6 +148,8 @@ export async function composeDashboard(
               toolName: call.tool,
               args: call.args,
               surface: call.surface ?? source.surface,
+              supportedWidths: manifest.tools.find((tool) => tool.name === call.tool)
+                ?.supportedWidths,
               allowedToolNames,
               allowedTools,
               result,
@@ -182,6 +185,7 @@ export async function composeDashboard(
         {
           componentId: outcome.componentId,
           surface: outcome.surface,
+          supportedWidths: outcome.supportedWidths,
         },
       );
       if (!collected) {

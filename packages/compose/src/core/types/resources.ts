@@ -38,6 +38,18 @@ export interface CollectedUiResource {
   /** Optional inner surface assembled from components advertised by this App. */
   surface?: ComponentSurface;
 
+  /** Widths offered by this viewer in CSS pixels. An empty list disables resizing. */
+  supportedWidths?: readonly number[];
+
   /** Slot index (0-based execution order). */
   slot: number;
+}
+
+/** Whether a Compose width declaration contains only positive whole CSS pixel values. */
+export function isSupportedWidths(value: unknown): value is readonly number[] {
+  if (!Array.isArray(value)) return false;
+  for (const width of value) {
+    if (!Number.isSafeInteger(width) || width <= 0) return false;
+  }
+  return true;
 }

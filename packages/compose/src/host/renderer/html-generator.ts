@@ -5,11 +5,14 @@
  */
 
 import type { CompositeUiDescriptor } from "../../core/types/descriptor.ts";
-import type { CollectedUiResource } from "../../core/types/resources.ts";
+import { type CollectedUiResource, isSupportedWidths } from "../../core/types/resources.ts";
 import { isLayoutAreas } from "../../core/types/layout.ts";
 import { getBaseCss } from "./css/base.ts";
 import { getLayoutCss } from "./css/layouts.ts";
+import { getPanelControlsCss } from "./css/panel-controls.ts";
+import { generateCardHeightScript } from "./js/card-height.ts";
 import { generateEventBusScript } from "./js/event-bus.ts";
+import { createPanelReflow, installPanelMovement, installPanelResizing } from "./panel-controls.js";
 import type {
   RenderCompositeOptions,
   RendererSlotOptions,
@@ -56,6 +59,15 @@ export function renderComposite(
   const slots = resolveRendererSlots(descriptor, options);
   const bodyContent = generateBodyContent(descriptor, slots);
   const eventBusScript = generateEventBusScript(descriptor, slots);
+  const panelScript = descriptor.children.length === 0 ? "" : `
+    const board = document.querySelector('[data-compose-board]');
+    (${installPanelMovement})(board);
+    ${
+    descriptor.layout === "tabs"
+      ? ""
+      : `(${installPanelResizing})(board, undefined, (${createPanelReflow}));`
+  }
+  `;
 
   return `<!DOCTYPE html>
 <html>
@@ -68,12 +80,15 @@ export function renderComposite(
     body { font-family: system-ui, -apple-system, sans-serif; background: var(--mcc-bg-primary); color: inherit; }
     ${baseCss}
     ${layoutCss}
+    ${getPanelControlsCss()}
   </style>
 </head>
 <body>
   ${bodyContent}
   <script>
     ${eventBusScript}
+    ${panelScript}
+    ${descriptor.layout === "tabs" ? "" : generateCardHeightScript()}
   </script>
 </body>
 </html>`;
@@ -83,49 +98,36 @@ function generateBodyContent(
   descriptor: CompositeUiDescriptor,
   slots: ReadonlyMap<number, ResolvedRendererSlotOptions>,
 ): string {
-  if (isLayoutAreas(descriptor.layout)) {
-    return generateAreasLayout(descriptor, slots);
-  }
-
   if (descriptor.layout === "tabs") {
     return generateTabsLayout(descriptor, slots);
   }
 
-  const iframesHtml = descriptor.children
-    .map((child) => generateIframe(child, slots.get(child.slot)))
-    .join("\n    ");
-  return `<div class="layout-${descriptor.layout}" id="container">
-    ${iframesHtml}
-  </div>`;
+  const layout = isLayoutAreas(descriptor.layout) ? "areas" : descriptor.layout;
+  const panels = descriptor.children.map((child) => {
+    const id = child.componentId ?? child.source;
+    const area = layout === "areas"
+      ? ` data-area="${escapeAttr(descriptor.areaMap?.[id] ?? id)}"`
+      : "";
+    const widths = isSupportedWidths(child.supportedWidths) && child.supportedWidths.length
+      ? ` data-compose-widths="${child.supportedWidths.join(" ")}"`
+      : "";
+    return `<section class="compose-viewer" data-compose-panel data-panel-label="${
+      escapeAttr(id)
+    }"${area}${widths}>
+      ${descriptor.children.length > 1 ? grip(child) : ""}
+      ${generateIframe(child, slots.get(child.slot))}
+    </section>`;
+  });
+  return `<div class="layout-${layout}" id="container" data-compose-board>${
+    panels.join("\n")
+  }</div>`;
 }
 
-function generateAreasLayout(
-  descriptor: CompositeUiDescriptor,
-  slots: ReadonlyMap<number, ResolvedRendererSlotOptions>,
-): string {
-  const areaMap = descriptor.areaMap ?? {};
-  const iframesHtml = descriptor.children
-    .map((child) => {
-      const componentId = child.componentId ?? child.source;
-      const area = areaMap[componentId] ?? componentId;
-      const slot = slots.get(child.slot);
-      return `<iframe
-        id="ui-${child.slot}"
-        src="${escapeAttr(slot?.iframeSrc ?? child.resourceUri)}"
-        data-slot="${child.slot}"
-        data-source="${escapeAttr(child.source)}"
-        data-component-id="${escapeAttr(componentId)}"
-        data-area="${escapeAttr(area)}"
-${generateSandboxAttribute(slot)}
-      ></iframe>`;
-    })
-    .join("\n    ");
-
-  return `<div class="layout-areas" id="container">
-    ${iframesHtml}
-  </div>`;
+function grip(child: CollectedUiResource): string {
+  return `<button type="button" data-compose-grip aria-label="Move ${
+    escapeAttr(child.componentId ?? child.source)
+  }"></button>`;
 }
-
 function generateTabsLayout(
   descriptor: CompositeUiDescriptor,
   slots: ReadonlyMap<number, ResolvedRendererSlotOptions>,
@@ -142,29 +144,24 @@ function generateTabsLayout(
   const tabButtons = descriptor.children
     .map(
       (child, i) =>
-        `<button class="tab${i === 0 ? " active" : ""}" data-slot="${child.slot}">${
+        `<div data-compose-panel data-panel-label="${
+          escapeAttr(child.componentId ?? child.source)
+        }">
+        ${descriptor.children.length > 1 ? grip(child) : ""}
+        <button type="button" class="tab${i === 0 ? " active" : ""}" data-slot="${child.slot}">${
           escapeHtml(child.source)
-        }</button>`,
+        }</button></div>`,
     )
     .join("\n        ");
 
   const iframesHtml = descriptor.children
     .map(
-      (child, i) =>
-        `<iframe
-          id="ui-${child.slot}"
-          class="${i === 0 ? "active" : ""}"
-          src="${escapeAttr(slots.get(child.slot)?.iframeSrc ?? child.resourceUri)}"
-          data-slot="${child.slot}"
-          data-source="${escapeAttr(child.source)}"
-          data-component-id="${escapeAttr(child.componentId ?? child.source)}"
-${generateSandboxAttribute(slots.get(child.slot))}
-        ></iframe>`,
+      (child, i) => generateIframe(child, slots.get(child.slot), i === 0),
     )
     .join("\n      ");
 
   return `<div class="layout-tabs" id="container">
-    <div class="tab-bar">
+    <div class="tab-bar" data-compose-board>
       ${tabButtons}
     </div>
     <div class="tab-content">
@@ -176,9 +173,11 @@ ${generateSandboxAttribute(slots.get(child.slot))}
 function generateIframe(
   child: CollectedUiResource,
   slot?: ResolvedRendererSlotOptions,
+  active = false,
 ): string {
   return `<iframe
         id="ui-${child.slot}"
+        title="${escapeAttr(child.source)}"${active ? ' class="active"' : ""}
         src="${escapeAttr(slot?.iframeSrc ?? child.resourceUri)}"
         data-slot="${child.slot}"
         data-source="${escapeAttr(child.source)}"
