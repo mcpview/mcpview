@@ -5,6 +5,10 @@ All notable changes to `@mcpview/server` (published as `@casys/mcp-server` up to
 
 ## [Unreleased]
 
+## [0.30.3] - 2026-11-27
+
+### Added
+
 - Saved snippets can carry an optional dashboard layout. The catalog supports
   updating the layout of an existing snippet and passes it to the host when
   replaying the program.
