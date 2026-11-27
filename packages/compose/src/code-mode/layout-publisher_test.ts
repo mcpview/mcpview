@@ -47,9 +47,10 @@ function mount(options: {
             Promise.resolve({ structuredContent: { runId, revision } });
         },
       },
-      updateContext: async (update, request) => {
+      updateContext: async (...args) => {
+        const [update] = args;
         updates.push(update);
-        const response = await options.update?.(update, request) ?? {};
+        const response = await options.update?.(...args) ?? {};
         const { snippetLayout } = "structuredContent" in update
           ? update.structuredContent
           : JSON.parse(update.content[0].text);
@@ -204,4 +205,32 @@ Deno.test("the SDK's untyped structured result is checked before acknowledging a
   await h.commit();
   assertEquals(h.shown, ["pending", "failed"]);
   assertEquals(h.receipts.map(({ status }) => status), ["pending", "failed"]);
+});
+
+Deno.test("closing a board cancels staging and queued receipts but lets the in-flight App context settle", async () => {
+  const sending = Promise.withResolvers<void>();
+  const accepted = Promise.withResolvers<void>();
+  const closedStage = Promise.withResolvers<void>();
+  const h = mount({
+    stage: async (_, { signal }) => {
+      signal.addEventListener("abort", () => closedStage.resolve(), { once: true });
+      await closedStage.promise;
+      signal.throwIfAborted();
+      throw new Error("stage unexpectedly resumed");
+    },
+    update: async (...args) => {
+      assertEquals(args.length, 1); // No board-owned cancellation signal reaches the App writer.
+      sending.resolve();
+      await accepted.promise;
+      return {};
+    },
+  });
+  const pending = h.commit();
+  await sending.promise;
+  const queued = h.commit();
+  h.lifetime.abort();
+  accepted.resolve();
+  await Promise.all([pending, queued]);
+  assertEquals(h.receipts.map(({ revision, status }) => [revision, status]), [[1, "pending"]]);
+  assertEquals(h.shown, ["pending", "pending"]);
 });

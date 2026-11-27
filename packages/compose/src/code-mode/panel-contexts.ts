@@ -46,6 +46,9 @@ export function createPanelContexts<Block, Options, Response extends object>(
   const board = Symbol("layout receipt");
   type Source = string | typeof board;
   let active = new Map<Source, Selection<Block>>();
+  // A lost acknowledgement leaves the host snapshot unknown. Retain only the
+  // formats to clear on the next replacement, never the attempted selection.
+  let uncertain: Update | undefined;
   function liveSelections() {
     return new Map(
       [...active].filter(([, selection]) => !selection.signal.aborted),
@@ -107,6 +110,24 @@ export function createPanelContexts<Block, Options, Response extends object>(
         : {}),
     };
   }
+  async function replace(next: Map<Source, Selection<Block>>, last: Update, options?: Options) {
+    const update = { ...uncertain, ...merge(next, last) };
+    let response: Response;
+    try {
+      response = await send(update, options);
+    } catch (cause) {
+      uncertain = {
+        ...(update.content !== undefined ? { content: [] } : {}),
+        ...(update.structuredContent !== undefined ? { structuredContent: {} } : {}),
+      };
+      throw cause;
+    }
+    if (!("isError" in response && response.isError)) {
+      active = next;
+      uncertain = undefined;
+    }
+    return response;
+  }
   function forSource(id: Source, title: string, signal: AbortSignal) {
     return (value: Update, options?: Options) =>
       enqueue(async () => {
@@ -120,14 +141,7 @@ export function createPanelContexts<Block, Options, Response extends object>(
         const next = liveSelections();
         if (hasSelection(value)) next.set(id, { title, value, signal });
         else next.delete(id);
-        const response = await send(
-          merge(next, value),
-          options,
-        );
-        if (!("isError" in response && response.isError)) {
-          active = next;
-        }
-        return response;
+        return await replace(next, value, options);
       });
   }
   return {
@@ -136,7 +150,7 @@ export function createPanelContexts<Block, Options, Response extends object>(
     clear(): Promise<void> {
       return enqueue(async () => {
         const next = liveSelections();
-        if (next.size === active.size) return;
+        if (!uncertain && next.size === active.size) return;
         const entries = [...active.values()];
         const empty = {
           ...(entries.some(({ value }) => value.structuredContent !== undefined)
@@ -144,11 +158,10 @@ export function createPanelContexts<Block, Options, Response extends object>(
             : {}),
           ...(entries.some(({ value }) => value.content !== undefined) ? { content: [] } : {}),
         };
-        const response = await send(merge(next, empty));
+        const response = await replace(next, empty);
         if ("isError" in response && response.isError) {
           throw new Error(clearErrorMessage());
         }
-        active = next;
       });
     },
   };

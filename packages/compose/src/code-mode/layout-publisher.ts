@@ -41,7 +41,6 @@ export interface SnippetBoardLayoutOptions {
     update:
       | { structuredContent: { snippetLayout: SnippetLayoutReceipt } }
       | { content: { type: "text"; text: string }[] },
-    options: { signal: AbortSignal },
   ): Promise<object>;
   /** App-only callback that stages the geometry and returns the matching run ID and revision. */
   stageTool: string;
@@ -86,11 +85,12 @@ export function connectSnippetBoardLayout(
       signal.throwIfAborted();
       if (receipt.status !== "pending" && receipt.revision !== latest) return;
       const value = { snippetLayout: receipt };
+      // Once sent, an App-wide context update may include live selections from
+      // other panels. Let its acknowledgement settle even if this board closes.
       const response = await updateContext(
         structured
           ? { structuredContent: value }
           : { content: [{ type: "text", text: JSON.stringify(value) }] },
-        { signal },
       );
       if ("isError" in response && response.isError) throw new Error("Layout receipt rejected");
     });

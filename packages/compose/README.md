@@ -298,12 +298,18 @@ If a save confirmation replaces the board while the basket still belongs to the 
 the display lifetime and call `contexts.clear()` to remove expired contributions. End the basket
 lifetime and clear again when the selection is discarded.
 
+On a text-only host, Compose forwards the panels' content blocks in order. In structured context,
+multiple selections are grouped under `panels` with their titles. A single panel keeps its original
+shape unless a board metadata key overlaps, in which case its selection also appears under `panels`.
+
 To associate edits with the correct execution, the server can use `BoardLayoutRuns` from
 `@mcpview/compose/code-mode/layout-runs`. Register the scoped execution with `open`, passing a map
 from stable panel IDs to their declared widths. `stage` acknowledges a snapshot and revision from
 the app. On an explicit save or update, `selected` supplies the acknowledged geometry to the snippet
 catalog. Call `saved` only after a successful save. Updates accept names bound by saving or
-replaying this dashboard.
+replaying this dashboard. Repeating a stage request with the same revision and geometry is safe if
+the response was lost. A user-initiated retry in the App stages the current layout with a new
+revision.
 
 On a fresh board, `restorePanelLayout(board, snapshot)` applies the saved preference once the
 controls are installed. It returns false if the panel IDs or supported widths have changed

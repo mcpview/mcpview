@@ -252,3 +252,67 @@ Deno.test("the board cannot replace the structured panels envelope", async () =>
     { structuredContent: { month: "October", snippetLayout: { revision: 1 } } },
   ]);
 });
+
+Deno.test("clear removes a possibly delivered board receipt while keeping the acknowledged panel", async () => {
+  const updates: Update[] = [];
+  const store = createPanelContexts((update: Update) => {
+    updates.push(update);
+    if (updates.length === 2) return Promise.reject(new Error("receipt acknowledgement lost"));
+    return Promise.resolve({});
+  });
+  const basket = new AbortController();
+  const display = new AbortController();
+  const selected = { structuredContent: { month: "October" } };
+  const pending = { structuredContent: { snippetLayout: { status: "pending" } } };
+  await store.forPanel("revenue", "Revenue", basket.signal)(selected);
+  await assertRejects(() => store.forBoard(display.signal)(pending));
+  display.abort();
+  await store.clear();
+  await store.clear();
+  assertEquals(updates, [
+    selected,
+    { structuredContent: { ...selected.structuredContent, ...pending.structuredContent } },
+    selected,
+  ]);
+});
+
+Deno.test("first unacknowledged contribution is cleared in every attempted content format, retrying a lost clear", async () => {
+  const updates: Update[] = [];
+  const store = createPanelContexts((update: Update) => {
+    updates.push(update);
+    if (updates.length <= 2) return Promise.reject(new Error("transport disconnected after send"));
+    return Promise.resolve({});
+  });
+  const life = new AbortController();
+  const contribution = {
+    structuredContent: { ref: "A" },
+    content: [{ type: "text" as const, text: "A" }],
+  };
+  await assertRejects(() => store.forPanel("a", "A", life.signal)(contribution));
+  life.abort();
+  await assertRejects(() => store.clear());
+  await store.clear();
+  await store.clear();
+  const empty = { structuredContent: {}, content: [] };
+  assertEquals(updates, [contribution, empty, empty]);
+});
+
+Deno.test("a successful panel write reconciles an uncertain board receipt even after an explicit refusal", async () => {
+  const updates: Update[] = [];
+  const store = createPanelContexts((update: Update) => {
+    updates.push(update);
+    if (updates.length === 1) return Promise.reject(new Error("timeout"));
+    if (updates.length === 2) return Promise.resolve({ isError: true });
+    return Promise.resolve({});
+  });
+  const { signal } = new AbortController();
+  const note = { content: [{ type: "text" as const, text: "old receipt" }] };
+  const selected = { structuredContent: { ref: "A" } };
+  await assertRejects(() => store.forBoard(signal)(note));
+  const panel = store.forPanel("a", "A", signal);
+  await panel(selected);
+  await panel(selected);
+  await store.clear();
+  const reconciled = { content: [], ...selected };
+  assertEquals(updates, [note, reconciled, reconciled]);
+});
