@@ -2,6 +2,7 @@
 
 import { assertEquals, assertStrictEquals, assertStringIncludes } from "@std/assert";
 import { parseHTML } from "npm:linkedom@0.18.12";
+import { capturePanelLayout, restorePanelLayout } from "./panel-snapshot.js";
 import { installPanelResizing } from "./panel-resizing.js";
 
 function board(options: { noWidths?: boolean } = {}) {
@@ -12,7 +13,8 @@ function board(options: { noWidths?: boolean } = {}) {
   );
   const root = document.querySelector("main")!;
   const panels = Array.from(root.querySelectorAll<HTMLElement>("section"));
-  panels.forEach((panel) => {
+  panels.forEach((panel, i) => {
+    panel.dataset.composePanelId = ["stock", "revenue", "detail", "margin"][i];
     if (options.noWidths) panel.removeAttribute("data-compose-widths");
   });
   const browserEvents = document.createElement("span");
@@ -21,6 +23,7 @@ function board(options: { noWidths?: boolean } = {}) {
   Object.defineProperty(root, "clientWidth", { get: () => available });
   Object.defineProperty(document, "defaultView", {
     value: {
+      Event,
       innerWidth: 1100,
       addEventListener: browserEvents.addEventListener.bind(browserEvents),
       getComputedStyle: () => ({ display: "grid", paddingLeft: "0", paddingRight: "0" }),
@@ -294,4 +297,54 @@ Deno.test("the scrollbar created by a resize preview keeps the gesture and its v
   b.pointer("pointerup", 185);
   assertEquals(b.calls.at(-1), []);
   b.ctrl.abort();
+});
+
+Deno.test("a fresh board restores requested widths, manual anchors and slot order without touching its frames", () => {
+  const previous = board();
+  // The committed state is independent of the available width or a later drag preview.
+  previous.panels[0].style.order = "1";
+  previous.panels[1].style.order = "0";
+  previous.fire(previous.root, "compose-layout-change");
+  let edits = 0;
+  previous.root.addEventListener("compose-panel-layout-committed", () => edits++);
+  previous.key(0, "End");
+  assertEquals(edits, 1);
+  assertEquals(previous.place("commit", 1, 0, "below"), true);
+  previous.resize(600);
+  const snapshot = capturePanelLayout(previous.root)!;
+  assertEquals(snapshot, {
+    version: 1,
+    order: ["revenue", "stock", "detail", "margin"],
+    widths: [{ panel: "stock", width: 768 }],
+    placements: [{ panel: "revenue", beside: "stock", side: "below" }],
+  });
+  const fresh = board();
+  const frame = fresh.panels[0].querySelector("iframe");
+  fresh.resize(600);
+  assertEquals(restorePanelLayout(fresh.root, JSON.parse(JSON.stringify(snapshot))), true);
+  assertEquals(fresh.panels.map((p) => p.style.order), ["1", "0", "2", "3"]);
+  assertEquals(fresh.calls.at(-1), [380]);
+  assertEquals(fresh.positions.at(-1), [[1, 0, "below"]]);
+  fresh.resize(1100);
+  assertEquals(fresh.calls.at(-1), [768]);
+  assertEquals(capturePanelLayout(fresh.root), snapshot);
+  assertStrictEquals(fresh.panels[0].querySelector("iframe"), frame);
+  assertEquals(
+    restorePanelLayout(fresh.root, { ...snapshot, widths: [{ panel: "stock", width: 777 }] }),
+    false,
+  );
+  assertEquals(
+    restorePanelLayout(fresh.root, {
+      ...snapshot,
+      order: ["revenue", "stock", "another", "margin"],
+    }),
+    false,
+  );
+  assertEquals(capturePanelLayout(fresh.root), snapshot);
+  fresh.pointer("pointerdown", 300);
+  assertEquals(capturePanelLayout(fresh.root), undefined);
+  fresh.pointer("pointercancel", 300);
+  assertEquals(capturePanelLayout(fresh.root), snapshot);
+  previous.ctrl.abort();
+  fresh.ctrl.abort();
 });

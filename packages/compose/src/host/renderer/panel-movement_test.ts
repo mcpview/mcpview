@@ -2,6 +2,7 @@
 
 import { assertEquals, assertStrictEquals } from "@std/assert";
 import { parseHTML } from "npm:linkedom@0.18.12";
+import { capturePanelLayout, restorePanelLayout } from "./panel-controls.js";
 import { installPanelMovement } from "./panel-movement.js";
 
 function board(markup: string) {
@@ -269,4 +270,27 @@ Deno.test("the lower edge opens a row, and moving back beside the viewer release
   pointer("pointermove", 40, 35); // Center retains the ordinary swap.
   pointer("pointerup", 40, 35);
   assertEquals([stock.dataset.area, revenue.dataset.area], ["chart", "table"]);
+});
+
+Deno.test("named template restores by stable panel identity when fresh area names differ", () => {
+  const html = (a: string, b: string) =>
+    [a, b].map((slot, i) =>
+      `<div data-compose-panel data-compose-panel-id="kpi:${i}" data-area="${slot}"><iframe></iframe></div>`
+    ).join("");
+  const first = board(html("top", "bottom")).container;
+  let edits = 0;
+  first.addEventListener("compose-panel-layout-committed", () => edits++);
+  const [a, b] = first.querySelectorAll("button");
+  a.click();
+  b.click();
+  assertEquals(edits, 1);
+  const snapshot = capturePanelLayout(first);
+  assertEquals(snapshot?.order, ["kpi:1", "kpi:0"]);
+  const fresh = board(html("left", "right")).container;
+  const [panelA, panelB] = fresh.querySelectorAll<HTMLElement>("[data-compose-panel]");
+  const frame = panelA.querySelector("iframe");
+  assertEquals(restorePanelLayout(fresh, snapshot), true);
+  assertEquals([panelA.dataset.area, panelB.dataset.area], ["right", "left"]);
+  assertStrictEquals(panelA.querySelector("iframe"), frame);
+  assertEquals(capturePanelLayout(fresh), snapshot);
 });

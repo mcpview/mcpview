@@ -262,8 +262,32 @@ Drag the bottom-right corner to preview an allowed width. At the right edge of t
 to reach a wider format. The skeleton reserves the space and neighbors shift sideways or wrap to a
 new row. When the viewer shrinks, its neighbor returns beside it with the template's original gap as
 soon as both fit. Release to apply the width or press Escape to cancel. The left and right arrow
-keys step between available widths when the corner has focus. Reopening the dashboard restores the
-template layout. Each iframe stays mounted and reports its own content height as its width changes.
+keys step between available widths when the corner has focus. The template supplies the initial
+layout unless the host restores a saved layout. Each iframe stays mounted and reports its own
+content height as its width changes.
+
+A Code Mode host can store the panel order, requested widths and relative placements with a snippet.
+Give each panel a stable `data-compose-panel-id` shared by later runs. Two instances of the same
+business view need distinct IDs. After installing movement and resizing, listen to
+`compose-panel-layout-committed` on the board and read the preference with
+`capturePanelLayout(board)`. Save this geometry with the snippet when requested. The host continues
+to manage the conversation context.
+
+To associate edits with the correct execution, the server can use `BoardLayoutRuns` from
+`@mcpview/compose/code-mode/layout-runs`. Register the scoped execution with `open`, passing a map
+from stable panel IDs to their declared widths. `stage` acknowledges a snapshot and revision from
+the app. On an explicit save or update, `selected` supplies the acknowledged geometry to the snippet
+catalog. Call `saved` only after a successful save. Updates accept names bound by saving or
+replaying this dashboard.
+
+On a fresh board, `restorePanelLayout(board, snapshot)` applies the saved preference once the
+controls are installed. It returns false if the panel IDs or supported widths have changed
+incompatibly. On narrow screens the controls apply a width that fits and retain the requested width
+for a larger screen.
+
+`@mcpview/compose/code-mode/layout` exports the `PanelLayoutSnapshot` type and the DOM-independent
+`isPanelLayoutSnapshot` validator. The board entry point (`@mcpview/compose/code-mode/board`) also
+exports these and the browser capture and restore functions.
 
 For a Code Mode board with local renderers, `@mcpview/compose/code-mode/board` exports
 `getPanelControlsCss()`, `installPanelMovement(board, signal?)` and

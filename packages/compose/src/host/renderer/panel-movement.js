@@ -104,6 +104,7 @@ export function installPanelMovement(container, signal) {
   function announceSwap(from, to) {
     status.textContent = label(from) + " swapped with " + label(to) + ".";
     container.dispatchEvent(new Event("compose-layout-change"));
+    container.dispatchEvent(new Event("compose-panel-layout-committed"));
   }
 
   /** @param {"preview" | "commit" | "cancel"} phase @param {FreePlace} place */
@@ -274,7 +275,8 @@ export function installPanelMovement(container, signal) {
   }
 
   for (const [index, panel] of panels.entries()) {
-    if (!namedAreas) panel.style.order = String(index);
+    if (namedAreas) panel.dataset.composeTemplateArea ??= panel.dataset.area;
+    else panel.style.order = String(index);
     let grip = /** @type {HTMLButtonElement | null} */ (panel.querySelector("[data-compose-grip]"));
     if (!grip) {
       grip = doc.createElement("button");
@@ -365,6 +367,7 @@ export function installPanelMovement(container, signal) {
         const where = placement.side === "below" ? " below " : " beside ";
         status.textContent = label(from) + " placed" + where + label(placement.beside) + ".";
         container.dispatchEvent(new Event("compose-layout-change"));
+        container.dispatchEvent(new Event("compose-panel-layout-committed"));
       }
       select();
     } else finishPress();

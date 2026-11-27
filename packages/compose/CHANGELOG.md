@@ -5,6 +5,9 @@ documented in this file.
 
 ## [Unreleased]
 
+- Capture and restore a dashboard's committed positions and supported widths using stable panel IDs.
+  Hosts can associate an acknowledged layout revision with an authenticated Code Mode execution.
+
 ## [0.13.0] - 2026-11-27
 
 ### Added

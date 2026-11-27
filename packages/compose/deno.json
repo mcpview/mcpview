@@ -5,6 +5,8 @@
     ".": "./mod.ts",
     "./core": "./src/core/mod.ts",
     "./code-mode": "./src/code-mode/mod.ts",
+    "./code-mode/layout": "./src/code-mode/layout.ts",
+    "./code-mode/layout-runs": "./src/code-mode/layout-runs.ts",
     "./code-mode/board": "./src/code-mode/board.ts",
     "./sdk": "./src/sdk/mod.ts",
     "./host": "./src/host/mod.ts",

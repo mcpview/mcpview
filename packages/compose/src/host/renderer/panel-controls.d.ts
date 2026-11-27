@@ -1,7 +1,14 @@
+import type { PanelLayoutSnapshot } from "../../code-mode/layout.ts";
+
 /** The board element available to a caller running in a DOM environment. */
 type PanelContainer = typeof globalThis extends { HTMLElement: { prototype: infer Element } }
   ? Element
   : never;
+
+/** Capture the current board's committed choices, keeping the requested widths across viewport changes. */
+export declare function capturePanelLayout(board: PanelContainer): PanelLayoutSnapshot | undefined;
+/** Restore the snapshot in place on a compatible mounted board. */
+export declare function restorePanelLayout(board: PanelContainer, value: unknown): boolean;
 
 /** Install pointer and keyboard controls for moving panels within a Compose board. */
 export declare function installPanelMovement(container: PanelContainer, signal?: AbortSignal): void;

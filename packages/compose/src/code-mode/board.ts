@@ -21,7 +21,13 @@ import {
 export { SNIPPET_SYNC_META_KEY };
 
 export { getPanelControlsCss } from "../host/renderer/css/panel-controls.ts";
-export { installPanelMovement, installPanelResizing } from "../host/renderer/panel-controls.js";
+export { isPanelLayoutSnapshot, type PanelLayoutSnapshot } from "./layout.ts";
+export {
+  capturePanelLayout,
+  installPanelMovement,
+  installPanelResizing,
+  restorePanelLayout,
+} from "../host/renderer/panel-controls.js";
 
 /** MCP App result metadata containing the receipts selected by the program. */
 export const SNIPPET_PANELS_META_KEY = "io.mcpview/snippet-panels";
