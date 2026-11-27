@@ -640,8 +640,12 @@ return (
 
 Rectangles can start in the collection background or on a mark with `data-visual-selection-start`.
 For draggable cards, leave the mark unflagged so the background starts a rectangle and the card
-keeps its drag action. Chart views can supply `getItemBounds` and `intersectsItem` for their
-geometry.
+keeps its drag action. An image inside a rectangle start can also declare `draggable={false}` to
+disable native image dragging explicitly.
+
+Custom surfaces can supply `getItemBounds` and `intersectsItem` for their geometry, including marks
+partially or completely covered by an opaque overlay. `DataTable` accounts for a continuous
+top-sticky `thead` in its own table.
 
 For viewers with explicit buttons, import `DisclosureChevron` and `ContextPinButton` from the same
 entry. A standalone viewer can call `installMcpViewInteractionStyles()` once in its document, or

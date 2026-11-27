@@ -265,6 +265,25 @@ export interface DataTableProps<TRow> {
   readonly className?: string;
 }
 
+function tableRowIntersects(item: Element, rectangle: DOMRectReadOnly): boolean {
+  const header = item.parentElement?.previousElementSibling;
+  if (header?.localName !== "thead") return true;
+  const style = header.ownerDocument.defaultView?.getComputedStyle?.(header);
+  if (
+    style?.position !== "sticky" || style.top === "auto" ||
+    style.visibility === "hidden" || style.visibility === "collapse"
+  ) return true;
+
+  const head = header.getBoundingClientRect();
+  if (head.width <= 0 || head.height <= 0) return true;
+  const row = item.getBoundingClientRect();
+  // Only reject an overlap completely covered by this table's sticky header.
+  return Math.max(rectangle.left, row.left) < head.left ||
+    Math.min(rectangle.right, row.right) > head.right ||
+    Math.max(rectangle.top, row.top) < head.top ||
+    Math.min(rectangle.bottom, row.bottom) > head.bottom;
+}
+
 /** Accessible compact table; selection behavior is opt-in and keyboard-safe. */
 export function DataTable<TRow>({
   label,
@@ -308,6 +327,7 @@ export function DataTable<TRow>({
       });
       contextSelection.onAdd?.(added);
     }),
+    intersectsItem: tableRowIntersects,
   });
 
   if (rows.length === 0) {

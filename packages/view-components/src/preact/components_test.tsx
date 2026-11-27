@@ -637,6 +637,26 @@ Deno.test("DataTable context gestures keep columns, explicit disclosures and nes
       acknowledge?.();
       assertEquals(outline(), 1);
     });
+    await test.step("rectangle respects a top-sticky header and keeps the exposed row", () => {
+      const head = root.querySelector("thead")!;
+      head.getBoundingClientRect = () => box(0, 0, 280, 60) as DOMRect;
+      const window = head.ownerDocument.defaultView!;
+      const previousStyle = window.getComputedStyle;
+      window.getComputedStyle = (element) =>
+        ({
+          position: element === head ? "sticky" : "static",
+          top: element === head ? "0px" : "auto",
+          visibility: "visible",
+        }) as CSSStyleDeclaration;
+      try {
+        pointer(second, "pointerdown", 10, 70);
+        pointer(dom.document as unknown as Document, "pointermove", 150, 0);
+        pointer(dom.document as unknown as Document, "pointerup", 150, 0);
+        assertEquals(read(), ["add:b"]);
+      } finally {
+        window.getComputedStyle = previousStyle;
+      }
+    });
     await test.step("omitting the opt-in restores the existing selection and disclosure routes", () => {
       draw(false);
       assertEquals(root.querySelectorAll("[data-visual-item]").length, 0);

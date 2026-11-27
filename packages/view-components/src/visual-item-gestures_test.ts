@@ -13,7 +13,7 @@ Deno.test("visual items distinguish activation, context and rectangle selection"
     <html><body>
       <button id="previous">Previous focus</button>
       <div id="scrollport"><section data-visual-selection-surface>
-        <button data-visual-item="a" data-visual-selection-start>A</button>
+        <button data-visual-item="a" data-visual-selection-start><img alt="">A</button>
         <div id="inner"><div data-visual-item="b" data-visual-selection-start role="button" tabindex="0">B</div></div>
         <button data-visual-item="c">C</button>
         <button data-visual-item="d">D</button>
@@ -148,6 +148,22 @@ Deno.test("visual items distinguish activation, context and rectangle selection"
       assertEquals(output(), [["add", "a", "b"]]);
       assertEquals(document.body.querySelector('[aria-hidden="true"]'), null);
       assert(click(a).defaultPrevented);
+      assertEquals(output(), []);
+    });
+
+    await test.step("native image drag only yields when a rectangle can start", () => {
+      const image = a.querySelector("img")!;
+      pointer(image, "pointerdown", 20, 20);
+      assert(dispatch(image, "dragstart").defaultPrevented);
+      pointer(b, "pointermove", 90, 70);
+      pointer(b, "pointerup", 90, 70);
+      assertEquals(output(), [["add", "a", "b"]]);
+
+      image.setAttribute("draggable", "true");
+      pointer(image, "pointerdown", 20, 20);
+      assert(!dispatch(image, "dragstart").defaultPrevented);
+      pointer(b, "pointermove", 90, 70);
+      pointer(b, "pointerup", 90, 70);
       assertEquals(output(), []);
     });
 

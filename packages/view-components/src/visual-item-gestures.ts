@@ -323,6 +323,18 @@ export function bindVisualItemGestures(
     clearPress();
   }
 
+  function onDragStart(event: DragEvent) {
+    const element = target(event);
+    if (
+      press?.surface && element?.localName === "img" &&
+      !element.closest("[draggable=true], a[href], [role=link]")
+    ) {
+      event.preventDefault();
+      return;
+    }
+    onCancel(event);
+  }
+
   function consume(event: Event) {
     event.preventDefault();
     event.stopPropagation();
@@ -395,7 +407,7 @@ export function bindVisualItemGestures(
   doc.addEventListener("pointermove", onPointerMove, capture);
   doc.addEventListener("pointerup", onPointerUp, passiveCapture);
   doc.addEventListener("pointercancel", onCancel, passiveCapture);
-  doc.addEventListener("dragstart", onCancel, passiveCapture);
+  doc.addEventListener("dragstart", onDragStart, capture);
   root.addEventListener("click", onClick as EventListener, capture);
   root.addEventListener("keydown", onKeyDown as EventListener, capture);
   doc.addEventListener("keydown", (event) => {
