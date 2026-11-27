@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-27
+
+### Added
+
+- Re-exports the reusable gesture controls through `./preact/controls`. The compatibility package
+  now resolves `@mcpview/components@^0.14.0` on npm and JSR.
+
 ## [0.13.0] - 2026-11-26
 
 ### Added

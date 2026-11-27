@@ -451,3 +451,231 @@ Deno.test("NoticeGroup treats a falsy omittedLabel as nothing left out", () => {
   }
   assert(NoticeGroup({ label: "Warnings", items: [], omittedLabel: "+ 3 more" }) !== null);
 });
+
+Deno.test("DataTable context gestures keep columns, explicit disclosures and nested controls", async (test) => {
+  const { parseHTML } = await import("npm:linkedom@0.18.12");
+  const dom = parseHTML("<html><body><div id=root></div></body></html>");
+  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const previousDOMRect = Object.getOwnPropertyDescriptor(globalThis, "DOMRect");
+  const box = (x: number, y: number, width: number, height: number) => ({
+    x,
+    y,
+    width,
+    height,
+    left: x,
+    top: y,
+    right: x + width,
+    bottom: y + height,
+  });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: dom.document });
+  Object.defineProperty(globalThis, "DOMRect", {
+    configurable: true,
+    value: class {
+      constructor(x: number, y: number, width: number, height: number) {
+        Object.assign(this, box(x, y, width, height));
+      }
+    },
+  });
+
+  const root = dom.document.getElementById("root") as unknown as HTMLElement;
+  const rows = [
+    { id: "a", name: "Boiler", balance: 10 },
+    { id: "b", name: "Pump", balance: 20 },
+    { id: "c", name: "Fan", balance: 30 },
+  ];
+  const observed: string[] = [];
+  const selected = new Set<string>();
+  let acknowledge: (() => void) | undefined;
+  function draw(context = true) {
+    render(
+      <DataTable
+        label="Parts"
+        rows={rows}
+        rowKey={(row) => row.id}
+        selected={(row) => selected.has(row.id)}
+        onSelect={(row) => observed.push(`select:${row.id}`)}
+        getDisclosure={(row) =>
+          row.id === "a"
+            ? { label: "Open boiler", onOpen: () => observed.push("disclose:a") }
+            : undefined}
+        contextSelection={context
+          ? {
+            labels: { selected: "Dans le contexte", unselected: "Hors contexte" },
+            onToggle: (row) => {
+              observed.push(`toggle:${row.id}`);
+              acknowledge = () => {
+                if (!selected.delete(row.id)) selected.add(row.id);
+                draw();
+              };
+            },
+            onAdd: (rows) => {
+              observed.push(`add:${rows.map((row) => row.id).join(",")}`);
+              acknowledge = () => {
+                for (const row of rows) selected.add(row.id);
+                draw();
+              };
+            },
+          }
+          : undefined}
+        columns={[
+          { id: "name", label: "Name", render: (row) => row.name },
+          {
+            id: "balance",
+            label: "Balance",
+            align: "right",
+            render: (row) =>
+              row.id === "a"
+                ? <button type="button" onClick={() => observed.push("nested:button")}>Pay</button>
+                : row.id === "b"
+                ? <span role="button" onClick={() => observed.push("nested:role")}>Adjust</span>
+                : row.balance,
+          },
+        ]}
+      />,
+      root,
+    );
+  }
+  const dispatch = (element: EventTarget, type: string, fields: Record<string, unknown> = {}) =>
+    element.dispatchEvent(Object.assign(
+      new dom.Event(type, {
+        bubbles: true,
+        cancelable: true,
+      }),
+      fields,
+    ) as unknown as Event);
+  const click = (element: Element, detail = 1) => dispatch(element, "click", { detail });
+  const key = (element: Element, key: string, shiftKey = false) =>
+    dispatch(element, "keydown", { key, shiftKey });
+  const pointer = (element: EventTarget, type: string, clientX: number, clientY: number) =>
+    dispatch(element, type, {
+      button: 0,
+      clientX,
+      clientY,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+    });
+  const read = () => observed.splice(0);
+  const settleClick = () => new Promise((resolve) => setTimeout(resolve, 520));
+  const description = (row: Element) => {
+    const id = row.getAttribute("aria-describedby");
+    return id ? dom.document.getElementById(id)?.textContent?.trim() : undefined;
+  };
+  const marks = () => [...root.querySelectorAll<HTMLTableRowElement>("tbody tr")];
+  const outline = () => root.querySelectorAll('tr[data-mcp-view-context-row="selected"]').length;
+  try {
+    draw();
+    const tbody = root.querySelector("tbody")!;
+    const [a, b, c] = marks();
+    const first = a.querySelector("td")!;
+    const second = b.querySelector("td")!;
+    await test.step("uses its existing cells and controlled selection state", async () => {
+      assertEquals(root.querySelectorAll("thead th").length, 2);
+      assertEquals(marks().map((row) => row.cells?.length ?? row.querySelectorAll("td").length), [
+        2,
+        2,
+        2,
+      ]);
+      assertEquals(b.getAttribute("aria-keyshortcuts"), "Shift+Space");
+      assertEquals(outline(), 0);
+      click(first);
+      await settleClick();
+      assertEquals(read(), ["disclose:a"]);
+      click(second);
+      click(second, 2);
+      assertEquals(read(), ["toggle:b"]);
+      assertEquals(description(b), "Hors contexte");
+      assertEquals(outline(), 0);
+      acknowledge?.();
+      assertEquals(description(b), "Dans le contexte");
+      assertEquals(b.getAttribute("aria-selected"), "true");
+      assertEquals(outline(), 1);
+      assertEquals(b.classList.contains("mcp-view-selected"), false);
+      key(b, "Enter");
+      assertEquals(read(), ["select:b"]);
+    });
+    await test.step("row clicks followed by explicit activation open once", async () => {
+      const chevron = a.querySelector(".mcp-view-table-disclosure")!;
+      click(first);
+      // Linkedom runs ancestor capture listeners while bubbling. Deliver
+      // this event to that listener even though the button stops bubbling
+      // in the browser, after the real ancestor capture phase.
+      dispatch(chevron, "click", { detail: 0, stopPropagation() {} });
+      assertEquals(read(), ["disclose:a"]);
+      await settleClick();
+      assertEquals(read(), []);
+      click(second);
+      key(b, "Enter");
+      assertEquals(read(), ["select:b"]);
+      await settleClick();
+      assertEquals(read(), []);
+    });
+    await test.step("leaves explicit and nested controls independent", () => {
+      click(a.querySelector(".mcp-view-table-disclosure")!, 0);
+      const inner = a.querySelector("button:not(.mcp-view-table-disclosure)")!;
+      click(inner);
+      click(inner, 2);
+      click(b.querySelector('[role="button"]')!);
+      assertEquals(read(), ["disclose:a", "nested:button", "nested:button", "nested:role"]);
+      assertEquals(outline(), 1);
+    });
+    await test.step("adds a rectangle as one callback and toggles in place with Shift+Space", () => {
+      tbody.getBoundingClientRect = () => box(0, 0, 280, 120) as DOMRect;
+      for (const [index, row] of [a, b, c].entries()) {
+        row.getBoundingClientRect = () => box(0, index * 40, 280, 40) as DOMRect;
+      }
+      pointer(first, "pointerdown", 10, 10);
+      pointer(dom.document as unknown as Document, "pointermove", 50, 65);
+      pointer(dom.document as unknown as Document, "pointerup", 50, 65);
+      assertEquals(read(), ["add:a,b"]);
+      assertEquals(outline(), 1);
+      acknowledge?.();
+      assertEquals(outline(), 2);
+      key(b, " ", true);
+      assertEquals(read(), ["toggle:b"]);
+      assertEquals(outline(), 2);
+      acknowledge?.();
+      assertEquals(outline(), 1);
+    });
+    await test.step("rectangle respects a top-sticky header and keeps the exposed row", () => {
+      const head = root.querySelector("thead")!;
+      head.getBoundingClientRect = () => box(0, 0, 280, 60) as DOMRect;
+      const window = head.ownerDocument.defaultView!;
+      const previousStyle = window.getComputedStyle;
+      window.getComputedStyle = (element) =>
+        ({
+          position: element === head ? "sticky" : "static",
+          top: element === head ? "0px" : "auto",
+          visibility: "visible",
+        }) as CSSStyleDeclaration;
+      try {
+        pointer(second, "pointerdown", 10, 70);
+        pointer(dom.document as unknown as Document, "pointermove", 150, 0);
+        pointer(dom.document as unknown as Document, "pointerup", 150, 0);
+        assertEquals(read(), ["add:b"]);
+      } finally {
+        window.getComputedStyle = previousStyle;
+      }
+    });
+    await test.step("omitting the opt-in restores the existing selection and disclosure routes", () => {
+      draw(false);
+      assertEquals(root.querySelectorAll("[data-visual-item]").length, 0);
+      assertEquals(outline(), 0);
+      assert(a.classList.contains("mcp-view-selected"));
+      const tabIndex = (row: Element) =>
+        Array.from(row.attributes).find(({ name }) => name.toLowerCase() === "tabindex")?.value;
+      assertEquals(tabIndex(a), undefined);
+      assertEquals(tabIndex(b), "0");
+      click(a);
+      click(b);
+      key(b, " ");
+      assertEquals(read(), ["disclose:a", "select:b", "select:b"]);
+    });
+  } finally {
+    render(null, root);
+    if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
+    else Reflect.deleteProperty(globalThis, "document");
+    if (previousDOMRect) Object.defineProperty(globalThis, "DOMRect", previousDOMRect);
+    else Reflect.deleteProperty(globalThis, "DOMRect");
+  }
+});

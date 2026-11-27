@@ -40,6 +40,7 @@ export type {
   CodeBlockProps,
   CrossSelectionProps,
   DataTableColumn,
+  DataTableDisclosure,
   DataTableProps,
   EmptyStateProps,
   InlineCodeProps,

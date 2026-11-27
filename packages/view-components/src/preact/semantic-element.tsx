@@ -1,6 +1,7 @@
 /** @jsxImportSource preact */
 /** Generic, domain-neutral presentation shell for one semantic object. */
 
+import { eventStartedInInteractiveChild } from "./interactive-child.ts";
 import type { ComposedSemanticRef } from "@mcpview/contracts";
 import type { ComponentChildren, JSX, VNode } from "preact";
 import { Card, type CardProps, type PresentationTone } from "./components.tsx";
@@ -325,26 +326,6 @@ export function SemanticElement({
       {provenance}
     </div>
   );
-}
-
-const INTERACTIVE_CHILD_SELECTOR = [
-  "a[href]",
-  "button",
-  "input",
-  "select",
-  "textarea",
-  "[role='button']",
-  "[role='link']",
-].join(",");
-
-function eventStartedInInteractiveChild(
-  element: HTMLDivElement,
-  target: EventTarget | null,
-): boolean {
-  const candidate = target as (Element & { closest?: (selector: string) => Element | null }) | null;
-  if (!candidate || typeof candidate.closest !== "function") return false;
-  const interactive = candidate.closest(INTERACTIVE_CHILD_SELECTOR);
-  return interactive !== null && interactive !== element && element.contains(interactive);
 }
 
 function verdictBorder(tone: PresentationTone): string {

@@ -1,7 +1,11 @@
 /** @jsxImportSource preact */
 /** Shared Preact presentation primitives for composable MCP Apps. */
 
+import { eventStartedInInteractiveChild } from "./interactive-child.ts";
 import { createElement, render } from "preact";
+import { useId } from "preact/hooks";
+import { DisclosureChevron } from "./interaction-controls.tsx";
+import { useVisualItemGestures } from "./visual-item-gestures.ts";
 import type { ComponentChildren, JSX } from "preact";
 
 export type PresentationTone =
@@ -226,15 +230,58 @@ export interface DataTableColumn<TRow> {
   readonly render: (row: TRow) => ComponentChildren;
 }
 
+export interface DataTableDisclosure {
+  /** Localized accessible action, including the row identity. */
+  readonly label: string;
+  /** Supply only for locally expandable details. */
+  readonly expanded?: boolean;
+  readonly controls?: string;
+  readonly onOpen: () => void;
+}
+
 export interface DataTableProps<TRow> {
   readonly label: string;
   readonly rows: readonly TRow[];
   readonly columns: readonly DataTableColumn<TRow>[];
   readonly rowKey: (row: TRow) => string | number;
+  /** Returns context membership when contextSelection is supplied. */
   readonly selected?: (row: TRow) => boolean;
   readonly onSelect?: (row: TRow) => void;
+  /** Opt into context gestures. The consumer controls membership through selected. */
+  readonly contextSelection?: {
+    /** Double-click, long press or Shift+Space toggles one row. */
+    readonly onToggle: (row: TRow) => void;
+    /** Rectangle selection adds these rows to the existing context. */
+    readonly onAdd?: (rows: readonly TRow[]) => void;
+    /** Spoken row status; default labels are in English. */
+    readonly labels?: {
+      readonly selected: string;
+      readonly unselected: string;
+    };
+  };
+  /** A row with a disclosure opens on activation. Other rows keep their optional selection action. */
+  readonly getDisclosure?: (row: TRow) => DataTableDisclosure | undefined;
   readonly emptyLabel?: string;
   readonly className?: string;
+}
+
+function tableRowIntersects(item: Element, rectangle: DOMRectReadOnly): boolean {
+  const header = item.parentElement?.previousElementSibling;
+  if (header?.localName !== "thead") return true;
+  const style = header.ownerDocument.defaultView?.getComputedStyle?.(header);
+  if (
+    style?.position !== "sticky" || style.top === "auto" ||
+    style.visibility === "hidden" || style.visibility === "collapse"
+  ) return true;
+
+  const head = header.getBoundingClientRect();
+  if (head.width <= 0 || head.height <= 0) return true;
+  const row = item.getBoundingClientRect();
+  // Only reject an overlap completely covered by this table's sticky header.
+  return Math.max(rectangle.left, row.left) < head.left ||
+    Math.min(rectangle.right, row.right) > head.right ||
+    Math.max(rectangle.top, row.top) < head.top ||
+    Math.min(rectangle.bottom, row.bottom) > head.bottom;
 }
 
 /** Accessible compact table; selection behavior is opt-in and keyboard-safe. */
@@ -245,9 +292,44 @@ export function DataTable<TRow>({
   rowKey,
   selected,
   onSelect,
+  contextSelection,
+  getDisclosure,
   emptyLabel = "No matching data",
   className,
 }: DataTableProps<TRow>): JSX.Element {
+  const statusId = useId();
+  const describeSelection = contextSelection !== undefined && selected !== undefined;
+  const items = rows.map((row) => {
+    const key = rowKey(row);
+    return {
+      row,
+      key,
+      id: typeof key === "string" ? `s:${key}` : `n:${key}`,
+      disclosure: getDisclosure?.(row),
+    };
+  });
+  const byId = new Map(contextSelection ? items.map((item) => [item.id, item]) : []);
+  const gestureRoot = useVisualItemGestures<HTMLTableSectionElement>({
+    onActivate: (id) => {
+      const item = byId.get(id);
+      if (!item) return;
+      if (item.disclosure) item.disclosure.onOpen();
+      else onSelect?.(item.row);
+    },
+    onToggle: contextSelection && ((id) => {
+      const item = byId.get(id);
+      if (item) contextSelection.onToggle(item.row);
+    }),
+    onAdd: contextSelection?.onAdd && ((ids) => {
+      const added = ids.flatMap((id) => {
+        const item = byId.get(id);
+        return item ? [item.row] : [];
+      });
+      contextSelection.onAdd?.(added);
+    }),
+    intersectsItem: tableRowIntersects,
+  });
+
   if (rows.length === 0) {
     return (
       <div
@@ -275,25 +357,36 @@ export function DataTable<TRow>({
             ))}
           </tr>
         </thead>
-        <tbody>
-          {rows.map((row) => {
-            const interactive = onSelect !== undefined;
+        <tbody
+          ref={contextSelection ? gestureRoot : undefined}
+          data-visual-selection-surface={contextSelection?.onAdd ? "" : undefined}
+        >
+          {items.map(({ row, key, id, disclosure }) => {
+            const interactive = disclosure !== undefined || onSelect !== undefined;
             const isSelected = selected?.(row);
-            const choose = () => onSelect?.(row);
+            const choose = disclosure ? disclosure.onOpen : () => onSelect?.(row);
             return (
               <tr
+                aria-describedby={describeSelection
+                  ? `${statusId}-${isSelected ? "selected" : "unselected"}`
+                  : undefined}
                 aria-selected={selected ? isSelected : undefined}
-                class={isSelected ? "mcp-view-selected" : undefined}
-                data-interactive={interactive ? "true" : undefined}
-                key={rowKey(row)}
-                tabIndex={interactive ? 0 : undefined}
-                onClick={interactive
+                aria-keyshortcuts={contextSelection ? "Shift+Space" : undefined}
+                class={isSelected && !contextSelection ? "mcp-view-selected" : undefined}
+                data-mcp-view-context-row={contextSelection && isSelected ? "selected" : undefined}
+                data-interactive={interactive || contextSelection ? "true" : undefined}
+                data-visual-item={contextSelection ? id : undefined}
+                data-visual-no-activate={contextSelection && !interactive ? "" : undefined}
+                data-visual-selection-start={contextSelection?.onAdd ? "" : undefined}
+                key={key}
+                tabIndex={contextSelection || (interactive && !disclosure) ? 0 : undefined}
+                onClick={interactive && !contextSelection
                   ? (event) => {
                     if (eventStartedInInteractiveChild(event.currentTarget, event.target)) return;
                     choose();
                   }
                   : undefined}
-                onKeyDown={interactive
+                onKeyDown={interactive && !contextSelection
                   ? (event) => {
                     if (event.target !== event.currentTarget) return;
                     if (event.key !== "Enter" && event.key !== " ") return;
@@ -302,8 +395,24 @@ export function DataTable<TRow>({
                   }
                   : undefined}
               >
-                {columns.map((column) => (
+                {columns.map((column, index) => (
                   <td key={column.id} data-align={column.align ?? "left"}>
+                    {index === 0 && disclosure && (
+                      <button
+                        type="button"
+                        class="mcp-view-table-disclosure"
+                        data-visual-immediate-activate={contextSelection ? "" : undefined}
+                        aria-label={disclosure.label}
+                        aria-expanded={disclosure.expanded}
+                        aria-controls={disclosure.controls}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          disclosure.onOpen();
+                        }}
+                      >
+                        <DisclosureChevron expanded={disclosure.expanded === true} />
+                      </button>
+                    )}
                     {column.render(row)}
                   </td>
                 ))}
@@ -312,6 +421,16 @@ export function DataTable<TRow>({
           })}
         </tbody>
       </table>
+      {describeSelection && (
+        <>
+          <span hidden id={`${statusId}-selected`}>
+            {contextSelection.labels?.selected ?? "Selected for context"}
+          </span>
+          <span hidden id={`${statusId}-unselected`}>
+            {contextSelection.labels?.unselected ?? "Not selected for context"}
+          </span>
+        </>
+      )}
     </div>
   );
 }
@@ -652,26 +771,6 @@ export function StateMessage({
       {children && <div class="mcp-view-state-detail">{children}</div>}
     </div>
   );
-}
-
-const INTERACTIVE_CHILD_SELECTOR = [
-  "a[href]",
-  "button",
-  "input",
-  "select",
-  "textarea",
-  "[role='button']",
-  "[role='link']",
-].join(",");
-
-function eventStartedInInteractiveChild(
-  row: HTMLTableRowElement,
-  target: EventTarget | null,
-): boolean {
-  const candidate = target as (Element & { closest?: (selector: string) => Element | null }) | null;
-  if (!candidate || typeof candidate.closest !== "function") return false;
-  const interactive = candidate.closest(INTERACTIVE_CHILD_SELECTOR);
-  return interactive !== null && interactive !== row && row.contains(interactive);
 }
 
 function classes(...values: Array<string | undefined>): string {

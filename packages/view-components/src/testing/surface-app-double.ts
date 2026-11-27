@@ -27,7 +27,7 @@ export type State = SurfaceAppState<Data>;
 export const PERMISSIONS = { read: true, env: true, run: true } as const;
 
 export async function withDocument(
-  fn: (root: HTMLElement) => Promise<void>,
+  fn: (root: HTMLElement) => void | Promise<void>,
 ): Promise<void> {
   const documentModule = await import("npm:linkedom@0.18.12");
   const dom = documentModule.parseHTML("<html><body><div id=root></div></body></html>");

@@ -3,6 +3,8 @@
 
 import type { ComponentChildren, JSX } from "preact";
 import type { PresentationTone } from "./components.tsx";
+import { eventStartedInInteractiveChild } from "./interactive-child.ts";
+import { DisclosureChevron } from "./interaction-controls.tsx";
 
 export interface PathBarItem {
   readonly id: string;
@@ -147,11 +149,6 @@ interface InteractiveDrillHintProps extends DrillHintBaseProps {
 
 export type DrillHintProps = StaticDrillHintProps | InteractiveDrillHintProps;
 
-const DRILL_HINT_GLYPH: Readonly<Record<DrillHintDirection, string>> = Object.freeze({
-  "in-view": "›",
-  "to-model": "~",
-});
-
 /**
  * Affordance for one available drill-down.
  *
@@ -175,10 +172,11 @@ export function DrillHint(props: DrillHintProps): JSX.Element {
       onClick={props.onActivate}
       type="button"
     >
+      {props.direction === "in-view" && <DisclosureChevron expanded={false} />}
       <span class="mcp-view-drill-hint-label">{props.label}</span>
-      <span aria-hidden="true" class="mcp-view-drill-hint-glyph">
-        {DRILL_HINT_GLYPH[props.direction]}
-      </span>
+      {props.direction === "to-model" && (
+        <span aria-hidden="true" class="mcp-view-drill-hint-glyph">~</span>
+      )}
     </button>
   );
 }
@@ -367,17 +365,29 @@ function TreeListItem({
       data-tone={node.tone}
       role="treeitem"
     >
-      <div class="mcp-view-tree-list-row" style={{ paddingInlineStart: `${(level - 1) * 0.9}rem` }}>
+      <div
+        class="mcp-view-tree-list-row"
+        style={{ paddingInlineStart: `${(level - 1) * 0.9}rem` }}
+        onClick={children.length > 0 && !onSelect
+          ? (event) => {
+            if (eventStartedInInteractiveChild(event.currentTarget, event.target)) return;
+            onToggle(node.id);
+          }
+          : undefined}
+      >
         {children.length > 0
           ? (
             <button
               aria-expanded={open}
               aria-label={toggleLabel}
               class="mcp-view-tree-list-twisty"
-              onClick={() => onToggle(node.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggle(node.id);
+              }}
               type="button"
             >
-              <span aria-hidden="true">{open ? "▾" : "▸"}</span>
+              <DisclosureChevron expanded={open} />
             </button>
           )
           : <span aria-hidden="true" class="mcp-view-tree-list-twisty" data-empty="true" />}

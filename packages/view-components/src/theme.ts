@@ -1,5 +1,7 @@
 /** Shared light-first visual language for composable MCP App components. */
 
+import { MCP_VIEW_INTERACTION_CSS } from "./interaction-styles.ts";
+
 export const MCP_VIEW_THEME_STYLE_ID = "mcp-view-theme";
 
 /** Stable CSS custom-property names available to App-local themes. */
@@ -107,6 +109,7 @@ export type McpViewThemeToken = McpViewThemeTokens[keyof McpViewThemeTokens];
  * and explicit system states. Every token can be overridden by the host.
  */
 export const MCP_VIEW_THEME_CSS: string = String.raw`
+${MCP_VIEW_INTERACTION_CSS}
 :root {
   color-scheme: light dark;
   --mcp-view-text: var(--color-text-primary, #101519);
@@ -1632,6 +1635,17 @@ button.mcp-view-drill-hint:focus-visible {
   font: inherit;
   font-size: var(--mcp-view-size-note);
   line-height: 1;
+}
+.mcp-view-table-disclosure {
+  display: inline-grid; place-items: center; min-width: 36px; min-height: 36px;
+  margin-inline-end: .2rem; padding: 0; border: 0; border-radius: var(--mcp-view-radius-control);
+  background: none; color: var(--mcp-view-muted); cursor: pointer; vertical-align: middle;
+}
+.mcp-view-table-disclosure:focus-visible {
+  outline: 2px solid var(--mcp-view-accent); outline-offset: -2px;
+}
+@media (pointer: coarse) {
+  .mcp-view-table-disclosure, button.mcp-view-tree-list-twisty { min-width: 44px; min-height: 44px; }
 }
 .mcp-view-tree-list-twisty[data-empty="true"] { cursor: default; }
 .mcp-view-tree-list-twisty:focus-visible {

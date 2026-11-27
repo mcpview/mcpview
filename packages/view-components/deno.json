@@ -1,10 +1,11 @@
 {
   "name": "@mcpview/components",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "license": "MIT",
   "exports": {
     ".": "./mod.ts",
     "./preact": "./preact.ts",
+    "./preact/controls": "./preact-controls.ts",
     "./preact/components": "./preact-components.ts",
     "./scaffold": "./scaffold.ts",
     "./surface": "./surface.ts",
@@ -18,6 +19,7 @@
       "preact.ts",
       "preact-components.ts",
       "preact-context.ts",
+      "preact-controls.ts",
       "scaffold.ts",
       "surface.ts",
       "layout.ts",
@@ -32,7 +34,7 @@
   "tasks": {
     "build:npm": "deno run -A scripts/build-npm.ts",
     "test": "deno test --allow-read --allow-write --allow-run --allow-env src/ entries_test.ts preact_components_test.ts scaffold_test.ts",
-    "check": "deno check preact-context.ts mod.ts preact.ts preact-components.ts scaffold.ts surface.ts layout.ts fonts.ts scripts/fetch-fonts.ts",
+    "check": "deno check preact-controls.ts preact-context.ts mod.ts preact.ts preact-components.ts scaffold.ts surface.ts layout.ts fonts.ts scripts/fetch-fonts.ts",
     "fonts:fetch": "deno run --allow-net=fonts.googleapis.com,fonts.gstatic.com --allow-read --allow-write scripts/fetch-fonts.ts",
     "fonts:check": "deno run --allow-net=fonts.googleapis.com,fonts.gstatic.com --allow-read scripts/fetch-fonts.ts --check",
     "lint": "deno lint",

@@ -13,6 +13,8 @@ import * as aliasLayout from "./layout.ts";
 import * as targetLayout from "@mcpview/components/layout";
 import * as aliasFonts from "./fonts.ts";
 import * as targetFonts from "@mcpview/components/fonts";
+import * as aliasControls from "./preact-controls.ts";
+import * as targetControls from "@mcpview/components/preact/controls";
 import * as aliasContext from "./preact-context.ts";
 import * as targetContext from "@mcpview/components/preact/context";
 
@@ -47,4 +49,8 @@ Deno.test("@casys/mcp-view-components/fonts re-exports @mcpview/components/fonts
 
 Deno.test("@casys/mcp-view-components/preact/context re-exports @mcpview/components/preact/context", () => {
   assertModuleParity("./preact/context", aliasContext, targetContext);
+});
+
+Deno.test("@casys/mcp-view-components/preact/controls re-exports @mcpview/components/preact/controls", () => {
+  assertModuleParity("./preact/controls", aliasControls, targetControls);
 });
