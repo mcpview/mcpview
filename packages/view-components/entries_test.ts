@@ -67,6 +67,7 @@ Deno.test({
         "./preact.ts",
         "./preact-components.ts",
         "./preact-context.ts",
+        "./preact-controls.ts",
         "./layout.ts",
       ]
     ) {
@@ -181,6 +182,25 @@ Deno.test({
       assert(result.outputFiles[0].text.length > 0, "the checked bundle must contain emitted code");
     } finally {
       await esbuild.stop();
+    }
+  },
+});
+
+Deno.test({
+  name: "the controls entry loads only Preact, standalone styles and the two controls",
+  permissions: { read: true, run: true, env: true },
+  async fn() {
+    const modules = await runtimeModules(new URL("./preact-controls.ts", import.meta.url));
+    for (
+      const forbidden of [
+        "/src/theme.ts",
+        "@modelcontextprotocol/",
+        "/view/src/",
+        "/preact/components.tsx",
+        "/src/fonts-data.ts",
+      ]
+    ) {
+      assertFalse(modules.some((name) => name.includes(forbidden)), forbidden);
     }
   },
 });

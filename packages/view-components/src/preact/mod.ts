@@ -85,6 +85,7 @@ export type {
   CollectionCardProps,
   CrossSelectionProps,
   DataTableColumn,
+  DataTableDisclosure,
   DataTableProps,
   DisclosureProps,
   DrillHintDirection,

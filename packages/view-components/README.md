@@ -597,12 +597,117 @@ local checkout); the `/surface` entry is derived from the latter unless
 `MCP_VIEW_COMPONENTS_SURFACE_MODULE` names it. Run the generator from JSR:
 
 ```sh
-deno run -A jsr:@mcpview/components@0.13.1/scaffold result-viewer ./result-viewer
+deno run -A jsr:@mcpview/components@0.14.0/scaffold result-viewer ./result-viewer
 ```
 
 The npm package contains only the runtime and presentation entry points. It does not export or ship
 `@mcpview/components/scaffold`; Node ESM imports and CommonJS requires of that subpath are expected
 to fail with `ERR_PACKAGE_PATH_NOT_EXPORTED` rather than loading a Deno-only module.
+
+## Opening details and pinning context
+
+The working version of `@mcpview/components/preact/controls` provides `useVisualItemGestures` for
+views that handle navigation and context directly on data. Attach the returned callback ref to the
+collection. Give each selectable mark a stable `data-visual-item` ID. A click or tap calls
+`onActivate(id)`. Double-click, long press, or Shift+Space calls `onToggle(id)`. Supply `onAdd(ids)`
+for collections that support dragging a rectangle. It receives the covered IDs on release. The
+viewer adds those identities to its current context and uses its acknowledged state to draw the
+outline and update the basket.
+
+```tsx
+const gestures = useVisualItemGestures({
+  onActivate: openInvoice,
+  onToggle: contextSupported ? toggleInvoice : undefined,
+  onAdd: contextSupported ? addInvoices : undefined,
+});
+
+return (
+  <div ref={gestures} data-visual-selection-surface style={{ touchAction: "pan-y" }}>
+    {invoices.map((invoice) => (
+      <button
+        key={invoice.name}
+        data-visual-item={invoice.name}
+        data-visual-selection-start
+        aria-pressed={contextSupported ? isSelected(invoice.name) : undefined}
+        aria-keyshortcuts={contextSupported ? "Shift+Space" : undefined}
+      >
+        {invoice.name}
+      </button>
+    ))}
+  </div>
+);
+```
+
+Rectangles can start in the collection background or on a mark with `data-visual-selection-start`.
+For draggable cards, leave the mark unflagged so the background starts a rectangle and the card
+keeps its drag action. Chart views can supply `getItemBounds` and `intersectsItem` for their
+geometry.
+
+For viewers with explicit buttons, import `DisclosureChevron` and `ContextPinButton` from the same
+entry. A standalone viewer can call `installMcpViewInteractionStyles()` once in its document, or
+include `MCP_VIEW_INTERACTION_CSS` in its own stylesheet. The full MCPView theme already includes
+these styles.
+
+Place `DisclosureChevron` before the identity inside the button that opens a detail. Place
+`ContextPinButton` beside that button, at the end of the row. The pin accepts a localized `label`, a
+controlled `pressed` state, and `onToggle(shiftKey)`. Use `group` for a collection, with
+`pressed="mixed"` when part of it is pinned. Show the pin when the host accepts context. The viewer
+owns the item identity, the pin state and the operation sent to the host.
+
+```tsx
+<div class="mcp-view-disclosure-row">
+  <button type="button" aria-expanded={open} onClick={openInvoice}>
+    <DisclosureChevron expanded={open} /> {invoice.name}
+  </button>
+  <ContextPinButton label={pinLabel} pressed={pinned} onToggle={toggleInvoicePin} />
+</div>;
+```
+
+`DataTable` can handle the gestures on the rows themselves. In this example `context` comes from
+`useActiveContext(controller, scopeKey)`. The app supplies `invoiceContext(row)`, which returns a
+stable `ContextSelectionItem` for that invoice.
+
+```tsx
+<DataTable
+  label="Invoices"
+  rows={invoices}
+  rowKey={(invoice) => invoice.name}
+  columns={columns}
+  getDisclosure={(invoice) => ({
+    label: `Open ${invoice.name}`,
+    onOpen: () => openInvoice(invoice.name),
+  })}
+  selected={(invoice) => context.isSelected(invoiceContext(invoice))}
+  contextSelection={contextSupported
+    ? {
+      onToggle: (invoice) => context.toggle(invoiceContext(invoice)),
+      onAdd: (invoices) => context.select(invoices.map(invoiceContext), "add"),
+    }
+    : undefined}
+/>;
+```
+
+A click opens the invoice through its disclosure. A double-click, long press or Shift+Space toggles
+the targeted invoice. Dragging a rectangle with the mouse adds the covered rows in one context
+update. Touch users can scroll horizontally. The selection outline follows the existing data cells
+and surrounds each run of adjacent joined rows. A focused row announces its context status using
+`contextSelection.labels.selected` or `contextSelection.labels.unselected` if provided. Pass
+localized labels and use acknowledged selection state so that both the contour and the announcement
+follow the host's reply.
+
+Custom tables can use the same contour by installing `MCP_VIEW_CONTEXT_ROW_CSS` from
+`@mcpview/components/preact/controls`; it is also included by `installMcpViewInteractionStyles()`.
+Set `data-mcp-view-context-row="selected"` on each joined `tr`. For a list layout, put the attribute
+on each row wrapper and `data-mcp-view-context-row-outline` on its content. If the wrapper also
+contains an open detail below the row, mark the wrapper with `data-mcp-view-context-row-break` to
+end that outline. `--mcp-view-context-row-accent` overrides the default `--mcp-view-accent` colour.
+
+Rows without a disclosure retain their optional `onSelect` action. A `TreeList` branch expands from
+its row when there is no selection action. When `onSelect` is supplied, the branch keeps its leading
+disclosure and the label performs the selection.
+
+On a KPI chart, a click can update a linked panel for the chosen month. A context gesture on another
+month targets that month and preserves the period on display.
 
 ## Active context
 

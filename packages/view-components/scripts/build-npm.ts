@@ -24,6 +24,7 @@ await build({
   entryPoints: [
     "./mod.ts",
     { name: "./preact", path: "./preact.ts" },
+    { name: "./preact/controls", path: "./preact-controls.ts" },
     { name: "./preact/components", path: "./preact-components.ts" },
     { name: "./preact/context", path: "./preact-context.ts" },
     { name: "./surface", path: "./surface.ts" },
@@ -71,6 +72,11 @@ packageJson.exports = {
     types: "./esm/mod.d.ts",
     import: "./esm/mod.js",
     require: "./script/mod.js",
+  },
+  "./preact/controls": {
+    types: "./esm/preact-controls.d.ts",
+    import: "./esm/preact-controls.js",
+    require: "./script/preact-controls.js",
   },
   "./preact/context": {
     types: "./esm/preact-context.d.ts",

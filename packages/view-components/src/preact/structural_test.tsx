@@ -398,7 +398,12 @@ Deno.test({
       );
       const btn = root.querySelector("button") as unknown as HTMLButtonElement;
       assertEquals(btn?.getAttribute("aria-label"), "Drill into view");
-      assertEquals(root.querySelector(".mcp-view-drill-hint-glyph")?.textContent, "›");
+      assertEquals(
+        root.querySelector("button")?.firstElementChild?.classList.contains(
+          "mcp-view-disclosure-chevron",
+        ),
+        true,
+      );
       btn.click();
 
       render(
@@ -639,7 +644,24 @@ Deno.test({
       );
       const twisty = root.querySelector("button[aria-label='Expand']");
       (twisty as unknown as HTMLButtonElement).click();
-      assertEquals(toggled, ["parent"]);
+      root.querySelector<HTMLElement>(".mcp-view-tree-list-row")!.click();
+      assertEquals(toggled, ["parent", "parent"]);
+
+      const selected: string[] = [];
+      render(
+        <TreeList
+          label="Tree"
+          nodes={nodes}
+          expandedIds={[]}
+          onToggle={(id) => toggled.push(id)}
+          toggleLabel="Expand"
+          onSelect={(id) => selected.push(id)}
+        />,
+        root,
+      );
+      root.querySelector<HTMLButtonElement>(".mcp-view-tree-list-label")!.click();
+      assertEquals(selected, ["parent"]);
+      assertEquals(toggled, ["parent", "parent"]);
     } finally {
       Object.defineProperty(globalThis, "document", {
         configurable: true,

@@ -5,6 +5,7 @@ import {
   assertStrictEquals,
   assertStringIncludes,
 } from "@std/assert";
+import { MCP_VIEW_CONTEXT_ROW_CSS } from "./context-row-styles.ts";
 
 import {
   installMcpViewTheme,
@@ -184,7 +185,8 @@ Deno.test("shared theme exposes offline heading body and mono typography roles",
 
   assertFalse(MCP_VIEW_THEME_CSS.includes("font-family: Inter"));
 
-  assertFalse(MCP_VIEW_THEME_CSS.includes("box-shadow:"));
+  // Row outlines use inset shadows to preserve collapsed table borders.
+  assertFalse(MCP_VIEW_THEME_CSS.replace(MCP_VIEW_CONTEXT_ROW_CSS, "").includes("box-shadow:"));
   assertFalse(MCP_VIEW_THEME_CSS.includes("0 8px 28px"));
 
   const badgeStart = MCP_VIEW_THEME_CSS.indexOf(".mcp-view-badge {");

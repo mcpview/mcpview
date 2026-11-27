@@ -8,6 +8,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-27
+
+### Added
+
+- Tables and custom viewers can open details on a click or tap, toggle an item in conversation
+  context with a double-click or long press, and add visible items by dragging a rectangle. Adjacent
+  table rows share an outline, leaving the business columns their full width.
+- `DataTable.contextSelection` exposes confirmed context membership to assistive technology and
+  supports localized selection descriptions. Activating a row and its disclosure in quick succession
+  opens its detail once.
+
 ## [0.13.1] - 2026-11-26
 
 ### Changed
