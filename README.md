@@ -14,6 +14,9 @@ observability — plus a view toolkit for interactive MCP Apps and multi-server
 composition, all in TypeScript. Learn more at
 [mcpview.dev](https://mcpview.dev).
 
+Questions about mcpview? Ask the team on
+[Casys Discord](https://discord.gg/VruRCTS8pQ).
+
 The repository contains **six packages** under the `@mcpview` scope: one
 canonical framework and five companion packages. The production-ready claim
 applies to `@mcpview/server`; the companion packages are currently experimental
